@@ -18,6 +18,12 @@ app.use("/api/food-items", foodItemRoutes);
 const reviewRoutes = require("./routes/review");
 app.use("/api/reviews", reviewRoutes);
 
+const addressRoutes = require("./routes/address");
+app.use("/api/addresses", addressRoutes);
+
+const userRoutes = require("./routes/user");
+app.use("/api/users", userRoutes);
+
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;
 mongoose
