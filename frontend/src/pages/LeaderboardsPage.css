@@ -1,0 +1,63 @@
+/* src/pages/LeaderboardsPage.css */
+
+/* Container for the entire leaderboard page */
+.leaderboards-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Category filter dropdown styling */
+.category-filter,
+.sort-options {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+/* Label styling for category and sort options */
+.category-filter label,
+.sort-options label {
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+/* Select dropdown styling */
+.category-filter select,
+.sort-options select {
+  padding: 5px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+/* Styling for the leaderboard list */
+.leaderboards-list {
+  margin-top: 20px;
+}
+
+/* Individual leaderboard item styling */
+.leaderboard-item {
+  border-bottom: 1px solid #ddd;
+  padding: 15px 0;
+}
+
+/* Leaderboard item title (rank and name) */
+.leaderboard-item h4 {
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #333;
+}
+
+/* Paragraphs inside leaderboard items for ratings and reviews */
+.leaderboard-item p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+/* Small text styling (e.g., for review dates) */
+.leaderboard-item small {
+  color: #999;
+}

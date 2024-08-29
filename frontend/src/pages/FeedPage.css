@@ -1,0 +1,51 @@
+/* src/pages/FeedPage.css */
+.feed-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.sort-options {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.sort-options select {
+  padding: 5px;
+  font-size: 14px;
+}
+
+.local-reviews,
+.followed-reviews {
+  margin-top: 20px;
+}
+
+.local-reviews h3,
+.followed-reviews h3 {
+  margin-bottom: 15px;
+}
+
+.review-item {
+  border-bottom: 1px solid #ddd;
+  padding: 15px 0;
+}
+
+.review-item h4 {
+  margin-bottom: 10px;
+}
+
+.review-item p {
+  margin: 5px 0;
+}
+
+.review-item small {
+  color: #666;
+}
+
+.review-item button {
+  margin-right: 10px;
+  padding: 5px 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
