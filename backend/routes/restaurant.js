@@ -8,7 +8,14 @@ const Restaurant = require("../models/Restaurant");
 // Create a new restaurant
 router.post("/", async (req, res) => {
   try {
-    const restaurant = new Restaurant(req.body);
+    const { name, address, type, cuisine, ambiance } = req.body;
+    const restaurant = new Restaurant({
+      name,
+      address,
+      type,
+      cuisine,
+      ambiance,
+    });
     const savedRestaurant = await restaurant.save();
     res.status(201).json(savedRestaurant);
   } catch (err) {
@@ -106,12 +113,26 @@ router.get("/:id/reviews", async (req, res) => {
   }
 });
 
+// Filter restaurants by ambiance
+router.get("/filter", async (req, res) => {
+  try {
+    const { ambiance } = req.query;
+    const restaurants = await Restaurant.find({
+      ambiance: { $in: ambiance },
+    }).populate("address");
+    res.status(200).json(restaurants);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Update a restaurant by ID
 router.put("/:id", async (req, res) => {
   try {
+    const { ambiance } = req.body;
     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { ambiance },
       { new: true }
     );
     if (!updatedRestaurant)

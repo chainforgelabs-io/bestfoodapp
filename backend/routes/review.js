@@ -5,7 +5,24 @@ const Review = require("../models/Review");
 // Create a new review
 router.post("/", async (req, res) => {
   try {
-    const review = new Review(req.body);
+    const {
+      userId,
+      restaurantId,
+      foodItem,
+      score,
+      ambianceRating,
+      comment,
+      photos,
+    } = req.body;
+    const review = new Review({
+      userId,
+      restaurantId,
+      foodItem,
+      score,
+      ambianceRating,
+      comment,
+      photos,
+    });
     const savedReview = await review.save();
     res.status(201).json(savedReview);
   } catch (err) {
@@ -37,9 +54,10 @@ router.get("/:id", async (req, res) => {
 // Update a review by ID
 router.put("/:id", async (req, res) => {
   try {
+    const { ambianceRating } = req.body;
     const updatedReview = await Review.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { ambianceRating },
       { new: true }
     );
     if (!updatedReview)
