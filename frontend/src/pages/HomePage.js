@@ -1,7 +1,7 @@
 // src/pages/HomePage.js
 import React, { useState } from "react";
 import axios from "axios";
-import "./HomePage.css"; // Create this file for styling
+import "../styles/HomePage.css"; // Create this file for styling
 
 function HomePage() {
   const [searchTerm, setSearchTerm] = useState("");

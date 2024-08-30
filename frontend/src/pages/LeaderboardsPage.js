@@ -1,6 +1,6 @@
 // src/pages/LeaderboardsPage.js
 import React, { useState, useEffect } from "react";
-import "./LeaderboardsPage.css"; // Import your CSS file for styling
+import "../styles/LeaderboardsPage.css"; // Import your CSS file for styling
 
 function LeaderboardsPage() {
   const [leaderboards, setLeaderboards] = useState([]);

@@ -5,9 +5,10 @@ const Address = require("../models/Address");
 const Restaurant = require("../models/Restaurant");
 const FoodItem = require("../models/FoodItem");
 const Review = require("../models/Review");
+const protect = require("../middleware/authMiddleware"); // Import the protect middleware
 
-// POST route to create a new address
-router.post("/", async (req, res) => {
+// POST route to create a new address (Protected: Only authenticated users can create addresses)
+router.post("/", protect, async (req, res) => {
   try {
     const address = new Address(req.body);
     const savedAddress = await address.save();
@@ -17,7 +18,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Get the overall score for a city
+// Get the overall score for a city (Public: Anyone can view the overall score for a city)
 router.get("/city/:city/score", async (req, res) => {
   try {
     const city = req.params.city;
@@ -66,7 +67,7 @@ router.get("/city/:city/score", async (req, res) => {
   }
 });
 
-// Get the overall score for a country
+// Get the overall score for a country (Public: Anyone can view the overall score for a country)
 router.get("/country/:country/score", async (req, res) => {
   try {
     const country = req.params.country;
@@ -117,7 +118,7 @@ router.get("/country/:country/score", async (req, res) => {
   }
 });
 
-// Get all reviews for a specific city
+// Get all reviews for a specific city (Public: Anyone can view reviews for a city)
 router.get("/city/:city/reviews", async (req, res) => {
   try {
     const city = req.params.city;
@@ -163,7 +164,7 @@ router.get("/city/:city/reviews", async (req, res) => {
   }
 });
 
-// Get all reviews for a specific country
+// Get all reviews for a specific country (Public: Anyone can view reviews for a country)
 router.get("/country/:country/reviews", async (req, res) => {
   try {
     const country = req.params.country;

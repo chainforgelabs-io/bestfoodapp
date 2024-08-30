@@ -1,21 +1,16 @@
 const express = require("express");
 const router = express.Router();
 const Review = require("../models/Review");
+const protect = require("../middleware/authMiddleware"); // Import the protect middleware
 
-// Create a new review
-router.post("/", async (req, res) => {
+// Create a new review (Protected: Only authenticated users can create reviews)
+router.post("/", protect, async (req, res) => {
   try {
-    const {
-      userId,
-      restaurantId,
-      foodItem,
-      score,
-      ambianceRating,
-      comment,
-      photos,
-    } = req.body;
+    const { restaurantId, foodItem, score, ambianceRating, comment, photos } =
+      req.body;
+
     const review = new Review({
-      userId,
+      userId: req.user.id, // Use the authenticated user's ID from protect middleware
       restaurantId,
       foodItem,
       score,
@@ -30,7 +25,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Get all reviews
+// Get all reviews (Public: Anyone can view reviews)
 router.get("/", async (req, res) => {
   try {
     const reviews = await Review.find().populate("foodItem");
@@ -40,7 +35,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Get a single review by ID
+// Get a single review by ID (Public: Anyone can view a review)
 router.get("/:id", async (req, res) => {
   try {
     const review = await Review.findById(req.params.id).populate("foodItem");
@@ -51,29 +46,44 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Update a review by ID
-router.put("/:id", async (req, res) => {
+// Update a review by ID (Protected: Only the authenticated user who created the review can update it)
+router.put("/:id", protect, async (req, res) => {
   try {
-    const { ambianceRating } = req.body;
-    const updatedReview = await Review.findByIdAndUpdate(
-      req.params.id,
-      { ambianceRating },
-      { new: true }
-    );
-    if (!updatedReview)
+    const review = await Review.findById(req.params.id);
+
+    if (!review) {
       return res.status(404).json({ message: "Review not found" });
+    }
+
+    if (review.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized action" });
+    }
+
+    const { ambianceRating, comment } = req.body;
+    review.ambianceRating = ambianceRating || review.ambianceRating;
+    review.comment = comment || review.comment;
+
+    const updatedReview = await review.save();
     res.status(200).json(updatedReview);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// Delete a review by ID
-router.delete("/:id", async (req, res) => {
+// Delete a review by ID (Protected: Only the authenticated user who created the review can delete it)
+router.delete("/:id", protect, async (req, res) => {
   try {
-    const deletedReview = await Review.findByIdAndDelete(req.params.id);
-    if (!deletedReview)
+    const review = await Review.findById(req.params.id);
+
+    if (!review) {
       return res.status(404).json({ message: "Review not found" });
+    }
+
+    if (review.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized action" });
+    }
+
+    await review.remove();
     res.status(200).json({ message: "Review deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });

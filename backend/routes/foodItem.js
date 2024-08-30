@@ -3,9 +3,10 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const FoodItem = require("../models/FoodItem");
 const Review = require("../models/Review");
+const protect = require("../middleware/authMiddleware"); // Import the protect middleware
 
-// Create a new food item
-router.post("/", async (req, res) => {
+// Create a new food item (Protected: Only authenticated users can create food items)
+router.post("/", protect, async (req, res) => {
   try {
     const foodItem = new FoodItem(req.body);
     const savedFoodItem = await foodItem.save();
@@ -15,7 +16,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Get all food items
+// Get all food items (Public: Anyone can view food items)
 router.get("/", async (req, res) => {
   try {
     const foodItems = await FoodItem.find().populate("restaurant");
@@ -25,7 +26,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Get a single food item by ID
+// Get a single food item by ID (Public: Anyone can view a food item)
 router.get("/:id", async (req, res) => {
   try {
     const foodItem = await FoodItem.findById(req.params.id).populate(
@@ -39,7 +40,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Get all food items from restuarant id
+// Get all food items from restaurant id (Public: Anyone can view food items by restaurant)
 router.get("/restaurant/:restaurantId", async (req, res) => {
   try {
     const foodItems = await FoodItem.find({
@@ -56,7 +57,7 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
   }
 });
 
-// Get the average and current score of a food item
+// Get the average and current score of a food item (Public: Anyone can view scores of a food item)
 router.get("/:id/scores", async (req, res) => {
   try {
     const foodItemId = req.params.id;
@@ -90,8 +91,8 @@ router.get("/:id/scores", async (req, res) => {
   }
 });
 
-// Update a food item by ID
-router.put("/:id", async (req, res) => {
+// Update a food item by ID (Protected: Only authenticated users can update a food item)
+router.put("/:id", protect, async (req, res) => {
   try {
     const updatedFoodItem = await FoodItem.findByIdAndUpdate(
       req.params.id,
@@ -106,8 +107,8 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Delete a food item by ID
-router.delete("/:id", async (req, res) => {
+// Delete a food item by ID (Protected: Only authenticated users can delete a food item)
+router.delete("/:id", protect, async (req, res) => {
   try {
     const deletedFoodItem = await FoodItem.findByIdAndDelete(req.params.id);
     if (!deletedFoodItem)

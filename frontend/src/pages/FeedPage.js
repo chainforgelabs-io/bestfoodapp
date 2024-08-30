@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import "./FeedPage.css"; // Create this file for styling
+import "../styles/FeedPage.css"; // Create this file for styling
 
 function FeedPage() {
   const [localReviews, setLocalReviews] = useState([]);

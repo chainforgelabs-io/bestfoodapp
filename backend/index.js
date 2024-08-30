@@ -24,6 +24,10 @@ app.use("/api/addresses", addressRoutes);
 const userRoutes = require("./routes/user");
 app.use("/api/users", userRoutes);
 
+// Add the authentication routes here
+const authRoutes = require("./routes/auth");
+app.use("/api/auth", authRoutes); // <-- New line to include auth routes
+
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;
 mongoose

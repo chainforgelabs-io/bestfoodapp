@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
+const protect = require("../middleware/authMiddleware"); // Import the protect middleware
 
-// Create a new user
+// Create a new user (Registration - no protection needed here)
 router.post("/", async (req, res) => {
   try {
     const { username, email, password, profilePicture, bio } = req.body;
@@ -20,7 +21,8 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
+// Get a user's profile (Protected: Only authenticated users should view user profiles)
+router.get("/:id", protect, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -30,8 +32,13 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+// Update a user's profile (Protected: Only the authenticated user should update their own profile)
+router.put("/:id", protect, async (req, res) => {
   try {
+    if (req.user.id !== req.params.id) {
+      return res.status(403).json({ message: "Unauthorized action" });
+    }
+
     const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     }).select("-password");
@@ -43,8 +50,13 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+// Delete a user (Protected: Only the authenticated user should delete their own account)
+router.delete("/:id", protect, async (req, res) => {
   try {
+    if (req.user.id !== req.params.id) {
+      return res.status(403).json({ message: "Unauthorized action" });
+    }
+
     const deletedUser = await User.findByIdAndDelete(req.params.id);
     if (!deletedUser)
       return res.status(404).json({ message: "User not found" });
@@ -54,13 +66,14 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-router.post("/:id/follow", async (req, res) => {
+// Follow a user (Protected: Only authenticated users should be able to follow others)
+router.post("/:id/follow", protect, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    const currentUser = await User.findById(req.body.userId); // Assuming you pass the current user's ID in the body
+    const currentUser = await User.findById(req.user.id); // Use req.user.id from the protect middleware
 
-    if (!user.followers.includes(req.body.userId)) {
-      await user.updateOne({ $push: { followers: req.body.userId } });
+    if (!user.followers.includes(req.user.id)) {
+      await user.updateOne({ $push: { followers: req.user.id } });
       await currentUser.updateOne({ $push: { following: req.params.id } });
       res.status(200).json("User has been followed");
     } else {
@@ -71,13 +84,14 @@ router.post("/:id/follow", async (req, res) => {
   }
 });
 
-router.post("/:id/unfollow", async (req, res) => {
+// Unfollow a user (Protected: Only authenticated users should be able to unfollow others)
+router.post("/:id/unfollow", protect, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    const currentUser = await User.findById(req.body.userId); // Assuming you pass the current user's ID in the body
+    const currentUser = await User.findById(req.user.id); // Use req.user.id from the protect middleware
 
-    if (user.followers.includes(req.body.userId)) {
-      await user.updateOne({ $pull: { followers: req.body.userId } });
+    if (user.followers.includes(req.user.id)) {
+      await user.updateOne({ $pull: { followers: req.user.id } });
       await currentUser.updateOne({ $pull: { following: req.params.id } });
       res.status(200).json("User has been unfollowed");
     } else {

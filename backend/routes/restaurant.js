@@ -4,9 +4,10 @@ const mongoose = require("mongoose");
 const FoodItem = require("../models/FoodItem");
 const Review = require("../models/Review");
 const Restaurant = require("../models/Restaurant");
+const protect = require("../middleware/authMiddleware"); // Import the protect middleware
 
-// Create a new restaurant
-router.post("/", async (req, res) => {
+// Create a new restaurant (Protected: Only authenticated users can create restaurants)
+router.post("/", protect, async (req, res) => {
   try {
     const { name, address, type, cuisine, ambiance } = req.body;
     const restaurant = new Restaurant({
@@ -23,7 +24,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Get all restaurants
+// Get all restaurants (Public: Anyone can view restaurants)
 router.get("/", async (req, res) => {
   try {
     const restaurants = await Restaurant.find().populate("address");
@@ -33,7 +34,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Get a single restaurant by ID
+// Get a single restaurant by ID (Public: Anyone can view a restaurant)
 router.get("/:id", async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.id).populate(
@@ -47,7 +48,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Get the overall score of a restaurant
+// Get the overall score of a restaurant (Public: Anyone can view the score)
 router.get("/:id/score", async (req, res) => {
   try {
     const restaurantId = req.params.id;
@@ -82,7 +83,7 @@ router.get("/:id/score", async (req, res) => {
   }
 });
 
-// Get all reviews for a restaurant
+// Get all reviews for a restaurant (Public: Anyone can view reviews)
 router.get("/:id/reviews", async (req, res) => {
   try {
     const restaurantId = req.params.id;
@@ -113,7 +114,7 @@ router.get("/:id/reviews", async (req, res) => {
   }
 });
 
-// Filter restaurants by ambiance
+// Filter restaurants by ambiance (Public: Anyone can filter restaurants)
 router.get("/filter", async (req, res) => {
   try {
     const { ambiance } = req.query;
@@ -126,8 +127,8 @@ router.get("/filter", async (req, res) => {
   }
 });
 
-// Update a restaurant by ID
-router.put("/:id", async (req, res) => {
+// Update a restaurant by ID (Protected: Only authenticated users can update a restaurant)
+router.put("/:id", protect, async (req, res) => {
   try {
     const { ambiance } = req.body;
     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
@@ -143,8 +144,8 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Delete a restaurant by ID
-router.delete("/:id", async (req, res) => {
+// Delete a restaurant by ID (Protected: Only authenticated users can delete a restaurant)
+router.delete("/:id", protect, async (req, res) => {
   try {
     const deletedRestaurant = await Restaurant.findByIdAndDelete(req.params.id);
     if (!deletedRestaurant)
