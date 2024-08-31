@@ -8,11 +8,26 @@ const protect = require("../middleware/authMiddleware"); // Import the protect m
 // Create a new food item (Protected: Only authenticated users can create food items)
 router.post("/", protect, async (req, res) => {
   try {
-    const foodItem = new FoodItem(req.body);
+    const { name, type, subType, cuisine, price, restaurant } = req.body;
+
+    // Create a new FoodItem instance
+    const foodItem = new FoodItem({
+      name,
+      type, // General type/category of food (e.g., Burger, Pizza)
+      subType, // Specific variation (e.g., Cheese Burger, Pepperoni Pizza)
+      cuisine, // Cuisine type (e.g., American, Italian, Mexican)
+      price,
+      restaurant,
+      createdBy: req.user._id, // Set the creator's ID
+    });
+
+    // Save the food item to the database
     const savedFoodItem = await foodItem.save();
+
     res.status(201).json(savedFoodItem);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
@@ -94,28 +109,49 @@ router.get("/:id/scores", async (req, res) => {
 // Update a food item by ID (Protected: Only authenticated users can update a food item)
 router.put("/:id", protect, async (req, res) => {
   try {
+    // Find the food item by ID
+    const foodItem = await FoodItem.findById(req.params.id);
+    if (!foodItem)
+      return res.status(404).json({ message: "Food item not found" });
+
+    // Ensure the user trying to update the food item is the creator
+    if (foodItem.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ msg: "Unauthorized action" });
+    }
+
+    // Update the food item with the new data
     const updatedFoodItem = await FoodItem.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true }
     );
-    if (!updatedFoodItem)
-      return res.status(404).json({ message: "Food item not found" });
+
     res.status(200).json(updatedFoodItem);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Delete a food item by ID (Protected: Only authenticated users can delete a food item)
 router.delete("/:id", protect, async (req, res) => {
   try {
-    const deletedFoodItem = await FoodItem.findByIdAndDelete(req.params.id);
-    if (!deletedFoodItem)
+    // Find the food item by ID
+    const foodItem = await FoodItem.findById(req.params.id);
+    if (!foodItem)
       return res.status(404).json({ message: "Food item not found" });
+
+    // Ensure the user trying to delete the food item is the creator
+    if (foodItem.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ msg: "Unauthorized action" });
+    }
+
+    // Delete the food item
+    await foodItem.deleteOne();
     res.status(200).json({ message: "Food item deleted" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

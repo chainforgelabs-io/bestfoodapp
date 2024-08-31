@@ -1,6 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const secret = process.env.JWT_SECRET;
 const User = require("../models/User"); // Import the User model
 const router = express.Router();
 

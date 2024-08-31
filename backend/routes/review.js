@@ -9,6 +9,13 @@ router.post("/", protect, async (req, res) => {
     const { restaurantId, foodItem, score, ambianceRating, comment, photos } =
       req.body;
 
+    // Ensure the score is between 0 and 100
+    if (score < 0 || score > 100) {
+      return res
+        .status(400)
+        .json({ message: "Score must be between 0 and 100" });
+    }
+
     const review = new Review({
       userId: req.user.id, // Use the authenticated user's ID from protect middleware
       restaurantId,
@@ -18,6 +25,7 @@ router.post("/", protect, async (req, res) => {
       comment,
       photos,
     });
+
     const savedReview = await review.save();
     res.status(201).json(savedReview);
   } catch (err) {

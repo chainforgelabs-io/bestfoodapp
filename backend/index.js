@@ -28,6 +28,9 @@ app.use("/api/users", userRoutes);
 const authRoutes = require("./routes/auth");
 app.use("/api/auth", authRoutes); // <-- New line to include auth routes
 
+const protectedRoute = require("./routes/protected");
+app.use("/api", protectedRoute);
+
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;
 mongoose

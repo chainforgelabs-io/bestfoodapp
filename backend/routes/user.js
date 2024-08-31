@@ -21,7 +21,47 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Get a user's profile (Protected: Only authenticated users should view user profiles)
+// View User Profile (Protected: Only the authenticated user can view their own profile)
+// This route must be placed before the dynamic route to avoid conflicts
+router.get("/profile", protect, (req, res) => {
+  res.status(200).json(req.user);
+});
+
+// Update User Profile (Protected: Only the authenticated user can update their own profile)
+// This route allows users to update their profile based on their own ID, using req.user._id
+router.put("/profile", protect, async (req, res) => {
+  try {
+    const updatedData = req.body;
+
+    // Find the user by ID and update their profile
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      updatedData,
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-password"); // Don't return the password
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+// Delete User Account
+router.delete("/profile", protect, async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.user._id);
+    res.status(200).json({ msg: "User account deleted" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+// Get a user's profile by ID (Protected: Only authenticated users should view user profiles)
 router.get("/:id", protect, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
@@ -32,7 +72,8 @@ router.get("/:id", protect, async (req, res) => {
   }
 });
 
-// Update a user's profile (Protected: Only the authenticated user should update their own profile)
+// Update a user's profile by ID (Protected: Only the authenticated user should update their own profile)
+// This route allows users to update their profile by providing their ID in the request params
 router.put("/:id", protect, async (req, res) => {
   try {
     if (req.user.id !== req.params.id) {

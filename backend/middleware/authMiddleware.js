@@ -12,15 +12,15 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.id).select("-password");
-      next();
+      next(); // Proceed to the next middleware or route handler
     } catch (error) {
-      console.error(error);
-      res.status(401).json({ msg: "Not authorized, token failed" });
+      console.error("Token verification failed:", error);
+      return res.status(401).json({ msg: "Not authorized, token failed" });
     }
   }
 
   if (!token) {
-    res.status(401).json({ msg: "Not authorized, no token" });
+    return res.status(401).json({ msg: "Not authorized, no token" });
   }
 };
 

@@ -1,7 +1,11 @@
 const mongoose = require("mongoose");
 
 const reviewSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   restaurantId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Restaurant",
@@ -12,12 +16,30 @@ const reviewSchema = new mongoose.Schema({
     ref: "FoodItem",
     required: true,
   },
-  score: { type: Number, required: true },
-  ambianceRating: { type: Number }, // New field for ambiance rating
-  comment: { type: String, default: "" },
-  photos: [{ type: String }], // Array of image URLs
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
+  score: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 100, // Adjusted to reflect a score out of 100
+  },
+  ambianceRating: {
+    type: Number,
+    required: false,
+    min: 0,
+    max: 5,
+  },
+  comment: {
+    type: String,
+    required: false,
+  },
+  photos: {
+    type: [String], // Array of photo URLs or paths
+    required: false,
+  },
+  reviewDate: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 module.exports = mongoose.model("Review", reviewSchema);

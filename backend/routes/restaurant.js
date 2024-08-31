@@ -16,6 +16,7 @@ router.post("/", protect, async (req, res) => {
       type,
       cuisine,
       ambiance,
+      createdBy: req.user._id, // Add this line to set the creator
     });
     const savedRestaurant = await restaurant.save();
     res.status(201).json(savedRestaurant);
@@ -130,29 +131,48 @@ router.get("/filter", async (req, res) => {
 // Update a restaurant by ID (Protected: Only authenticated users can update a restaurant)
 router.put("/:id", protect, async (req, res) => {
   try {
-    const { ambiance } = req.body;
+    const restaurant = await Restaurant.findById(req.params.id);
+    if (!restaurant)
+      return res.status(404).json({ msg: "Restaurant not found" });
+
+    // Ensure the user trying to update the restaurant is the creator
+    if (restaurant.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ msg: "Unauthorized action" });
+    }
+
     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
       req.params.id,
-      { ambiance },
-      { new: true }
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
     );
-    if (!updatedRestaurant)
-      return res.status(404).json({ message: "Restaurant not found" });
     res.status(200).json(updatedRestaurant);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
-// Delete a restaurant by ID (Protected: Only authenticated users can delete a restaurant)
+// Delete a restaurant by ID (Protected: Only the creator can delete the restaurant)
 router.delete("/:id", protect, async (req, res) => {
   try {
-    const deletedRestaurant = await Restaurant.findByIdAndDelete(req.params.id);
-    if (!deletedRestaurant)
-      return res.status(404).json({ message: "Restaurant not found" });
-    res.status(200).json({ message: "Restaurant deleted" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    const restaurant = await Restaurant.findById(req.params.id);
+    if (!restaurant)
+      return res.status(404).json({ msg: "Restaurant not found" });
+
+    // Ensure the user trying to delete the restaurant is the creator
+    if (restaurant.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ msg: "Unauthorized action" });
+    }
+
+    // Use deleteOne instead of remove
+    await restaurant.deleteOne();
+    res.status(200).json({ msg: "Restaurant deleted" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
