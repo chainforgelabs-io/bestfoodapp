@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const Review = require("../models/Review");
+const User = require("../models/User");
 const protect = require("../middleware/authMiddleware"); // Import the protect middleware
 
+// Create a new review (Protected: Only authenticated users can create reviews)
 // Create a new review (Protected: Only authenticated users can create reviews)
 router.post("/", protect, async (req, res) => {
   try {
@@ -16,6 +18,7 @@ router.post("/", protect, async (req, res) => {
         .json({ message: "Score must be between 0 and 100" });
     }
 
+    // Create a new review instance
     const review = new Review({
       userId: req.user.id, // Use the authenticated user's ID from protect middleware
       restaurantId,
@@ -26,7 +29,20 @@ router.post("/", protect, async (req, res) => {
       photos,
     });
 
+    // Save the review to the database
     const savedReview = await review.save();
+
+    // Calculate points based on the review
+    let pointsEarned = 1; // 1 point for the review
+    if (comment) pointsEarned += 1; // 1 additional point for a comment
+    if (photos && photos.length > 0) pointsEarned += 1; // 1 additional point for photos
+
+    // Update the user's points and add the review to the user's reviews array
+    const user = await User.findById(req.user.id);
+    user.points += pointsEarned;
+    user.reviews.push(savedReview._id);
+    await user.save();
+
     res.status(201).json(savedReview);
   } catch (err) {
     res.status(400).json({ message: err.message });

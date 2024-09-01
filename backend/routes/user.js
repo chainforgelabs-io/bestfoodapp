@@ -3,6 +3,22 @@ const router = express.Router();
 const User = require("../models/User");
 const protect = require("../middleware/authMiddleware"); // Import the protect middleware
 
+// Get the current user's points (Protected: Only authenticated users can view their points)
+router.get("/points", protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("points");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ points: user.points });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Create a new user (Registration - no protection needed here)
 router.post("/", async (req, res) => {
   try {
@@ -22,13 +38,11 @@ router.post("/", async (req, res) => {
 });
 
 // View User Profile (Protected: Only the authenticated user can view their own profile)
-// This route must be placed before the dynamic route to avoid conflicts
 router.get("/profile", protect, (req, res) => {
   res.status(200).json(req.user);
 });
 
 // Update User Profile (Protected: Only the authenticated user can update their own profile)
-// This route allows users to update their profile based on their own ID, using req.user._id
 router.put("/profile", protect, async (req, res) => {
   try {
     const updatedData = req.body;
@@ -73,7 +87,6 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Update a user's profile by ID (Protected: Only the authenticated user should update their own profile)
-// This route allows users to update their profile by providing their ID in the request params
 router.put("/:id", protect, async (req, res) => {
   try {
     if (req.user.id !== req.params.id) {
@@ -110,36 +123,71 @@ router.delete("/:id", protect, async (req, res) => {
 // Follow a user (Protected: Only authenticated users should be able to follow others)
 router.post("/:id/follow", protect, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    const currentUser = await User.findById(req.user.id); // Use req.user.id from the protect middleware
+    const userToFollow = await User.findById(req.params.id);
+    const currentUser = await User.findById(req.user.id);
 
-    if (!user.followers.includes(req.user.id)) {
-      await user.updateOne({ $push: { followers: req.user.id } });
+    if (!userToFollow) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!currentUser.following.includes(req.params.id)) {
       await currentUser.updateOne({ $push: { following: req.params.id } });
+      await userToFollow.updateOne({ $push: { followers: req.user.id } });
       res.status(200).json("User has been followed");
     } else {
       res.status(403).json("You already follow this user");
     }
   } catch (err) {
-    res.status(500).json(err);
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 // Unfollow a user (Protected: Only authenticated users should be able to unfollow others)
 router.post("/:id/unfollow", protect, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    const currentUser = await User.findById(req.user.id); // Use req.user.id from the protect middleware
+    const userToUnfollow = await User.findById(req.params.id);
+    const currentUser = await User.findById(req.user.id);
 
-    if (user.followers.includes(req.user.id)) {
-      await user.updateOne({ $pull: { followers: req.user.id } });
+    if (!userToUnfollow) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (currentUser.following.includes(req.params.id)) {
       await currentUser.updateOne({ $pull: { following: req.params.id } });
+      await userToUnfollow.updateOne({ $pull: { followers: req.user.id } });
       res.status(200).json("User has been unfollowed");
     } else {
       res.status(403).json("You don't follow this user");
     }
   } catch (err) {
-    res.status(500).json(err);
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Get a user's followers and following count (Protected: Only authenticated users should view user profiles)
+router.get("/:id/followers-following", protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .populate("followers", "username")
+      .populate("following", "username");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      followers: user.followers.length,
+      following: user.following.length,
+      followerUsernames: user.followers.map((follower) => follower.username),
+      followingUsernames: user.following.map(
+        (followedUser) => followedUser.username
+      ),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
