@@ -49,38 +49,34 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Get the overall score of a restaurant (Public: Anyone can view the score)
+// Get the overall score for a specific restaurant (Public: Anyone can view the overall score for a restaurant)
 router.get("/:id/score", async (req, res) => {
   try {
-    const restaurantId = req.params.id;
+    const { id } = req.params;
 
-    // Step 1: Find all food items associated with this restaurant
-    const foodItems = await FoodItem.find({ restaurant: restaurantId });
-
-    if (!foodItems || foodItems.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No food items found for this restaurant" });
+    // Find the restaurant by ID to ensure it exists
+    const restaurant = await Restaurant.findById(id);
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found" });
     }
 
-    // Step 2: Get all reviews for the food items
-    const foodItemIds = foodItems.map((item) => item._id);
-    const reviews = await Review.find({ foodItem: { $in: foodItemIds } });
+    // Find all reviews for the given restaurant
+    const reviews = await Review.find({ restaurantId: id });
 
     if (!reviews || reviews.length === 0) {
       return res
         .status(404)
-        .json({ message: "No reviews found for this restaurant's food items" });
+        .json({ message: "No reviews found for this restaurant" });
     }
 
-    // Step 3: Calculate the average score from all the reviews
+    // Calculate the total score and the average score
     const totalScore = reviews.reduce((sum, review) => sum + review.score, 0);
     const averageScore = totalScore / reviews.length;
 
-    // Step 4: Respond with the average score
-    res.json({ restaurantId, overallScore: averageScore });
+    // Return the restaurant ID and the calculated overall score
+    res.status(200).json({ restaurant: id, overallScore: averageScore });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 

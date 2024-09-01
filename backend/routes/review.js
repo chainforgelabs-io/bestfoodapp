@@ -43,6 +43,24 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Get all reviews for a specific food item (Public: Anyone can view reviews)
+router.get("/food-item/:foodItemId", async (req, res) => {
+  try {
+    const reviews = await Review.find({
+      foodItem: req.params.foodItemId,
+    }).populate("userId", "username");
+    if (!reviews || reviews.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No reviews found for this food item" });
+    }
+    res.status(200).json(reviews);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Get a single review by ID (Public: Anyone can view a review)
 router.get("/:id", async (req, res) => {
   try {
@@ -79,22 +97,26 @@ router.put("/:id", protect, async (req, res) => {
 });
 
 // Delete a review by ID (Protected: Only the authenticated user who created the review can delete it)
+// Delete a review by ID (Protected: Only the review owner can delete their review)
 router.delete("/:id", protect, async (req, res) => {
   try {
+    // Find the review by ID
     const review = await Review.findById(req.params.id);
-
     if (!review) {
       return res.status(404).json({ message: "Review not found" });
     }
 
-    if (review.userId.toString() !== req.user.id) {
+    // Check if the logged-in user is the owner of the review
+    if (review.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Unauthorized action" });
     }
 
-    await review.remove();
+    // Delete the review
+    await review.deleteOne();
     res.status(200).json({ message: "Review deleted" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
