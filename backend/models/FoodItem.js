@@ -9,23 +9,29 @@ const foodItemSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-  }, // E.g., Burger, Pizza, Taco, Pasta (Category of food)
+  },
   subType: {
     type: String,
-    required: false,
-  }, // E.g., Cheese Burger, Pepperoni Pizza (Specific variation)
+  },
   cuisine: {
     type: String,
     required: true,
-  }, // E.g., American, Italian, Mexican (Cuisine type)
+  },
   name: {
     type: String,
     required: true,
-  }, // E.g., Beef Tacos, Cheese Burger (Name of the dish at this restaurant)
+  },
   price: {
     type: Number,
-    required: false,
-  }, // Optional in case some items don’t have a price listed
+  },
+  adminScore: {
+    type: Number,
+    default: 0,
+  },
+  communityScore: {
+    type: Number,
+    default: 0,
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

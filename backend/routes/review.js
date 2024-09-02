@@ -1,135 +1,380 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
+const Address = require("../models/Address");
+const Restaurant = require("../models/Restaurant");
+const FoodItem = require("../models/FoodItem");
 const Review = require("../models/Review");
-const User = require("../models/User");
-const protect = require("../middleware/authMiddleware"); // Import the protect middleware
+const protect = require("../middleware/authMiddleware");
 
-// Create a new review (Protected: Only authenticated users can create reviews)
-// Create a new review (Protected: Only authenticated users can create reviews)
+// Helper function to categorize prices
+function categorizePrices(prices) {
+  const sortedPrices = [...prices].sort((a, b) => a - b);
+  const lowPrice = sortedPrices[Math.floor(sortedPrices.length * 0.33)];
+  const highPrice = sortedPrices[Math.floor(sortedPrices.length * 0.66)];
+
+  return { lowPrice, highPrice };
+}
+
+// Create a new food item (Protected: Only authenticated users can create food items)
 router.post("/", protect, async (req, res) => {
   try {
-    const { restaurantId, foodItem, score, ambianceRating, comment, photos } =
-      req.body;
+    const { name, type, subType, cuisine, price, restaurant } = req.body;
 
-    // Ensure the score is between 0 and 100
-    if (score < 0 || score > 100) {
-      return res
-        .status(400)
-        .json({ message: "Score must be between 0 and 100" });
-    }
-
-    // Create a new review instance
-    const review = new Review({
-      userId: req.user.id, // Use the authenticated user's ID from protect middleware
-      restaurantId,
-      foodItem,
-      score,
-      ambianceRating,
-      comment,
-      photos,
+    const foodItem = new FoodItem({
+      name,
+      type,
+      subType,
+      cuisine,
+      price,
+      restaurant,
+      createdBy: req.user._id,
     });
 
-    // Save the review to the database
-    const savedReview = await review.save();
+    const savedFoodItem = await foodItem.save();
 
-    // Calculate points based on the review
-    let pointsEarned = 1; // 1 point for the review
-    if (comment) pointsEarned += 1; // 1 additional point for a comment
-    if (photos && photos.length > 0) pointsEarned += 1; // 1 additional point for photos
-
-    // Update the user's points and add the review to the user's reviews array
-    const user = await User.findById(req.user.id);
-    user.points += pointsEarned;
-    user.reviews.push(savedReview._id);
-    await user.save();
-
-    res.status(201).json(savedReview);
+    res.status(201).json(savedFoodItem);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
-// Get all reviews (Public: Anyone can view reviews)
+// Get all food items (Public: Anyone can view food items)
 router.get("/", async (req, res) => {
   try {
-    const reviews = await Review.find().populate("foodItem");
-    res.status(200).json(reviews);
+    const foodItems = await FoodItem.find().populate("restaurant");
+    res.status(200).json(foodItems);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// Get all reviews for a specific food item (Public: Anyone can view reviews)
-router.get("/food-item/:foodItemId", async (req, res) => {
+// Get a single food item by ID (Public: Anyone can view a food item)
+router.get("/:id", async (req, res) => {
   try {
-    const reviews = await Review.find({
-      foodItem: req.params.foodItemId,
-    }).populate("userId", "username");
+    const foodItem = await FoodItem.findById(req.params.id).populate(
+      "restaurant"
+    );
+    if (!foodItem)
+      return res.status(404).json({ message: "Food item not found" });
+    res.status(200).json(foodItem);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get all food items from restaurant id (Public: Anyone can view food items by restaurant)
+router.get("/restaurant/:restaurantId", async (req, res) => {
+  try {
+    const foodItems = await FoodItem.find({
+      restaurant: req.params.restaurantId,
+    });
+    if (!foodItems || foodItems.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No food items found for this restaurant" });
+    }
+    res.json(foodItems);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get the overall score for a specific food item (Public: Anyone can view the score)
+router.get("/:foodItemId/score", async (req, res) => {
+  try {
+    const { foodItemId } = req.params;
+
+    const reviews = await Review.find({ foodItem: foodItemId });
+
     if (!reviews || reviews.length === 0) {
       return res
         .status(404)
         .json({ message: "No reviews found for this food item" });
     }
-    res.status(200).json(reviews);
+
+    const totalScore = reviews.reduce((sum, review) => sum + review.score, 0);
+    const averageScore = totalScore / reviews.length;
+
+    res.status(200).json({ foodItem: foodItemId, averageScore });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get ranked list of food items by category or subcategory (Public: Anyone can view ranked lists)
+router.get("/rank/category/:category", async (req, res) => {
+  try {
+    const { category } = req.params;
+    const { filter, subCategory } = req.query;
+
+    const query = subCategory ? { subType: subCategory } : { type: category };
+    const foodItems = await FoodItem.find(query);
+
+    if (!foodItems || foodItems.length === 0) {
+      return res
+        .status(404)
+        .json({ message: `No food items found for the provided criteria` });
+    }
+
+    let rankedList;
+
+    if (filter === "admin") {
+      // Rank by admin scores
+      rankedList = foodItems.sort((a, b) => b.adminScore - a.adminScore);
+    } else if (filter === "community") {
+      // Rank by community scores
+      rankedList = foodItems.sort(
+        (a, b) => b.communityScore - a.communityScore
+      );
+    } else {
+      // Rank by combined overall scores
+      rankedList = foodItems.sort(
+        (a, b) =>
+          b.adminScore + b.communityScore - (a.adminScore + a.communityScore)
+      );
+    }
+
+    res.status(200).json(rankedList);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get ranked list of food items by category or subcategory and city
+router.get("/rank/category/:category/city/:city", async (req, res) => {
+  try {
+    const { category, city } = req.params;
+    const { filter, subCategory } = req.query;
+
+    const addresses = await Address.find({ city: city });
+    const addressIds = addresses.map((address) => address._id);
+
+    const restaurants = await Restaurant.find({ address: { $in: addressIds } });
+    const restaurantIds = restaurants.map((restaurant) => restaurant._id);
+
+    const query = subCategory
+      ? { subType: subCategory, restaurant: { $in: restaurantIds } }
+      : { type: category, restaurant: { $in: restaurantIds } };
+
+    const foodItems = await FoodItem.find(query);
+
+    if (!foodItems || foodItems.length === 0) {
+      return res.status(404).json({
+        message: `No food items found for the provided criteria in city: ${city}`,
+      });
+    }
+
+    let rankedList;
+
+    if (filter === "admin") {
+      // Rank by admin scores
+      rankedList = foodItems.sort((a, b) => b.adminScore - a.adminScore);
+    } else if (filter === "community") {
+      // Rank by community scores
+      rankedList = foodItems.sort(
+        (a, b) => b.communityScore - a.communityScore
+      );
+    } else {
+      // Rank by combined overall scores
+      rankedList = foodItems.sort(
+        (a, b) =>
+          b.adminScore + b.communityScore - (a.adminScore + a.communityScore)
+      );
+    }
+
+    res.status(200).json(rankedList);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get ranked list of food items by category or subcategory and province
+router.get("/rank/category/:category/province/:province", async (req, res) => {
+  try {
+    const { category, province } = req.params;
+    const { filter, subCategory } = req.query;
+
+    const addresses = await Address.find({ province: province });
+    const addressIds = addresses.map((address) => address._id);
+
+    const restaurants = await Restaurant.find({ address: { $in: addressIds } });
+    const restaurantIds = restaurants.map((restaurant) => restaurant._id);
+
+    const query = subCategory
+      ? { subType: subCategory, restaurant: { $in: restaurantIds } }
+      : { type: category, restaurant: { $in: restaurantIds } };
+
+    const foodItems = await FoodItem.find(query);
+
+    if (!foodItems || foodItems.length === 0) {
+      return res.status(404).json({
+        message: `No food items found for the provided criteria in province: ${province}`,
+      });
+    }
+
+    let rankedList;
+
+    if (filter === "admin") {
+      // Rank by admin scores
+      rankedList = foodItems.sort((a, b) => b.adminScore - a.adminScore);
+    } else if (filter === "community") {
+      // Rank by community scores
+      rankedList = foodItems.sort(
+        (a, b) => b.communityScore - a.communityScore
+      );
+    } else {
+      // Rank by combined overall scores
+      rankedList = foodItems.sort(
+        (a, b) =>
+          b.adminScore + b.communityScore - (a.adminScore + a.communityScore)
+      );
+    }
+
+    res.status(200).json(rankedList);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get ranked list of food items by category or subcategory and country
+router.get("/rank/category/:category/country/:country", async (req, res) => {
+  try {
+    const { category, country } = req.params;
+    const { filter, subCategory } = req.query;
+
+    const addresses = await Address.find({ country: country });
+    const addressIds = addresses.map((address) => address._id);
+
+    const restaurants = await Restaurant.find({ address: { $in: addressIds } });
+    const restaurantIds = restaurants.map((restaurant) => restaurant._id);
+
+    const query = subCategory
+      ? { subType: subCategory, restaurant: { $in: restaurantIds } }
+      : { type: category, restaurant: { $in: restaurantIds } };
+
+    const foodItems = await FoodItem.find(query);
+
+    if (!foodItems || foodItems.length === 0) {
+      return res.status(404).json({
+        message: `No food items found for the provided criteria in country: ${country}`,
+      });
+    }
+
+    let rankedList;
+
+    if (filter === "admin") {
+      // Rank by admin scores
+      rankedList = foodItems.sort((a, b) => b.adminScore - a.adminScore);
+    } else if (filter === "community") {
+      // Rank by community scores
+      rankedList = foodItems.sort(
+        (a, b) => b.communityScore - a.communityScore
+      );
+    } else {
+      // Rank by combined overall scores
+      rankedList = foodItems.sort(
+        (a, b) =>
+          b.adminScore + b.communityScore - (a.adminScore + a.communityScore)
+      );
+    }
+
+    res.status(200).json(rankedList);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get ranked lists of food items by price range
+router.get("/rank/category/:foodCategory/price-range", async (req, res) => {
+  try {
+    const { foodCategory } = req.params;
+    const { range, filter } = req.query;
+
+    const foodItems = await FoodItem.find({ type: foodCategory });
+
+    if (!foodItems || foodItems.length === 0) {
+      return res
+        .status(404)
+        .json({ message: `No food items found for ${foodCategory}` });
+    }
+
+    const prices = foodItems.map((item) => item.price);
+    const { lowPrice, highPrice } = categorizePrices(prices);
+
+    let filteredItems;
+    if (range === "budget") {
+      filteredItems = foodItems.filter((item) => item.price <= lowPrice);
+    } else if (range === "mid-range") {
+      filteredItems = foodItems.filter(
+        (item) => item.price > lowPrice && item.price <= highPrice
+      );
+    } else if (range === "high-end") {
+      filteredItems = foodItems.filter((item) => item.price > highPrice);
+    } else {
+      return res.status(400).json({ message: "Invalid price range specified" });
+    }
+
+    let rankedItems;
+
+    if (filter === "admin") {
+      rankedItems = filteredItems.sort((a, b) => b.adminScore - a.adminScore);
+    } else if (filter === "community") {
+      rankedItems = filteredItems.sort(
+        (a, b) => b.communityScore - a.communityScore
+      );
+    } else {
+      rankedItems = filteredItems.sort(
+        (a, b) =>
+          b.adminScore + b.communityScore - (a.adminScore + a.communityScore)
+      );
+    }
+
+    res.json({ range, rankedItems });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// Get a single review by ID (Public: Anyone can view a review)
-router.get("/:id", async (req, res) => {
-  try {
-    const review = await Review.findById(req.params.id).populate("foodItem");
-    if (!review) return res.status(404).json({ message: "Review not found" });
-    res.status(200).json(review);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Update a review by ID (Protected: Only the authenticated user who created the review can update it)
+// Update a food item by ID (Protected: Only authenticated users can update a food item)
 router.put("/:id", protect, async (req, res) => {
   try {
-    const review = await Review.findById(req.params.id);
+    const foodItem = await FoodItem.findById(req.params.id);
+    if (!foodItem)
+      return res.status(404).json({ message: "Food item not found" });
 
-    if (!review) {
-      return res.status(404).json({ message: "Review not found" });
+    if (foodItem.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ msg: "Unauthorized action" });
     }
 
-    if (review.userId.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Unauthorized action" });
-    }
+    const updatedFoodItem = await FoodItem.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
 
-    const { ambianceRating, comment } = req.body;
-    review.ambianceRating = ambianceRating || review.ambianceRating;
-    review.comment = comment || review.comment;
-
-    const updatedReview = await review.save();
-    res.status(200).json(updatedReview);
+    res.status(200).json(updatedFoodItem);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// Delete a review by ID (Protected: Only the authenticated user who created the review can delete it)
-// Delete a review by ID (Protected: Only the review owner can delete their review)
+// Delete a food item by ID (Protected: Only authenticated users can delete a food item)
 router.delete("/:id", protect, async (req, res) => {
   try {
-    // Find the review by ID
-    const review = await Review.findById(req.params.id);
-    if (!review) {
-      return res.status(404).json({ message: "Review not found" });
+    const foodItem = await FoodItem.findById(req.params.id);
+    if (!foodItem)
+      return res.status(404).json({ message: "Food item not found" });
+
+    if (foodItem.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ msg: "Unauthorized action" });
     }
 
-    // Check if the logged-in user is the owner of the review
-    if (review.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Unauthorized action" });
-    }
-
-    // Delete the review
-    await review.deleteOne();
-    res.status(200).json({ message: "Review deleted" });
+    await foodItem.deleteOne();
+    res.status(200).json({ message: "Food item deleted" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

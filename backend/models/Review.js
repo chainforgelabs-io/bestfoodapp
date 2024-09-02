@@ -20,21 +20,18 @@ const reviewSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 0,
-    max: 100, // Adjusted to reflect a score out of 100
+    max: 100,
   },
   ambianceRating: {
     type: Number,
-    required: false,
     min: 0,
     max: 5,
   },
   comment: {
     type: String,
-    required: false,
   },
   photos: {
     type: [String], // Array of photo URLs or paths
-    required: false,
   },
   reviewDate: {
     type: Date,

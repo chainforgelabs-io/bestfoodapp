@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   profilePicture: { type: String, default: "" },
   bio: { type: String, default: "" },
+  role: { type: String, enum: ["user", "admin"], default: "user" }, // Add role field
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   points: { type: Number, default: 0 },
