@@ -1,3 +1,7 @@
 # dependencies
 /node_modules
+.env.development
+.env.testing
+.env.production
 .env
+notes

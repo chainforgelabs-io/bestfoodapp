@@ -103,17 +103,19 @@ router.get("/:foodItemId/score", async (req, res) => {
   }
 });
 
-// Get ranked list of food items by category (Public: Anyone can view ranked lists)
+// Get ranked list of food items by category or subcategory (Public: Anyone can view ranked lists)
 router.get("/rank/category/:category", async (req, res) => {
   try {
     const { category } = req.params;
+    const { subCategory } = req.query;
 
-    const foodItems = await FoodItem.find({ type: category });
+    const query = subCategory ? { subType: subCategory } : { type: category };
+    const foodItems = await FoodItem.find(query);
 
     if (!foodItems || foodItems.length === 0) {
       return res
         .status(404)
-        .json({ message: `No food items found for category: ${category}` });
+        .json({ message: `No food items found for the provided criteria` });
     }
 
     const foodItemIds = foodItems.map((item) => item._id);
@@ -122,7 +124,7 @@ router.get("/rank/category/:category", async (req, res) => {
     if (!reviews || reviews.length === 0) {
       return res
         .status(404)
-        .json({ message: `No reviews found for category: ${category}` });
+        .json({ message: `No reviews found for the provided criteria` });
     }
 
     const scores = foodItems.map((item) => {
@@ -150,10 +152,11 @@ router.get("/rank/category/:category", async (req, res) => {
   }
 });
 
-// Get ranked list of food items by category and city
+// Get ranked list of food items by category or subcategory and city
 router.get("/rank/category/:category/city/:city", async (req, res) => {
   try {
     const { category, city } = req.params;
+    const { subCategory } = req.query;
 
     const addresses = await Address.find({ city: city });
     const addressIds = addresses.map((address) => address._id);
@@ -161,14 +164,15 @@ router.get("/rank/category/:category/city/:city", async (req, res) => {
     const restaurants = await Restaurant.find({ address: { $in: addressIds } });
     const restaurantIds = restaurants.map((restaurant) => restaurant._id);
 
-    const foodItems = await FoodItem.find({
-      type: category,
-      restaurant: { $in: restaurantIds },
-    });
+    const query = subCategory
+      ? { subType: subCategory, restaurant: { $in: restaurantIds } }
+      : { type: category, restaurant: { $in: restaurantIds } };
+
+    const foodItems = await FoodItem.find(query);
 
     if (!foodItems || foodItems.length === 0) {
       return res.status(404).json({
-        message: `No food items found for category: ${category} in city: ${city}`,
+        message: `No food items found for the provided criteria in city: ${city}`,
       });
     }
 
@@ -177,7 +181,7 @@ router.get("/rank/category/:category/city/:city", async (req, res) => {
 
     if (!reviews || reviews.length === 0) {
       return res.status(404).json({
-        message: `No reviews found for category: ${category} in city: ${city}`,
+        message: `No reviews found for the provided criteria in city: ${city}`,
       });
     }
 
@@ -206,10 +210,11 @@ router.get("/rank/category/:category/city/:city", async (req, res) => {
   }
 });
 
-// Get ranked list of food items by category and province
+// Get ranked list of food items by category or subcategory and province
 router.get("/rank/category/:category/province/:province", async (req, res) => {
   try {
     const { category, province } = req.params;
+    const { subCategory } = req.query;
 
     const addresses = await Address.find({ province: province });
     const addressIds = addresses.map((address) => address._id);
@@ -217,14 +222,15 @@ router.get("/rank/category/:category/province/:province", async (req, res) => {
     const restaurants = await Restaurant.find({ address: { $in: addressIds } });
     const restaurantIds = restaurants.map((restaurant) => restaurant._id);
 
-    const foodItems = await FoodItem.find({
-      type: category,
-      restaurant: { $in: restaurantIds },
-    });
+    const query = subCategory
+      ? { subType: subCategory, restaurant: { $in: restaurantIds } }
+      : { type: category, restaurant: { $in: restaurantIds } };
+
+    const foodItems = await FoodItem.find(query);
 
     if (!foodItems || foodItems.length === 0) {
       return res.status(404).json({
-        message: `No food items found for category: ${category} in province: ${province}`,
+        message: `No food items found for the provided criteria in province: ${province}`,
       });
     }
 
@@ -233,7 +239,7 @@ router.get("/rank/category/:category/province/:province", async (req, res) => {
 
     if (!reviews || reviews.length === 0) {
       return res.status(404).json({
-        message: `No reviews found for category: ${category} in province: ${province}`,
+        message: `No reviews found for the provided criteria in province: ${province}`,
       });
     }
 
@@ -262,10 +268,11 @@ router.get("/rank/category/:category/province/:province", async (req, res) => {
   }
 });
 
-// Get ranked list of food items by category and country
+// Get ranked list of food items by category or subcategory and country
 router.get("/rank/category/:category/country/:country", async (req, res) => {
   try {
     const { category, country } = req.params;
+    const { subCategory } = req.query;
 
     const addresses = await Address.find({ country: country });
     const addressIds = addresses.map((address) => address._id);
@@ -273,14 +280,15 @@ router.get("/rank/category/:category/country/:country", async (req, res) => {
     const restaurants = await Restaurant.find({ address: { $in: addressIds } });
     const restaurantIds = restaurants.map((restaurant) => restaurant._id);
 
-    const foodItems = await FoodItem.find({
-      type: category,
-      restaurant: { $in: restaurantIds },
-    });
+    const query = subCategory
+      ? { subType: subCategory, restaurant: { $in: restaurantIds } }
+      : { type: category, restaurant: { $in: restaurantIds } };
+
+    const foodItems = await FoodItem.find(query);
 
     if (!foodItems || foodItems.length === 0) {
       return res.status(404).json({
-        message: `No food items found for category: ${category} in country: ${country}`,
+        message: `No food items found for the provided criteria in country: ${country}`,
       });
     }
 
@@ -289,7 +297,7 @@ router.get("/rank/category/:category/country/:country", async (req, res) => {
 
     if (!reviews || reviews.length === 0) {
       return res.status(404).json({
-        message: `No reviews found for category: ${category} in country: ${country}`,
+        message: `No reviews found for the provided criteria in country: ${country}`,
       });
     }
 

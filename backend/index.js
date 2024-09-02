@@ -1,6 +1,12 @@
 const express = require("express");
 const mongoose = require("mongoose");
-require("dotenv").config();
+const dotenv = require("dotenv");
+
+// Load environment-specific .env file based on NODE_ENV
+dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
+
+// Fallback to .env if no specific file is found
+dotenv.config(); // This ensures .env is loaded if NODE_ENV is not set or is invalid
 
 const app = express();
 const PORT = process.env.PORT || 5000;
