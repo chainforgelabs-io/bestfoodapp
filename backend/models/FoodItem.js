@@ -6,20 +6,24 @@ const foodItemSchema = new mongoose.Schema({
     ref: "Restaurant",
     required: true,
   },
+  // field to represent the "Menu Item Name"
+  name: {
+    type: String,
+    required: true,
+  },
+  // field to represent the "Menu Item Category - ie. "Side", "Main", "Handheld", "Appetizer"
+  category: {
+    type: String,
+    required: true,
+  },
+  // field to represent food type - ie. "Burger", "Fries", "Pizza", "Tacos"
   type: {
     type: String,
     required: true,
   },
+  // field to represent food subtype - ie. "Cheese Burger", "Specialty Fries", "Cheese Pizza", "Chicken Tacos"
   subType: {
     type: String,
-  },
-  cuisine: {
-    type: String,
-    required: true,
-  },
-  name: {
-    type: String,
-    required: true,
   },
   price: {
     type: Number,

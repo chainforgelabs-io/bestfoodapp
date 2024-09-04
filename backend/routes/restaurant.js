@@ -4,7 +4,19 @@ const mongoose = require("mongoose");
 const FoodItem = require("../models/FoodItem");
 const Review = require("../models/Review");
 const Restaurant = require("../models/Restaurant");
-const protect = require("../middleware/authMiddleware"); // Import the protect middleware
+const { protect } = require("../middleware/authMiddleware"); // Import the protect middleware
+
+// Define the weights for different food categories
+const categoryWeights = {
+  Mains: 0.35,
+  Burgers: 0.2,
+  "Sandwiches/Handhelds": 0.15,
+  "Deep-Fried": 0.1,
+  Appetizers: 0.075,
+  Sides: 0.05,
+  Desserts: 0.05,
+  Drinks: 0.025,
+};
 
 // Create a new restaurant (Protected: Only authenticated users can create restaurants)
 router.post("/", protect, async (req, res) => {
@@ -60,21 +72,37 @@ router.get("/:id/score", async (req, res) => {
       return res.status(404).json({ message: "Restaurant not found" });
     }
 
-    // Find all reviews for the given restaurant
-    const reviews = await Review.find({ restaurantId: id });
+    // Step 1: Find all food items associated with this restaurant
+    const foodItems = await FoodItem.find({ restaurant: id });
 
-    if (!reviews || reviews.length === 0) {
+    if (!foodItems || foodItems.length === 0) {
       return res
         .status(404)
-        .json({ message: "No reviews found for this restaurant" });
+        .json({ message: "No food items found for this restaurant" });
     }
 
-    // Calculate the total score and the average score
-    const totalScore = reviews.reduce((sum, review) => sum + review.score, 0);
-    const averageScore = totalScore / reviews.length;
+    // Step 2: Calculate the weighted average score for the restaurant
+    let weightedSum = 0;
+    let totalWeight = 0;
+
+    for (let foodItem of foodItems) {
+      const reviews = await Review.find({ foodItem: foodItem._id });
+
+      if (reviews.length > 0) {
+        const averageScore =
+          reviews.reduce((sum, review) => sum + review.score, 0) /
+          reviews.length;
+        const categoryWeight = categoryWeights[foodItem.category] || 0; // Use the weight for the item's category
+        weightedSum += averageScore * categoryWeight;
+        totalWeight += categoryWeight;
+      }
+    }
+
+    // Calculate the overall score using the weighted sum
+    const overallScore = totalWeight > 0 ? weightedSum / totalWeight : 0;
 
     // Return the restaurant ID and the calculated overall score
-    res.status(200).json({ restaurant: id, overallScore: averageScore });
+    res.status(200).json({ restaurant: id, overallScore });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }

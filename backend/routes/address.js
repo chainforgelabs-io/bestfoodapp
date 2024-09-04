@@ -5,7 +5,7 @@ const Address = require("../models/Address");
 const Restaurant = require("../models/Restaurant");
 const FoodItem = require("../models/FoodItem");
 const Review = require("../models/Review");
-const protect = require("../middleware/authMiddleware");
+const { protect } = require("../middleware/authMiddleware");
 
 // Helper function to get restaurants and reviews by location
 async function getRestaurantsAndReviewsByLocation(locationType, locationValue) {

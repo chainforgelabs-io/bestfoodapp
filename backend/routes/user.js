@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
-const protect = require("../middleware/authMiddleware"); // Import the protect middleware
+const FoodItem = require("../models/FoodItem");
+const Restaurant = require("../models/Restaurant");
+const Review = require("../models/Review");
+const { protect } = require("../middleware/authMiddleware"); // Import the protect middleware
 
 // Get the current user's points (Protected: Only authenticated users can view their points)
 router.get("/points", protect, async (req, res) => {
@@ -187,6 +190,96 @@ router.get("/:id/followers-following", protect, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Submit a meal review (Protected: Only authenticated users can submit a meal)
+router.post("/meal", protect, async (req, res) => {
+  try {
+    const { restaurantId, foodItems } = req.body;
+
+    // Validate that the restaurant exists
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found" });
+    }
+
+    let weightedSum = 0;
+    let totalWeight = 0;
+    const individualScores = [];
+
+    // Category weights
+    const categoryWeights = {
+      Mains: 0.35,
+      Burgers: 0.2,
+      "Sandwiches/Handhelds": 0.15,
+      "Deep-Fried": 0.1,
+      Appetizers: 0.075,
+      Sides: 0.05,
+      Desserts: 0.05,
+      Drinks: 0.025,
+    };
+
+    // Loop through each food item in the meal and calculate the weighted sum
+    for (let foodItem of foodItems) {
+      const { foodItemId, score } = foodItem;
+
+      // Validate that the food item exists
+      const item = await FoodItem.findById(foodItemId);
+      if (!item) {
+        return res
+          .status(404)
+          .json({ message: `Food item not found: ${foodItemId}` });
+      }
+
+      // Use category weight for this food item
+      const categoryWeight = categoryWeights[item.category] || 0;
+      weightedSum += score * categoryWeight;
+      totalWeight += categoryWeight;
+
+      // Submit individual reviews for food items (which will affect the restaurant score)
+      const review = new Review({
+        userId: req.user._id,
+        restaurantId: restaurantId,
+        foodItemId: foodItemId,
+        score: score,
+      });
+      await review.save();
+
+      // Collect the individual food item scores
+      individualScores.push({
+        foodItemId: item._id,
+        name: item.name,
+        category: item.category,
+        score: score,
+        categoryWeight: categoryWeight,
+      });
+    }
+
+    // Calculate the overall meal score (but do not save it)
+    const mealScore = totalWeight > 0 ? weightedSum / totalWeight : 0;
+
+    // Return the individual scores and calculated meal score to the frontend
+    res.status(201).json({
+      individualScores,
+      calculatedMealScore: mealScore,
+      message: "Meal review submitted successfully!",
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Route to fetch user's submitted meals and display meal scores (Protected: Only authenticated users can view their meals)
+router.get("/meals", protect, async (req, res) => {
+  try {
+    // Find all meals submitted by the authenticated user
+    const meals = await Meal.find({ userId: req.user._id }).populate(
+      "restaurantId foodItems.foodItemId"
+    );
+    res.status(200).json(meals);
+  } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
 });
