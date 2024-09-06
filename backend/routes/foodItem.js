@@ -19,13 +19,13 @@ function categorizePrices(prices) {
 // Create a new food item (Protected: Only authenticated users can create food items)
 router.post("/", protect, async (req, res) => {
   try {
-    const { name, type, subType, cuisine, price, restaurant } = req.body;
+    const { name, category, type, subType, price, restaurant } = req.body;
 
     const foodItem = new FoodItem({
       name,
+      category,
       type,
       subType,
-      cuisine,
       price,
       restaurant,
       createdBy: req.user._id,

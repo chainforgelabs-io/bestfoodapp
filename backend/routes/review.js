@@ -1,382 +1,90 @@
 const express = require("express");
 const router = express.Router();
-const mongoose = require("mongoose");
-const Address = require("../models/Address");
-const Restaurant = require("../models/Restaurant");
-const FoodItem = require("../models/FoodItem");
 const Review = require("../models/Review");
+const FoodItem = require("../models/FoodItem");
+const Restaurant = require("../models/Restaurant");
+const User = require("../models/User");
 const { protect } = require("../middleware/authMiddleware");
 
-// Helper function to categorize prices
-function categorizePrices(prices) {
-  const sortedPrices = [...prices].sort((a, b) => a - b);
-  const lowPrice = sortedPrices[Math.floor(sortedPrices.length * 0.33)];
-  const highPrice = sortedPrices[Math.floor(sortedPrices.length * 0.66)];
+// Function to update food item scores
+async function updateScores(foodItemId) {
+  const reviews = await Review.find({ foodItem: foodItemId });
 
-  return { lowPrice, highPrice };
+  if (reviews.length === 0) return;
+
+  // Separate reviews into admin and community reviews
+  const adminReviews = reviews.filter((review) => review.userRole === "admin");
+  const communityReviews = reviews.filter(
+    (review) => review.userRole !== "admin"
+  );
+
+  // Calculate the average score for admins
+  const adminScore = adminReviews.length
+    ? adminReviews.reduce((sum, review) => sum + review.score, 0) /
+      adminReviews.length
+    : 0;
+
+  // Calculate the average score for community
+  const communityScore = communityReviews.length
+    ? communityReviews.reduce((sum, review) => sum + review.score, 0) /
+      communityReviews.length
+    : 0;
+
+  // Update the food item with the new scores
+  await FoodItem.findByIdAndUpdate(foodItemId, {
+    adminScore,
+    communityScore,
+  });
 }
 
-// Create a new food item (Protected: Only authenticated users can create food items)
+// Create a new review (Protected: Only authenticated users can create reviews)
 router.post("/", protect, async (req, res) => {
   try {
-    const { name, type, subType, cuisine, price, restaurant } = req.body;
+    const { restaurantId, foodItem, score, ambianceRating, comment, photos } =
+      req.body;
 
-    const foodItem = new FoodItem({
-      name,
-      type,
-      subType,
-      cuisine,
-      price,
-      restaurant,
-      createdBy: req.user._id,
+    // Ensure the score is between 0 and 100
+    if (score < 0 || score > 100) {
+      return res
+        .status(400)
+        .json({ message: "Score must be between 0 and 100" });
+    }
+
+    // Create a new review instance
+    const review = new Review({
+      userId: req.user.id,
+      userRole: req.user.role, // Store the user's role
+      restaurantId,
+      foodItem,
+      score,
+      ambianceRating: ambianceRating || undefined,
+      comment,
+      photos,
     });
 
-    const savedFoodItem = await foodItem.save();
+    // Save the review to the database
+    const savedReview = await review.save();
 
-    res.status(201).json(savedFoodItem);
+    // Update the food item scores based on the review
+    await updateScores(foodItem);
+
+    // Update user's points
+    let pointsToAdd = 1; // 1 point for creating a review
+    if (comment) pointsToAdd += 1; // Additional point for a comment
+    if (photos && photos.length > 0) pointsToAdd += 1; // Additional point for adding photos
+
+    const user = await User.findById(req.user.id);
+    user.points += pointsToAdd; // Update the user's points
+
+    // Add the review to the user's reviews array
+    user.reviews.push(savedReview._id);
+
+    // Save the updated user
+    await user.save();
+
+    res.status(201).json(savedReview);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "Server error" });
-  }
-});
-
-// Get all food items (Public: Anyone can view food items)
-router.get("/", async (req, res) => {
-  try {
-    const foodItems = await FoodItem.find().populate("restaurant");
-    res.status(200).json(foodItems);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Get a single food item by ID (Public: Anyone can view a food item)
-router.get("/:id", async (req, res) => {
-  try {
-    const foodItem = await FoodItem.findById(req.params.id).populate(
-      "restaurant"
-    );
-    if (!foodItem)
-      return res.status(404).json({ message: "Food item not found" });
-    res.status(200).json(foodItem);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Get all food items from restaurant id (Public: Anyone can view food items by restaurant)
-router.get("/restaurant/:restaurantId", async (req, res) => {
-  try {
-    const foodItems = await FoodItem.find({
-      restaurant: req.params.restaurantId,
-    });
-    if (!foodItems || foodItems.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No food items found for this restaurant" });
-    }
-    res.json(foodItems);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Get the overall score for a specific food item (Public: Anyone can view the score)
-router.get("/:foodItemId/score", async (req, res) => {
-  try {
-    const { foodItemId } = req.params;
-
-    const reviews = await Review.find({ foodItem: foodItemId });
-
-    if (!reviews || reviews.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No reviews found for this food item" });
-    }
-
-    const totalScore = reviews.reduce((sum, review) => sum + review.score, 0);
-    const averageScore = totalScore / reviews.length;
-
-    res.status(200).json({ foodItem: foodItemId, averageScore });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Get ranked list of food items by category or subcategory (Public: Anyone can view ranked lists)
-router.get("/rank/category/:category", async (req, res) => {
-  try {
-    const { category } = req.params;
-    const { filter, subCategory } = req.query;
-
-    const query = subCategory ? { subType: subCategory } : { type: category };
-    const foodItems = await FoodItem.find(query);
-
-    if (!foodItems || foodItems.length === 0) {
-      return res
-        .status(404)
-        .json({ message: `No food items found for the provided criteria` });
-    }
-
-    let rankedList;
-
-    if (filter === "admin") {
-      // Rank by admin scores
-      rankedList = foodItems.sort((a, b) => b.adminScore - a.adminScore);
-    } else if (filter === "community") {
-      // Rank by community scores
-      rankedList = foodItems.sort(
-        (a, b) => b.communityScore - a.communityScore
-      );
-    } else {
-      // Rank by combined overall scores
-      rankedList = foodItems.sort(
-        (a, b) =>
-          b.adminScore + b.communityScore - (a.adminScore + a.communityScore)
-      );
-    }
-
-    res.status(200).json(rankedList);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Get ranked list of food items by category or subcategory and city
-router.get("/rank/category/:category/city/:city", async (req, res) => {
-  try {
-    const { category, city } = req.params;
-    const { filter, subCategory } = req.query;
-
-    const addresses = await Address.find({ city: city });
-    const addressIds = addresses.map((address) => address._id);
-
-    const restaurants = await Restaurant.find({ address: { $in: addressIds } });
-    const restaurantIds = restaurants.map((restaurant) => restaurant._id);
-
-    const query = subCategory
-      ? { subType: subCategory, restaurant: { $in: restaurantIds } }
-      : { type: category, restaurant: { $in: restaurantIds } };
-
-    const foodItems = await FoodItem.find(query);
-
-    if (!foodItems || foodItems.length === 0) {
-      return res.status(404).json({
-        message: `No food items found for the provided criteria in city: ${city}`,
-      });
-    }
-
-    let rankedList;
-
-    if (filter === "admin") {
-      // Rank by admin scores
-      rankedList = foodItems.sort((a, b) => b.adminScore - a.adminScore);
-    } else if (filter === "community") {
-      // Rank by community scores
-      rankedList = foodItems.sort(
-        (a, b) => b.communityScore - a.communityScore
-      );
-    } else {
-      // Rank by combined overall scores
-      rankedList = foodItems.sort(
-        (a, b) =>
-          b.adminScore + b.communityScore - (a.adminScore + a.communityScore)
-      );
-    }
-
-    res.status(200).json(rankedList);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Get ranked list of food items by category or subcategory and province
-router.get("/rank/category/:category/province/:province", async (req, res) => {
-  try {
-    const { category, province } = req.params;
-    const { filter, subCategory } = req.query;
-
-    const addresses = await Address.find({ province: province });
-    const addressIds = addresses.map((address) => address._id);
-
-    const restaurants = await Restaurant.find({ address: { $in: addressIds } });
-    const restaurantIds = restaurants.map((restaurant) => restaurant._id);
-
-    const query = subCategory
-      ? { subType: subCategory, restaurant: { $in: restaurantIds } }
-      : { type: category, restaurant: { $in: restaurantIds } };
-
-    const foodItems = await FoodItem.find(query);
-
-    if (!foodItems || foodItems.length === 0) {
-      return res.status(404).json({
-        message: `No food items found for the provided criteria in province: ${province}`,
-      });
-    }
-
-    let rankedList;
-
-    if (filter === "admin") {
-      // Rank by admin scores
-      rankedList = foodItems.sort((a, b) => b.adminScore - a.adminScore);
-    } else if (filter === "community") {
-      // Rank by community scores
-      rankedList = foodItems.sort(
-        (a, b) => b.communityScore - a.communityScore
-      );
-    } else {
-      // Rank by combined overall scores
-      rankedList = foodItems.sort(
-        (a, b) =>
-          b.adminScore + b.communityScore - (a.adminScore + a.communityScore)
-      );
-    }
-
-    res.status(200).json(rankedList);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Get ranked list of food items by category or subcategory and country
-router.get("/rank/category/:category/country/:country", async (req, res) => {
-  try {
-    const { category, country } = req.params;
-    const { filter, subCategory } = req.query;
-
-    const addresses = await Address.find({ country: country });
-    const addressIds = addresses.map((address) => address._id);
-
-    const restaurants = await Restaurant.find({ address: { $in: addressIds } });
-    const restaurantIds = restaurants.map((restaurant) => restaurant._id);
-
-    const query = subCategory
-      ? { subType: subCategory, restaurant: { $in: restaurantIds } }
-      : { type: category, restaurant: { $in: restaurantIds } };
-
-    const foodItems = await FoodItem.find(query);
-
-    if (!foodItems || foodItems.length === 0) {
-      return res.status(404).json({
-        message: `No food items found for the provided criteria in country: ${country}`,
-      });
-    }
-
-    let rankedList;
-
-    if (filter === "admin") {
-      // Rank by admin scores
-      rankedList = foodItems.sort((a, b) => b.adminScore - a.adminScore);
-    } else if (filter === "community") {
-      // Rank by community scores
-      rankedList = foodItems.sort(
-        (a, b) => b.communityScore - a.communityScore
-      );
-    } else {
-      // Rank by combined overall scores
-      rankedList = foodItems.sort(
-        (a, b) =>
-          b.adminScore + b.communityScore - (a.adminScore + a.communityScore)
-      );
-    }
-
-    res.status(200).json(rankedList);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Get ranked lists of food items by price range
-router.get("/rank/category/:foodCategory/price-range", async (req, res) => {
-  try {
-    const { foodCategory } = req.params;
-    const { range, filter } = req.query;
-
-    const foodItems = await FoodItem.find({ type: foodCategory });
-
-    if (!foodItems || foodItems.length === 0) {
-      return res
-        .status(404)
-        .json({ message: `No food items found for ${foodCategory}` });
-    }
-
-    const prices = foodItems.map((item) => item.price);
-    const { lowPrice, highPrice } = categorizePrices(prices);
-
-    let filteredItems;
-    if (range === "budget") {
-      filteredItems = foodItems.filter((item) => item.price <= lowPrice);
-    } else if (range === "mid-range") {
-      filteredItems = foodItems.filter(
-        (item) => item.price > lowPrice && item.price <= highPrice
-      );
-    } else if (range === "high-end") {
-      filteredItems = foodItems.filter((item) => item.price > highPrice);
-    } else {
-      return res.status(400).json({ message: "Invalid price range specified" });
-    }
-
-    let rankedItems;
-
-    if (filter === "admin") {
-      rankedItems = filteredItems.sort((a, b) => b.adminScore - a.adminScore);
-    } else if (filter === "community") {
-      rankedItems = filteredItems.sort(
-        (a, b) => b.communityScore - a.communityScore
-      );
-    } else {
-      rankedItems = filteredItems.sort(
-        (a, b) =>
-          b.adminScore + b.communityScore - (a.adminScore + a.communityScore)
-      );
-    }
-
-    res.json({ range, rankedItems });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Update a food item by ID (Protected: Only authenticated users can update a food item)
-router.put("/:id", protect, async (req, res) => {
-  try {
-    const foodItem = await FoodItem.findById(req.params.id);
-    if (!foodItem)
-      return res.status(404).json({ message: "Food item not found" });
-
-    if (foodItem.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ msg: "Unauthorized action" });
-    }
-
-    const updatedFoodItem = await FoodItem.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-
-    res.status(200).json(updatedFoodItem);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Delete a food item by ID (Protected: Only authenticated users can delete a food item)
-router.delete("/:id", protect, async (req, res) => {
-  try {
-    const foodItem = await FoodItem.findById(req.params.id);
-    if (!foodItem)
-      return res.status(404).json({ message: "Food item not found" });
-
-    if (foodItem.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ msg: "Unauthorized action" });
-    }
-
-    await foodItem.deleteOne();
-    res.status(200).json({ message: "Food item deleted" });
-  } catch (err) {
-    console.error(err);
+    console.error(err); // Log the error for debugging
     res.status(500).json({ message: "Server error" });
   }
 });
