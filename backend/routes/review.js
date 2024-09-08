@@ -5,6 +5,7 @@ const FoodItem = require("../models/FoodItem");
 const Restaurant = require("../models/Restaurant");
 const User = require("../models/User");
 const { protect } = require("../middleware/authMiddleware");
+const moment = require("moment");
 
 // Function to update food item scores
 async function updateScores(foodItemId) {
@@ -40,8 +41,15 @@ async function updateScores(foodItemId) {
 // Create a new review (Protected: Only authenticated users can create reviews)
 router.post("/", protect, async (req, res) => {
   try {
-    const { restaurantId, foodItem, score, ambianceRating, comment, photos } =
-      req.body;
+    const {
+      restaurantId,
+      foodItem,
+      score,
+      ambianceRating,
+      comment,
+      photos,
+      purchaseDate,
+    } = req.body;
 
     // Ensure the score is between 0 and 100
     if (score < 0 || score > 100) {
@@ -53,6 +61,13 @@ router.post("/", protect, async (req, res) => {
     // Automatically set the userRole based on the authenticated user's role
     const userRole = req.user.role;
 
+    // Ensure purchaseDate is in the correct format (mm-dd-yyyy)
+    if (!moment(purchaseDate, "MM-DD-YYYY", true).isValid()) {
+      return res
+        .status(400)
+        .json({ message: "Purchase date must be in mm-dd-yyyy format" });
+    }
+
     // Create a new review instance
     const review = new Review({
       userId: req.user.id,
@@ -63,6 +78,7 @@ router.post("/", protect, async (req, res) => {
       ambianceRating: ambianceRating || undefined,
       comment,
       photos,
+      purchaseDate: moment(purchaseDate, "MM-DD-YYYY").toDate(), // Convert to a Date object
     });
 
     // Save the review to the database

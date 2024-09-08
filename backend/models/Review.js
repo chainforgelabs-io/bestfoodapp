@@ -38,6 +38,11 @@ const reviewSchema = new mongoose.Schema({
   photos: {
     type: [String], // Array of photo URLs or paths
   },
+  purchaseDate: {
+    // Add this new field for the purchase date
+    type: Date,
+    required: true, // Set it as required if necessary
+  },
   reviewDate: {
     type: Date,
     default: Date.now,
