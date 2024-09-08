@@ -81,7 +81,7 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
   }
 });
 
-// Get the overall score for a specific food item (Public: Anyone can view the score)
+// Get the overall admin and community scores for a specific food item
 router.get("/:foodItemId/score", async (req, res) => {
   try {
     const { foodItemId } = req.params;
@@ -94,23 +94,55 @@ router.get("/:foodItemId/score", async (req, res) => {
         .json({ message: "No reviews found for this food item" });
     }
 
-    const totalScore = reviews.reduce((sum, review) => sum + review.score, 0);
-    const averageScore = totalScore / reviews.length;
+    // Separate reviews into admin and community
+    const adminReviews = reviews.filter(
+      (review) => review.userRole === "admin"
+    );
+    const communityReviews = reviews.filter(
+      (review) => review.userRole !== "admin"
+    );
 
-    res.status(200).json({ foodItem: foodItemId, averageScore });
+    const adminTotalScore = adminReviews.reduce(
+      (sum, review) => sum + review.score,
+      0
+    );
+    const communityTotalScore = communityReviews.reduce(
+      (sum, review) => sum + review.score,
+      0
+    );
+
+    const adminAverageScore = adminReviews.length
+      ? adminTotalScore / adminReviews.length
+      : 0;
+    const communityAverageScore = communityReviews.length
+      ? communityTotalScore / communityReviews.length
+      : 0;
+
+    res.status(200).json({
+      foodItem: foodItemId,
+      adminScore: adminAverageScore,
+      communityScore: communityAverageScore,
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// Get ranked list of food items by category or subcategory (Public: Anyone can view ranked lists)
+// Get ranked list of food items by category and optionally by subCategory
 router.get("/rank/category/:category", async (req, res) => {
   try {
     const { category } = req.params;
     const { subCategory } = req.query;
 
-    const query = subCategory ? { subType: subCategory } : { type: category };
-    const foodItems = await FoodItem.find(query);
+    let filter = { type: category };
+
+    // If subCategory is provided, add it to the filter
+    if (subCategory) {
+      filter.subType = subCategory;
+    }
+
+    // Find food items by category and optional subCategory
+    const foodItems = await FoodItem.find(filter);
 
     if (!foodItems || foodItems.length === 0) {
       return res
@@ -118,37 +150,59 @@ router.get("/rank/category/:category", async (req, res) => {
         .json({ message: `No food items found for the provided criteria` });
     }
 
-    const foodItemIds = foodItems.map((item) => item._id);
-    const reviews = await Review.find({ foodItem: { $in: foodItemIds } });
+    const rankByScore = async (items) => {
+      const scores = await Promise.all(
+        items.map(async (item) => {
+          const adminReviews = await Review.find({
+            foodItem: item._id,
+            userRole: "admin",
+          });
+          const communityReviews = await Review.find({
+            foodItem: item._id,
+            userRole: "user",
+          });
 
-    if (!reviews || reviews.length === 0) {
-      return res
-        .status(404)
-        .json({ message: `No reviews found for the provided criteria` });
-    }
+          const adminScore =
+            adminReviews.length > 0
+              ? adminReviews.reduce((sum, review) => sum + review.score, 0) /
+                adminReviews.length
+              : null;
 
-    const scores = foodItems.map((item) => {
-      const itemReviews = reviews.filter(
-        (review) => review.foodItem.toString() === item._id.toString()
+          const communityScore =
+            communityReviews.length > 0
+              ? communityReviews.reduce(
+                  (sum, review) => sum + review.score,
+                  0
+                ) / communityReviews.length
+              : null;
+
+          let scoreCount = 0;
+          let totalScore = 0;
+
+          if (adminScore !== null) {
+            totalScore += adminScore;
+            scoreCount++;
+          }
+
+          if (communityScore !== null) {
+            totalScore += communityScore;
+            scoreCount++;
+          }
+
+          const averageScore = scoreCount > 0 ? totalScore / scoreCount : 0;
+
+          return { foodItem: item, averageScore };
+        })
       );
-      const totalScore = itemReviews.reduce(
-        (sum, review) => sum + review.score,
-        0
-      );
-      const averageScore = itemReviews.length
-        ? totalScore / itemReviews.length
-        : 0;
-      return {
-        foodItem: item,
-        averageScore,
-      };
-    });
+      return scores.sort((a, b) => b.averageScore - a.averageScore);
+    };
 
-    const rankedList = scores.sort((a, b) => b.averageScore - a.averageScore);
+    const rankedItems = await rankByScore(foodItems);
 
-    res.status(200).json(rankedList);
+    res.json(rankedItems);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -164,9 +218,13 @@ router.get("/rank/category/:category/city/:city", async (req, res) => {
     const restaurants = await Restaurant.find({ address: { $in: addressIds } });
     const restaurantIds = restaurants.map((restaurant) => restaurant._id);
 
+    // Correct the query to ensure the category is passed as a string and applied
     const query = subCategory
-      ? { subType: subCategory, restaurant: { $in: restaurantIds } }
-      : { type: category, restaurant: { $in: restaurantIds } };
+      ? {
+          subType: new RegExp(subCategory, "i"),
+          restaurant: { $in: restaurantIds },
+        }
+      : { type: new RegExp(category, "i"), restaurant: { $in: restaurantIds } };
 
     const foodItems = await FoodItem.find(query);
 
@@ -186,27 +244,52 @@ router.get("/rank/category/:category/city/:city", async (req, res) => {
     }
 
     const scores = foodItems.map((item) => {
-      const itemReviews = reviews.filter(
-        (review) => review.foodItem.toString() === item._id.toString()
+      const itemAdminReviews = reviews.filter(
+        (review) =>
+          review.foodItem.toString() === item._id.toString() &&
+          review.userRole === "admin"
       );
-      const totalScore = itemReviews.reduce(
+      const itemCommunityReviews = reviews.filter(
+        (review) =>
+          review.foodItem.toString() === item._id.toString() &&
+          review.userRole !== "admin"
+      );
+
+      const totalAdminScore = itemAdminReviews.reduce(
         (sum, review) => sum + review.score,
         0
       );
-      const averageScore = itemReviews.length
-        ? totalScore / itemReviews.length
+      const totalCommunityScore = itemCommunityReviews.reduce(
+        (sum, review) => sum + review.score,
+        0
+      );
+
+      const adminAverageScore = itemAdminReviews.length
+        ? totalAdminScore / itemAdminReviews.length
         : 0;
+      const communityAverageScore = itemCommunityReviews.length
+        ? totalCommunityScore / itemCommunityReviews.length
+        : 0;
+
+      const overallAverageScore =
+        (adminAverageScore + communityAverageScore) / 2;
+
       return {
         foodItem: item,
-        averageScore,
+        adminAverageScore,
+        communityAverageScore,
+        overallAverageScore,
       };
     });
 
-    const rankedList = scores.sort((a, b) => b.averageScore - a.averageScore);
+    const rankedList = scores.sort(
+      (a, b) => b.overallAverageScore - a.overallAverageScore
+    );
 
     res.status(200).json(rankedList);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -222,9 +305,13 @@ router.get("/rank/category/:category/province/:province", async (req, res) => {
     const restaurants = await Restaurant.find({ address: { $in: addressIds } });
     const restaurantIds = restaurants.map((restaurant) => restaurant._id);
 
+    // Correct the query to ensure the category is passed as a string and applied
     const query = subCategory
-      ? { subType: subCategory, restaurant: { $in: restaurantIds } }
-      : { type: category, restaurant: { $in: restaurantIds } };
+      ? {
+          subType: new RegExp(subCategory, "i"),
+          restaurant: { $in: restaurantIds },
+        }
+      : { type: new RegExp(category, "i"), restaurant: { $in: restaurantIds } };
 
     const foodItems = await FoodItem.find(query);
 
@@ -244,27 +331,55 @@ router.get("/rank/category/:category/province/:province", async (req, res) => {
     }
 
     const scores = foodItems.map((item) => {
-      const itemReviews = reviews.filter(
-        (review) => review.foodItem.toString() === item._id.toString()
+      const itemAdminReviews = reviews.filter(
+        (review) =>
+          review.foodItem.toString() === item._id.toString() &&
+          review.userRole === "admin"
       );
-      const totalScore = itemReviews.reduce(
+      const itemCommunityReviews = reviews.filter(
+        (review) =>
+          review.foodItem.toString() === item._id.toString() &&
+          review.userRole !== "admin"
+      );
+
+      const totalAdminScore = itemAdminReviews.reduce(
         (sum, review) => sum + review.score,
         0
       );
-      const averageScore = itemReviews.length
-        ? totalScore / itemReviews.length
+      const totalCommunityScore = itemCommunityReviews.reduce(
+        (sum, review) => sum + review.score,
+        0
+      );
+
+      const adminAverageScore = itemAdminReviews.length
+        ? totalAdminScore / itemAdminReviews.length
         : 0;
+      const communityAverageScore = itemCommunityReviews.length
+        ? totalCommunityScore / itemCommunityReviews.length
+        : 0;
+
+      // Only include non-zero scores in the overall average
+      const overallAverageScore =
+        adminAverageScore > 0 && communityAverageScore > 0
+          ? (adminAverageScore + communityAverageScore) / 2
+          : adminAverageScore || communityAverageScore;
+
       return {
         foodItem: item,
-        averageScore,
+        adminAverageScore,
+        communityAverageScore,
+        overallAverageScore,
       };
     });
 
-    const rankedList = scores.sort((a, b) => b.averageScore - a.averageScore);
+    const rankedList = scores.sort(
+      (a, b) => b.overallAverageScore - a.overallAverageScore
+    );
 
     res.status(200).json(rankedList);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -274,16 +389,20 @@ router.get("/rank/category/:category/country/:country", async (req, res) => {
     const { category, country } = req.params;
     const { subCategory } = req.query;
 
+    // Find all addresses in the specified country
     const addresses = await Address.find({ country: country });
     const addressIds = addresses.map((address) => address._id);
 
+    // Find all restaurants in those addresses
     const restaurants = await Restaurant.find({ address: { $in: addressIds } });
     const restaurantIds = restaurants.map((restaurant) => restaurant._id);
 
+    // Construct the query to find food items based on category or subcategory
     const query = subCategory
       ? { subType: subCategory, restaurant: { $in: restaurantIds } }
       : { type: category, restaurant: { $in: restaurantIds } };
 
+    // Find all food items that match the query
     const foodItems = await FoodItem.find(query);
 
     if (!foodItems || foodItems.length === 0) {
@@ -292,6 +411,7 @@ router.get("/rank/category/:category/country/:country", async (req, res) => {
       });
     }
 
+    // Get all reviews for the found food items
     const foodItemIds = foodItems.map((item) => item._id);
     const reviews = await Review.find({ foodItem: { $in: foodItemIds } });
 
@@ -301,25 +421,53 @@ router.get("/rank/category/:category/country/:country", async (req, res) => {
       });
     }
 
+    // Calculate scores for each food item
     const scores = foodItems.map((item) => {
-      const itemReviews = reviews.filter(
-        (review) => review.foodItem.toString() === item._id.toString()
+      const itemAdminReviews = reviews.filter(
+        (review) =>
+          review.foodItem.toString() === item._id.toString() &&
+          review.userRole === "admin"
       );
-      const totalScore = itemReviews.reduce(
+      const itemCommunityReviews = reviews.filter(
+        (review) =>
+          review.foodItem.toString() === item._id.toString() &&
+          review.userRole !== "admin"
+      );
+
+      const totalAdminScore = itemAdminReviews.reduce(
         (sum, review) => sum + review.score,
         0
       );
-      const averageScore = itemReviews.length
-        ? totalScore / itemReviews.length
+      const totalCommunityScore = itemCommunityReviews.reduce(
+        (sum, review) => sum + review.score,
+        0
+      );
+
+      // Calculate average scores, ignoring zero scores
+      const adminAverageScore = itemAdminReviews.length
+        ? totalAdminScore / itemAdminReviews.length
         : 0;
+      const communityAverageScore = itemCommunityReviews.length
+        ? totalCommunityScore / itemCommunityReviews.length
+        : 0;
+
+      const overallAverageScore =
+        (adminAverageScore + communityAverageScore) / 2;
+
       return {
         foodItem: item,
-        averageScore,
+        adminAverageScore,
+        communityAverageScore,
+        overallAverageScore,
       };
     });
 
-    const rankedList = scores.sort((a, b) => b.averageScore - a.averageScore);
+    // Rank the food items based on overall average score
+    const rankedList = scores.sort(
+      (a, b) => b.overallAverageScore - a.overallAverageScore
+    );
 
+    // Return the ranked list
     res.status(200).json(rankedList);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -332,6 +480,7 @@ router.get("/rank/category/:foodCategory/price-range", async (req, res) => {
     const { foodCategory } = req.params;
     const { range } = req.query;
 
+    // Fetch all food items within the specified category
     const foodItems = await FoodItem.find({ type: foodCategory });
 
     if (!foodItems || foodItems.length === 0) {
@@ -340,69 +489,90 @@ router.get("/rank/category/:foodCategory/price-range", async (req, res) => {
         .json({ message: `No food items found for ${foodCategory}` });
     }
 
+    // Get the price categorization boundaries
     const prices = foodItems.map((item) => item.price);
     const { lowPrice, highPrice } = categorizePrices(prices);
 
+    console.log(`Prices for category ${foodCategory}: `, prices);
+    console.log(
+      `Price range boundaries - Low: ${lowPrice}, High: ${highPrice}`
+    );
+
+    // Filter the food items based on the specified price range
     let filteredItems;
     if (range === "budget") {
       filteredItems = foodItems.filter((item) => item.price <= lowPrice);
+      console.log("Filtered budget items: ", filteredItems);
     } else if (range === "mid-range") {
       filteredItems = foodItems.filter(
         (item) => item.price > lowPrice && item.price <= highPrice
       );
+      console.log("Filtered mid-range items: ", filteredItems);
     } else if (range === "high-end") {
       filteredItems = foodItems.filter((item) => item.price > highPrice);
-    } else if (!range) {
-      const budgetItems = foodItems.filter((item) => item.price <= lowPrice);
-      const midRangeItems = foodItems.filter(
-        (item) => item.price > lowPrice && item.price <= highPrice
-      );
-      const highEndItems = foodItems.filter((item) => item.price > highPrice);
-
-      const rankByScore = async (items) => {
-        const scores = await Promise.all(
-          items.map(async (item) => {
-            const reviews = await Review.find({ foodItem: item._id });
-            const avgScore =
-              reviews.reduce((sum, review) => sum + review.score, 0) /
-                reviews.length || 0;
-            return { item, avgScore };
-          })
-        );
-        return scores
-          .sort((a, b) => b.avgScore - a.avgScore)
-          .map((score) => score.item);
-      };
-
-      const rankedBudget = await rankByScore(budgetItems);
-      const rankedMidRange = await rankByScore(midRangeItems);
-      const rankedHighEnd = await rankByScore(highEndItems);
-
-      return res.json({
-        budget: rankedBudget,
-        midRange: rankedMidRange,
-        highEnd: rankedHighEnd,
-      });
+      console.log("Filtered high-end items: ", filteredItems);
     } else {
       return res.status(400).json({ message: "Invalid price range specified" });
     }
 
+    // If no items were found in the selected range
+    if (!filteredItems || filteredItems.length === 0) {
+      return res.status(404).json({
+        message: `No food items found in the ${range} price range for ${foodCategory}`,
+      });
+    }
+
+    // Rank items by their scores
     const rankByScore = async (items) => {
       const scores = await Promise.all(
         items.map(async (item) => {
           const reviews = await Review.find({ foodItem: item._id });
-          const avgScore =
-            reviews.reduce((sum, review) => sum + review.score, 0) /
-              reviews.length || 0;
-          return { item, avgScore };
+
+          const adminReviews = reviews.filter(
+            (review) => review.userRole === "admin"
+          );
+          const communityReviews = reviews.filter(
+            (review) => review.userRole !== "admin"
+          );
+
+          const totalAdminScore = adminReviews.reduce(
+            (sum, review) => sum + review.score,
+            0
+          );
+          const totalCommunityScore = communityReviews.reduce(
+            (sum, review) => sum + review.score,
+            0
+          );
+
+          const adminAverageScore = adminReviews.length
+            ? totalAdminScore / adminReviews.length
+            : 0;
+          const communityAverageScore = communityReviews.length
+            ? totalCommunityScore / communityReviews.length
+            : 0;
+
+          const overallAverageScore =
+            adminReviews.length && communityReviews.length
+              ? (adminAverageScore + communityAverageScore) / 2
+              : adminReviews.length
+              ? adminAverageScore
+              : communityReviews.length
+              ? communityAverageScore
+              : 0;
+
+          return { item, overallAverageScore };
         })
       );
+
       return scores
-        .sort((a, b) => b.avgScore - a.avgScore)
+        .sort((a, b) => b.overallAverageScore - a.overallAverageScore)
         .map((score) => score.item);
     };
 
+    // Rank the filtered items
     const rankedItems = await rankByScore(filteredItems);
+
+    console.log(`Ranked items for ${range} price range: `, rankedItems);
 
     res.json({ range, rankedItems });
   } catch (err) {
@@ -410,6 +580,357 @@ router.get("/rank/category/:foodCategory/price-range", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// Get ranked lists of food items by price range and city
+router.get(
+  "/rank/category/:foodCategory/price-range/city/:city",
+  async (req, res) => {
+    try {
+      const { foodCategory, city } = req.params;
+      const { range } = req.query;
+
+      // Find all addresses in the specified city
+      const addresses = await Address.find({ city: city });
+      const addressIds = addresses.map((address) => address._id);
+
+      // Find all restaurants in those addresses
+      const restaurants = await Restaurant.find({
+        address: { $in: addressIds },
+      });
+      const restaurantIds = restaurants.map((restaurant) => restaurant._id);
+
+      // Fetch all food items within the specified category and restaurants in the city
+      const foodItems = await FoodItem.find({
+        type: foodCategory,
+        restaurant: { $in: restaurantIds },
+      });
+
+      if (!foodItems || foodItems.length === 0) {
+        return res.status(404).json({
+          message: `No food items found for ${foodCategory} in city ${city}`,
+        });
+      }
+
+      // Get the price categorization boundaries
+      const prices = foodItems.map((item) => item.price);
+      const { lowPrice, highPrice } = categorizePrices(prices);
+
+      // Filter the food items based on the specified price range
+      let filteredItems;
+      if (range === "budget") {
+        filteredItems = foodItems.filter((item) => item.price <= lowPrice);
+      } else if (range === "mid-range") {
+        filteredItems = foodItems.filter(
+          (item) => item.price > lowPrice && item.price <= highPrice
+        );
+      } else if (range === "high-end") {
+        filteredItems = foodItems.filter((item) => item.price > highPrice);
+      } else {
+        return res
+          .status(400)
+          .json({ message: "Invalid price range specified" });
+      }
+
+      const rankByScore = async (items) => {
+        const scores = await Promise.all(
+          items.map(async (item) => {
+            const reviews = await Review.find({ foodItem: item._id });
+
+            const adminReviews = reviews.filter(
+              (review) => review.userRole === "admin"
+            );
+            const communityReviews = reviews.filter(
+              (review) => review.userRole !== "admin"
+            );
+
+            const totalAdminScore = adminReviews.reduce(
+              (sum, review) => sum + review.score,
+              0
+            );
+            const totalCommunityScore = communityReviews.reduce(
+              (sum, review) => sum + review.score,
+              0
+            );
+
+            const adminAverageScore = adminReviews.length
+              ? totalAdminScore / adminReviews.length
+              : 0;
+            const communityAverageScore = communityReviews.length
+              ? totalCommunityScore / communityReviews.length
+              : 0;
+
+            const overallAverageScore =
+              adminAverageScore && communityAverageScore
+                ? (adminAverageScore + communityAverageScore) / 2
+                : adminAverageScore || communityAverageScore;
+
+            return { item, overallAverageScore };
+          })
+        );
+
+        return scores
+          .sort((a, b) => b.overallAverageScore - a.overallAverageScore)
+          .map((score) => score.item);
+      };
+
+      const rankedItems = await rankByScore(filteredItems);
+      res.json({ range, rankedItems });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+// Get ranked lists of food items by price range and province
+router.get(
+  "/rank/category/:foodCategory/price-range/province/:province",
+  async (req, res) => {
+    try {
+      const { foodCategory, province } = req.params;
+      const { range } = req.query;
+
+      // Find all addresses in the specified province
+      const addresses = await Address.find({ province: province });
+      const addressIds = addresses.map((address) => address._id);
+
+      // Find all restaurants in those addresses
+      const restaurants = await Restaurant.find({
+        address: { $in: addressIds },
+      });
+      const restaurantIds = restaurants.map((restaurant) => restaurant._id);
+
+      // Fetch all food items within the specified category and restaurants in the province
+      const foodItems = await FoodItem.find({
+        type: foodCategory,
+        restaurant: { $in: restaurantIds },
+      });
+
+      if (!foodItems || foodItems.length === 0) {
+        return res.status(404).json({
+          message: `No food items found for ${foodCategory} in province ${province}`,
+        });
+      }
+
+      // Get the price categorization boundaries
+      const prices = foodItems.map((item) => item.price);
+      const { lowPrice, highPrice } = categorizePrices(prices);
+
+      // Filter the food items based on the specified price range
+      let filteredItems;
+      if (range === "budget") {
+        filteredItems = foodItems.filter((item) => item.price <= lowPrice);
+      } else if (range === "mid-range") {
+        filteredItems = foodItems.filter(
+          (item) => item.price > lowPrice && item.price <= highPrice
+        );
+      } else if (range === "high-end") {
+        filteredItems = foodItems.filter((item) => item.price > highPrice);
+      } else {
+        return res
+          .status(400)
+          .json({ message: "Invalid price range specified" });
+      }
+
+      const rankByScore = async (items) => {
+        const scores = await Promise.all(
+          items.map(async (item) => {
+            const reviews = await Review.find({ foodItem: item._id });
+
+            const adminReviews = reviews.filter(
+              (review) => review.userRole === "admin"
+            );
+            const communityReviews = reviews.filter(
+              (review) => review.userRole !== "admin"
+            );
+
+            const totalAdminScore = adminReviews.reduce(
+              (sum, review) => sum + review.score,
+              0
+            );
+            const totalCommunityScore = communityReviews.reduce(
+              (sum, review) => sum + review.score,
+              0
+            );
+
+            const adminAverageScore = adminReviews.length
+              ? totalAdminScore / adminReviews.length
+              : 0;
+            const communityAverageScore = communityReviews.length
+              ? totalCommunityScore / communityReviews.length
+              : 0;
+
+            const overallAverageScore =
+              adminAverageScore && communityAverageScore
+                ? (adminAverageScore + communityAverageScore) / 2
+                : adminAverageScore || communityAverageScore;
+
+            return { item, overallAverageScore };
+          })
+        );
+
+        return scores
+          .sort((a, b) => b.overallAverageScore - a.overallAverageScore)
+          .map((score) => score.item);
+      };
+
+      const rankedItems = await rankByScore(filteredItems);
+
+      res.json({ range, rankedItems });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error", error: err.message });
+    }
+  }
+);
+
+// Get ranked lists of food items by price range and country
+router.get(
+  "/rank/category/:foodCategory/price-range/country/:country",
+  async (req, res) => {
+    try {
+      const { foodCategory, country } = req.params;
+      const { range } = req.query;
+
+      // Find all addresses in the specified country
+      const addresses = await Address.find({ country: country });
+      const addressIds = addresses.map((address) => address._id);
+
+      // Find all restaurants in those addresses
+      const restaurants = await Restaurant.find({
+        address: { $in: addressIds },
+      });
+      const restaurantIds = restaurants.map((restaurant) => restaurant._id);
+
+      // Fetch all food items within the specified category and restaurants in the country
+      const foodItems = await FoodItem.find({
+        type: foodCategory,
+        restaurant: { $in: restaurantIds },
+      });
+
+      if (!foodItems || foodItems.length === 0) {
+        return res.status(404).json({
+          message: `No food items found for ${foodCategory} in country ${country}`,
+        });
+      }
+
+      // Get the price categorization boundaries
+      const prices = foodItems.map((item) => item.price);
+      const { lowPrice, highPrice } = categorizePrices(prices);
+
+      // Filter the food items based on the specified price range
+      let filteredItems;
+      if (range === "budget") {
+        filteredItems = foodItems.filter((item) => item.price <= lowPrice);
+      } else if (range === "mid-range") {
+        filteredItems = foodItems.filter(
+          (item) => item.price > lowPrice && item.price <= highPrice
+        );
+      } else if (range === "high-end") {
+        filteredItems = foodItems.filter((item) => item.price > highPrice);
+      } else {
+        return res
+          .status(400)
+          .json({ message: "Invalid price range specified" });
+      }
+
+      const rankByScore = async (items) => {
+        const scores = await Promise.all(
+          items.map(async (item) => {
+            const reviews = await Review.find({ foodItem: item._id });
+
+            const adminReviews = reviews.filter(
+              (review) => review.userRole === "admin"
+            );
+            const communityReviews = reviews.filter(
+              (review) => review.userRole !== "admin"
+            );
+
+            const totalAdminScore = adminReviews.reduce(
+              (sum, review) => sum + review.score,
+              0
+            );
+            const totalCommunityScore = communityReviews.reduce(
+              (sum, review) => sum + review.score,
+              0
+            );
+
+            const adminAverageScore = adminReviews.length
+              ? totalAdminScore / adminReviews.length
+              : 0;
+            const communityAverageScore = communityReviews.length
+              ? totalCommunityScore / communityReviews.length
+              : 0;
+
+            const overallAverageScore =
+              adminAverageScore && communityAverageScore
+                ? (adminAverageScore + communityAverageScore) / 2
+                : adminAverageScore || communityAverageScore;
+
+            return { item, overallAverageScore };
+          })
+        );
+
+        return scores
+          .sort((a, b) => b.overallAverageScore - a.overallAverageScore)
+          .map((score) => score.item);
+      };
+
+      const rankedItems = await rankByScore(filteredItems);
+
+      res.json({ range, rankedItems });
+    } catch (err) {
+      console.error(`Error occurred: ${err.message}`, err.stack); // Log the error message and stack
+      res.status(500).json({ message: "Server error", error: err.message });
+    }
+  }
+);
+
+// // Filter food items based on rating, price range, and type
+// router.get("/food-items/filter", async (req, res) => {
+//   try {
+//     const { rating, price, type } = req.query;
+
+//     // Building the price range query
+//     let priceQuery = {};
+//     if (price === "low") {
+//       priceQuery = { price: { $lte: 10 } };
+//     } else if (price === "mid") {
+//       priceQuery = { price: { $gt: 10, $lte: 30 } };
+//     } else if (price === "high") {
+//       priceQuery = { price: { $gt: 30 } };
+//     }
+
+//     // Constructing the type filter, optional check for 'type'
+//     let typeQuery = {};
+//     if (type) {
+//       typeQuery = { type: type };
+//     }
+
+//     // Finding the food items that match the type and price query
+//     const foodItems = await FoodItem.find({
+//       ...typeQuery,
+//       ...priceQuery,
+//     });
+
+//     if (!foodItems || foodItems.length === 0) {
+//       return res.status(404).json({ message: "No food items found" });
+//     }
+
+//     // Filtering by rating (if given) using both admin and community scores
+//     const filteredItems = foodItems.filter((item) => {
+//       const avgRating =
+//         (item.adminScore + item.communityScore) / 2 ||
+//         item.adminScore ||
+//         item.communityScore;
+//       return !rating || avgRating >= parseFloat(rating);
+//     });
+
+//     res.status(200).json(filteredItems);
+//   } catch (err) {
+//     res.status(500).json({ message: "Server error", error: err.message });
+//   }
+// });
 
 // Update a food item by ID (Protected: Only authenticated users can update a food item)
 router.put("/:id", protect, async (req, res) => {

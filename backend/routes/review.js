@@ -50,10 +50,13 @@ router.post("/", protect, async (req, res) => {
         .json({ message: "Score must be between 0 and 100" });
     }
 
+    // Automatically set the userRole based on the authenticated user's role
+    const userRole = req.user.role;
+
     // Create a new review instance
     const review = new Review({
       userId: req.user.id,
-      userRole: req.user.role, // Store the user's role
+      userRole, // Automatically set from the authenticated user
       restaurantId,
       foodItem,
       score,

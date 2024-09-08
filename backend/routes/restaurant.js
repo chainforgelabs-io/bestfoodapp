@@ -61,7 +61,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Get the overall score for a specific restaurant (Public: Anyone can view the overall score for a restaurant)
+// Get the overall admin and community scores for a specific restaurant
 router.get("/:id/score", async (req, res) => {
   try {
     const { id } = req.params;
@@ -81,28 +81,55 @@ router.get("/:id/score", async (req, res) => {
         .json({ message: "No food items found for this restaurant" });
     }
 
-    // Step 2: Calculate the weighted average score for the restaurant
-    let weightedSum = 0;
+    // Step 2: Calculate the weighted average scores for both admin and community reviews
+    let adminWeightedSum = 0;
+    let communityWeightedSum = 0;
     let totalWeight = 0;
 
     for (let foodItem of foodItems) {
       const reviews = await Review.find({ foodItem: foodItem._id });
 
       if (reviews.length > 0) {
-        const averageScore =
-          reviews.reduce((sum, review) => sum + review.score, 0) /
-          reviews.length;
-        const categoryWeight = categoryWeights[foodItem.category] || 0; // Use the weight for the item's category
-        weightedSum += averageScore * categoryWeight;
-        totalWeight += categoryWeight;
+        const adminReviews = reviews.filter(
+          (review) => review.userRole === "admin"
+        );
+        const communityReviews = reviews.filter(
+          (review) => review.userRole !== "admin"
+        );
+
+        // Calculate admin score
+        if (adminReviews.length > 0) {
+          const adminAverageScore =
+            adminReviews.reduce((sum, review) => sum + review.score, 0) /
+            adminReviews.length;
+          const categoryWeight = categoryWeights[foodItem.category] || 0;
+          adminWeightedSum += adminAverageScore * categoryWeight;
+        }
+
+        // Calculate community score
+        if (communityReviews.length > 0) {
+          const communityAverageScore =
+            communityReviews.reduce((sum, review) => sum + review.score, 0) /
+            communityReviews.length;
+          const categoryWeight = categoryWeights[foodItem.category] || 0;
+          communityWeightedSum += communityAverageScore * categoryWeight;
+        }
+
+        totalWeight += categoryWeights[foodItem.category] || 0;
       }
     }
 
-    // Calculate the overall score using the weighted sum
-    const overallScore = totalWeight > 0 ? weightedSum / totalWeight : 0;
+    // Calculate the overall admin and community scores using the weighted sum
+    const adminScore = totalWeight > 0 ? adminWeightedSum / totalWeight : 0;
+    const communityScore =
+      totalWeight > 0 ? communityWeightedSum / totalWeight : 0;
 
-    // Return the restaurant ID and the calculated overall score
-    res.status(200).json({ restaurant: id, overallScore });
+    // Return the restaurant ID and the calculated overall admin and community scores
+    res.status(200).json({
+      restaurant: id,
+      adminScore,
+      communityScore,
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
@@ -134,19 +161,6 @@ router.get("/:id/reviews", async (req, res) => {
 
     // Step 3: Respond with all the reviews
     res.json(reviews);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Filter restaurants by ambiance (Public: Anyone can filter restaurants)
-router.get("/filter", async (req, res) => {
-  try {
-    const { ambiance } = req.query;
-    const restaurants = await Restaurant.find({
-      ambiance: { $in: ambiance },
-    }).populate("address");
-    res.status(200).json(restaurants);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

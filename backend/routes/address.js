@@ -63,7 +63,81 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Get the overall score for a city (Public: Anyone can view the overall score for a city)
+// Helper function to calculate both admin and community scores
+function calculateScores(reviews) {
+  const adminReviews = reviews.filter((review) => review.userRole === "admin");
+  const communityReviews = reviews.filter(
+    (review) => review.userRole !== "admin"
+  );
+
+  const adminScore =
+    adminReviews.reduce((sum, review) => sum + review.score, 0) /
+    (adminReviews.length || 1);
+  const communityScore =
+    communityReviews.reduce((sum, review) => sum + review.score, 0) /
+    (communityReviews.length || 1);
+
+  return { adminScore, communityScore };
+}
+
+// Route to get all reviews for a specific city
+router.get("/city/:city/reviews", async (req, res) => {
+  try {
+    const { city } = req.params;
+    const { error, reviews } = await getRestaurantsAndReviewsByLocation(
+      "city",
+      city
+    );
+
+    if (error) {
+      return res.status(404).json({ message: error });
+    }
+
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Route to get all reviews for a specific province
+router.get("/province/:province/reviews", async (req, res) => {
+  try {
+    const { province } = req.params;
+    const { error, reviews } = await getRestaurantsAndReviewsByLocation(
+      "province",
+      province
+    );
+
+    if (error) {
+      return res.status(404).json({ message: error });
+    }
+
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Route to get all reviews for a specific country
+router.get("/country/:country/reviews", async (req, res) => {
+  try {
+    const { country } = req.params;
+    const { error, reviews } = await getRestaurantsAndReviewsByLocation(
+      "country",
+      country
+    );
+
+    if (error) {
+      return res.status(404).json({ message: error });
+    }
+
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get the overall scores for a city (Public: Anyone can view the scores for a city)
 router.get("/city/:city/score", async (req, res) => {
   try {
     const { city } = req.params;
@@ -76,16 +150,15 @@ router.get("/city/:city/score", async (req, res) => {
       return res.status(404).json({ message: error });
     }
 
-    const totalScore = reviews.reduce((sum, review) => sum + review.score, 0);
-    const averageScore = totalScore / reviews.length;
+    const { adminScore, communityScore } = calculateScores(reviews);
 
-    res.json({ city, overallScore: averageScore });
+    res.json({ city, adminScore, communityScore });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// Get the overall score for a province (Public: Anyone can view the overall score for a province)
+// Get the overall scores for a province (Public: Anyone can view the scores for a province)
 router.get("/province/:province/score", async (req, res) => {
   try {
     const { province } = req.params;
@@ -98,16 +171,15 @@ router.get("/province/:province/score", async (req, res) => {
       return res.status(404).json({ message: error });
     }
 
-    const totalScore = reviews.reduce((sum, review) => sum + review.score, 0);
-    const averageScore = totalScore / reviews.length;
+    const { adminScore, communityScore } = calculateScores(reviews);
 
-    res.json({ province, overallScore: averageScore });
+    res.json({ province, adminScore, communityScore });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// Get the overall score for a country (Public: Anyone can view the overall score for a country)
+// Get the overall scores for a country (Public: Anyone can view the scores for a country)
 router.get("/country/:country/score", async (req, res) => {
   try {
     const { country } = req.params;
@@ -120,10 +192,9 @@ router.get("/country/:country/score", async (req, res) => {
       return res.status(404).json({ message: error });
     }
 
-    const totalScore = reviews.reduce((sum, review) => sum + review.score, 0);
-    const averageScore = totalScore / reviews.length;
+    const { adminScore, communityScore } = calculateScores(reviews);
 
-    res.json({ country, overallScore: averageScore });
+    res.json({ country, adminScore, communityScore });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

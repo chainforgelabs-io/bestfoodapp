@@ -6,6 +6,11 @@ const reviewSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+  userRole: {
+    type: String,
+    required: true,
+    enum: ["admin", "user"], // Limit to 'admin' and 'user' roles
+  },
   restaurantId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Restaurant",
