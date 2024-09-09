@@ -1,14 +1,15 @@
-// src/pages/HomePage.js
 import React, { useState } from "react";
 import axios from "axios";
-import "../styles/HomePage.css"; // Create this file for styling
+import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
+import "../styles/HomePage.css";
 
 function HomePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewText, setReviewText] = useState("");
   const [reviewScore, setReviewScore] = useState("");
+  const navigate = useNavigate(); // Initialize navigate
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -16,7 +17,17 @@ function HomePage() {
       const response = await axios.get(`/api/restaurants?search=${searchTerm}`);
       setResults(response.data);
     } catch (error) {
-      console.error("There was an error with the search!", error);
+      console.error("Error searching restaurants by city:", error);
+    }
+  };
+
+  const handleCreateReviewClick = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must be logged in to perform this action.");
+      navigate("/login"); // Redirect to login page if not authenticated
+    } else {
+      setShowReviewForm(true); // Show review form if authenticated
     }
   };
 
@@ -24,26 +35,25 @@ function HomePage() {
     e.preventDefault();
     try {
       const reviewData = {
-        restaurantId: selectedRestaurant._id,
+        restaurantId: "5f9f1b9b9b9b9b9b9b9b9b9", // Placeholder restaurant ID
         comment: reviewText,
         score: reviewScore,
-        // Additional fields like userId can be added here
       };
       await axios.post("/api/reviews", reviewData);
       alert("Review submitted successfully!");
-      // Clear form after submission
-      setSelectedRestaurant(null);
       setReviewText("");
       setReviewScore("");
+      setShowReviewForm(false); // Hide form after submission
     } catch (error) {
-      console.error("There was an error submitting the review!", error);
+      console.error("Error submitting review:", error);
     }
   };
 
   return (
     <div>
       <h2>Home</h2>
-      {/* Search Form */}
+
+      {/* Search Form - No Authentication Required */}
       <form onSubmit={handleSearch} className="search-form">
         <input
           type="text"
@@ -54,15 +64,19 @@ function HomePage() {
         <button type="submit">Search</button>
       </form>
 
+      {/* Create a Review Button */}
+      <button
+        className="create-review-btn"
+        onClick={handleCreateReviewClick} // Check login status on button click
+      >
+        Create a Review
+      </button>
+
       {/* Search Results */}
       <div className="search-results">
         {results.length > 0 ? (
           results.map((result) => (
-            <div
-              key={result._id}
-              className="search-result-item"
-              onClick={() => setSelectedRestaurant(result)}
-            >
+            <div key={result._id} className="search-result-item">
               <h3>{result.name}</h3>
               <p>{result.cuisine.join(", ")}</p>
               <p>{result.address.city}</p>
@@ -73,10 +87,10 @@ function HomePage() {
         )}
       </div>
 
-      {/* Review Submission */}
-      {selectedRestaurant && (
+      {/* Review Submission Form */}
+      {showReviewForm && (
         <div className="review-form-container">
-          <h3>Submit a Review for {selectedRestaurant.name}</h3>
+          <h3>Submit a Review</h3>
           <form onSubmit={handleReviewSubmit} className="review-form">
             <textarea
               placeholder="Write your review..."

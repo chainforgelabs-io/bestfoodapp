@@ -1,15 +1,26 @@
-// src/pages/LoginPage.js
 import React, { useState } from "react";
-import "../styles/LoginPage.css"; // Import styling if necessary
+import axios from "axios";
+import "../styles/LoginPage.css"; // Style your page accordingly
 
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Integrate with backend API here
-    console.log("Logging in with", email, password);
+    try {
+      // Make API call to login the user
+      const response = await axios.post("/api/auth/login", {
+        email,
+        password,
+      });
+      // Save token to localStorage or sessionStorage
+      localStorage.setItem("token", response.data.token);
+      console.log("Login successful!");
+      // Redirect to the Home page or Profile page after login
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
   };
 
   return (
@@ -21,12 +32,14 @@ function LoginPage() {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
         <input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
         <button type="submit">Login</button>
       </form>
