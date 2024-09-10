@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const FoodItem = require("../models/FoodItem");
 const Review = require("../models/Review");
 const Restaurant = require("../models/Restaurant");
+const Address = require("../models/Address");
 const { protect } = require("../middleware/authMiddleware"); // Import the protect middleware
 
 // Define the weights for different food categories
@@ -44,6 +45,34 @@ router.get("/", async (req, res) => {
     res.status(200).json(restaurants);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// Get restaurants by city (Public: Anyone can view a restaurant)
+router.get("/search", async (req, res) => {
+  const { city } = req.query;
+
+  try {
+    // Find all addresses in the provided city
+    const addresses = await Address.find({ city: new RegExp(city, "i") }); // Case-insensitive regex search
+    const addressIds = addresses.map((address) => address._id);
+
+    // Find all restaurants located at those addresses
+    const restaurants = await Restaurant.find({
+      address: { $in: addressIds },
+    }).populate("address");
+
+    // Check if any restaurants were found
+    if (!restaurants || restaurants.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No restaurants found in this city" });
+    }
+
+    res.status(200).json(restaurants);
+  } catch (error) {
+    console.error("Error searching restaurants:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

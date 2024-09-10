@@ -4,23 +4,40 @@ import { useNavigate } from "react-router-dom"; // Import useNavigate for redire
 import "../styles/HomePage.css";
 
 function HomePage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [results, setResults] = useState([]);
-  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(""); // To capture the city search term
+  const [results, setResults] = useState([]); // To store search results
+  const [showReviewForm, setShowReviewForm] = useState(false); // To toggle review form visibility
   const [reviewText, setReviewText] = useState("");
   const [reviewScore, setReviewScore] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
   const navigate = useNavigate(); // Initialize navigate
 
+  // Search function to call the backend search API for restaurants based on city
   const handleSearch = async (e) => {
     e.preventDefault();
+    setHasSearched(true); // Mark as searched when the form is submitted
+
     try {
-      const response = await axios.get(`/api/restaurants?search=${searchTerm}`);
-      setResults(response.data);
+      console.log("Searching for restaurants in:", searchTerm); // Log search term
+
+      // Send a request to the backend search endpoint
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
+        {
+          params: { city: searchTerm }, // Pass city as query param
+        }
+      );
+
+      console.log("API response:", response.data); // Log the response data
+      setResults(response.data); // Store the search results in state
     } catch (error) {
-      console.error("Error searching restaurants by city:", error);
+      console.error("Error searching restaurants:", error);
+      alert("No restaurants found in this city");
+      setResults([]); // Clear results if no restaurants are found
     }
   };
 
+  // Handle review creation, checking for user authentication
   const handleCreateReviewClick = () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -31,6 +48,7 @@ function HomePage() {
     }
   };
 
+  // Handle form submission for reviews
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -51,15 +69,15 @@ function HomePage() {
 
   return (
     <div>
-      <h2>Home</h2>
+      <h2>Search for City</h2>
 
       {/* Search Form - No Authentication Required */}
       <form onSubmit={handleSearch} className="search-form">
         <input
           type="text"
-          placeholder="Search restaurants..."
+          placeholder="Enter city"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => setSearchTerm(e.target.value)} // Capture city input
         />
         <button type="submit">Search</button>
       </form>
@@ -74,17 +92,17 @@ function HomePage() {
 
       {/* Search Results */}
       <div className="search-results">
-        {results.length > 0 ? (
-          results.map((result) => (
-            <div key={result._id} className="search-result-item">
-              <h3>{result.name}</h3>
-              <p>{result.cuisine.join(", ")}</p>
-              <p>{result.address.city}</p>
-            </div>
-          ))
-        ) : (
-          <p>No results found.</p>
-        )}
+        {
+          results.length > 0
+            ? results.map((result) => (
+                <div key={result._id} className="search-result-item">
+                  <h3>{result.name}</h3>
+                  <p>{result.cuisine.join(", ")}</p>
+                  <p>{result.address.city}</p>
+                </div>
+              ))
+            : hasSearched && <p>No results found.</p> // Only show "No results found" after searching
+        }
       </div>
 
       {/* Review Submission Form */}

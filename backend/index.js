@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 
@@ -9,6 +10,7 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
 dotenv.config(); // This ensures .env is loaded if NODE_ENV is not set or is invalid
 
 const app = express();
+app.use(cors());
 const PORT = process.env.PORT || 5000;
 
 // Middleware
