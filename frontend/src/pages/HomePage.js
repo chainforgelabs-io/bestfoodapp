@@ -5,35 +5,54 @@ import "../styles/HomePage.css";
 
 function HomePage() {
   const [searchTerm, setSearchTerm] = useState(""); // To capture the city search term
+  const [citySelected, setCitySelected] = useState(""); // Selected city
   const [results, setResults] = useState([]); // To store search results
+  const [foodItems, setFoodItems] = useState([]); // Food item search results
   const [showReviewForm, setShowReviewForm] = useState(false); // To toggle review form visibility
   const [reviewText, setReviewText] = useState("");
   const [reviewScore, setReviewScore] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
+  const [foodSearchTerm, setFoodSearchTerm] = useState(""); // Food item search term
   const navigate = useNavigate(); // Initialize navigate
 
-  // Search function to call the backend search API for restaurants based on city
-  const handleSearch = async (e) => {
+  // Search for restaurants by city
+  const handleCitySearch = async (e) => {
     e.preventDefault();
     setHasSearched(true); // Mark as searched when the form is submitted
-
     try {
-      console.log("Searching for restaurants in:", searchTerm); // Log search term
-
-      // Send a request to the backend search endpoint
       const response = await axios.get(
         `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
-        {
-          params: { city: searchTerm }, // Pass city as query param
-        }
+        { params: { city: searchTerm } }
       );
-
-      console.log("API response:", response.data); // Log the response data
-      setResults(response.data); // Store the search results in state
+      setResults(response.data);
+      setCitySelected(searchTerm); // Set the city as selected
+      setSearchTerm(""); // Clear city search term after selection
     } catch (error) {
-      console.error("Error searching restaurants:", error);
+      console.error("Error searching restaurants by city:", error);
       alert("No restaurants found in this city");
-      setResults([]); // Clear results if no restaurants are found
+      setResults([]);
+    }
+  };
+
+  // Search for food items in the selected city
+  const handleFoodSearch = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_BASE_URL}/api/fooditems/search`,
+        { params: { city: citySelected, food: foodSearchTerm } }
+      );
+      setFoodItems(
+        response.data.sort(
+          (a, b) =>
+            (b.adminScore + b.communityScore) / 2 -
+            (a.adminScore + a.communityScore) / 2
+        )
+      ); // Sort food items by rank (best to worst)
+    } catch (error) {
+      console.error("Error searching food items:", error);
+      alert("No food items found in this city");
+      setFoodItems([]);
     }
   };
 
@@ -69,18 +88,58 @@ function HomePage() {
 
   return (
     <div>
-      <h2>Search for City</h2>
+      <h2>
+        {citySelected ? `Best Food in ${citySelected}` : "Search for City"}
+      </h2>
 
       {/* Search Form - No Authentication Required */}
-      <form onSubmit={handleSearch} className="search-form">
-        <input
-          type="text"
-          placeholder="Enter city"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)} // Capture city input
-        />
-        <button type="submit">Search</button>
-      </form>
+
+      {!citySelected && (
+        <form onSubmit={handleCitySearch} className="search-form">
+          <input
+            type="text"
+            placeholder="Enter city"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button type="submit">Search</button>
+        </form>
+      )}
+
+      {citySelected && (
+        <div>
+          <form onSubmit={handleFoodSearch} className="search-form">
+            <input
+              type="text"
+              placeholder={`Search for food in ${citySelected}`}
+              value={foodSearchTerm}
+              onChange={(e) => setFoodSearchTerm(e.target.value)}
+            />
+            <button type="submit">Search</button>
+          </form>
+
+          <div className="food-results">
+            {foodItems.length > 0
+              ? foodItems.map((item, index) => (
+                  <div key={item._id} className="food-result-item">
+                    <h3>
+                      {index + 1}. {item.name}
+                    </h3>
+                    <p>
+                      Restaurant: {item.restaurant.name} (
+                      {item.restaurant.address.street},{" "}
+                      {item.restaurant.address.city})
+                    </p>
+                    <p>
+                      Admin Score: {item.adminScore}, Community Score:{" "}
+                      {item.communityScore}
+                    </p>
+                  </div>
+                ))
+              : hasSearched && <p>No food items found.</p>}
+          </div>
+        </div>
+      )}
 
       {/* Create a Review Button */}
       <button
