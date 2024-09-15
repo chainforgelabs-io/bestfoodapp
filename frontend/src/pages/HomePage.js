@@ -19,13 +19,16 @@ function HomePage() {
   const handleCitySearch = async (e) => {
     e.preventDefault();
     setHasSearched(true); // Mark as searched when the form is submitted
+
+    const formattedCity = capitalizeWords(searchTerm); // Capitalize city name
+
     try {
       const response = await axios.get(
         `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
-        { params: { city: searchTerm } }
+        { params: { city: formattedCity } }
       );
       setResults(response.data);
-      setCitySelected(searchTerm); // Set the city as selected
+      setCitySelected(formattedCity); // Set the formatted city as selected
       setSearchTerm(""); // Clear city search term after selection
     } catch (error) {
       console.error("Error searching restaurants by city:", error);
@@ -34,14 +37,25 @@ function HomePage() {
     }
   };
 
+  // Helper function to capitalize the first letter of each word
+  const capitalizeWords = (str) => {
+    return str.replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   // Search for food items in the selected city
   const handleFoodSearch = async (e) => {
     e.preventDefault();
+
+    if (!citySelected) {
+      alert("Please select a city first.");
+      return;
+    }
+
     try {
       const response = await axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/api/fooditems/search`,
-        { params: { city: citySelected, food: foodSearchTerm } }
+        `${process.env.REACT_APP_API_BASE_URL}/api/food-items/rank/category/${foodSearchTerm}/city/${citySelected}`
       );
+
       setFoodItems(
         response.data.sort(
           (a, b) =>
@@ -51,9 +65,16 @@ function HomePage() {
       ); // Sort food items by rank (best to worst)
     } catch (error) {
       console.error("Error searching food items:", error);
-      alert("No food items found in this city");
+      alert("No food items found in this city for the selected category.");
       setFoodItems([]);
     }
+  };
+
+  const handleResetCity = () => {
+    setSearchTerm(""); // Clear the search input field
+    setResults([]); // Clear the search results
+    setCitySelected(""); // Clear the selected city
+    setHasSearched(false); // Reset the hasSearched flag to its initial state
   };
 
   // Handle review creation, checking for user authentication
@@ -140,6 +161,12 @@ function HomePage() {
           </div>
         </div>
       )}
+      {/* Reset City Button */}
+      <div>
+        <button onClick={handleResetCity} className="reset-button">
+          Reset City
+        </button>
+      </div>
 
       {/* Create a Review Button */}
       <button
@@ -157,7 +184,10 @@ function HomePage() {
                 <div key={result._id} className="search-result-item">
                   <h3>{result.name}</h3>
                   <p>{result.cuisine.join(", ")}</p>
-                  <p>{result.address.city}</p>
+                  <p>
+                    {result.address.street}, {result.address.city},{" "}
+                    {result.address.province}, {result.address.country}
+                  </p>
                 </div>
               ))
             : hasSearched && <p>No results found.</p> // Only show "No results found" after searching

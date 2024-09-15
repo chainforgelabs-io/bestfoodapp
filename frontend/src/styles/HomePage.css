@@ -50,6 +50,36 @@
   margin-bottom: 10px;
 }
 
+.reset-button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.reset-button:hover {
+  background-color: #d32f2f;
+}
+
 .review-form button {
   padding: 10px 20px;
+}
+
+.food-results {
+  margin-top: 20px;
+}
+
+.food-result-item {
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.food-result-item:hover {
+  background-color: #f9f9f9;
 }
