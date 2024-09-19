@@ -1,25 +1,25 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
 import "../styles/HomePage.css";
-import Logo from "../assets/logo.png"; // Import your logo here
+import "../assets/logo.png";
 
 function HomePage() {
-  const [searchTerm, setSearchTerm] = useState(""); // City search term
+  const [searchTerm, setSearchTerm] = useState(""); // To capture the city search term
   const [citySelected, setCitySelected] = useState(""); // Selected city
-  const [results, setResults] = useState([]); // Search results
-  const [foodItems, setFoodItems] = useState([]); // Food search results
-  const [showReviewForm, setShowReviewForm] = useState(false); // Review form visibility
-  const [reviewText, setReviewText] = useState(""); // Review text
-  const [reviewScore, setReviewScore] = useState(""); // Review score
-  const [hasSearched, setHasSearched] = useState(false); // Whether search was performed
+  const [results, setResults] = useState([]); // To store search results
+  const [foodItems, setFoodItems] = useState([]); // Food item search results
+  const [showReviewForm, setShowReviewForm] = useState(false); // To toggle review form visibility
+  const [reviewText, setReviewText] = useState("");
+  const [reviewScore, setReviewScore] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
   const [foodSearchTerm, setFoodSearchTerm] = useState(""); // Food item search term
-  const navigate = useNavigate(); // For navigation
+  const navigate = useNavigate(); // Initialize navigate
 
   // Search for restaurants by city
   const handleCitySearch = async (e) => {
     e.preventDefault();
-    setHasSearched(true); // Mark search as performed
+    setHasSearched(true); // Mark as searched when the form is submitted
 
     const formattedCity = capitalizeWords(searchTerm); // Capitalize city name
 
@@ -29,8 +29,8 @@ function HomePage() {
         { params: { city: formattedCity } }
       );
       setResults(response.data);
-      setCitySelected(formattedCity); // Set the selected city
-      setSearchTerm(""); // Clear search input
+      setCitySelected(formattedCity); // Set the formatted city as selected
+      setSearchTerm(""); // Clear city search term after selection
     } catch (error) {
       console.error("Error searching restaurants by city:", error);
       alert("No restaurants found in this city");
@@ -56,13 +56,14 @@ function HomePage() {
       const response = await axios.get(
         `${process.env.REACT_APP_API_BASE_URL}/api/food-items/rank/category/${foodSearchTerm}/city/${citySelected}`
       );
+
       setFoodItems(
         response.data.sort(
           (a, b) =>
             (b.adminScore + b.communityScore) / 2 -
             (a.adminScore + a.communityScore) / 2
         )
-      ); // Sort food items by rank
+      ); // Sort food items by rank (best to worst)
     } catch (error) {
       console.error("Error searching food items:", error);
       alert("No food items found in this city for the selected category.");
@@ -70,26 +71,25 @@ function HomePage() {
     }
   };
 
-  // Reset city search
   const handleResetCity = () => {
-    setSearchTerm("");
-    setResults([]);
-    setCitySelected("");
-    setHasSearched(false);
+    setSearchTerm(""); // Clear the search input field
+    setResults([]); // Clear the search results
+    setCitySelected(""); // Clear the selected city
+    setHasSearched(false); // Reset the hasSearched flag to its initial state
   };
 
-  // Handle review creation
+  // Handle review creation, checking for user authentication
   const handleCreateReviewClick = () => {
     const token = localStorage.getItem("token");
     if (!token) {
       alert("You must be logged in to perform this action.");
-      navigate("/login");
+      navigate("/login"); // Redirect to login page if not authenticated
     } else {
       setShowReviewForm(true); // Show review form if authenticated
     }
   };
 
-  // Handle review submission
+  // Handle form submission for reviews
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -102,39 +102,32 @@ function HomePage() {
       alert("Review submitted successfully!");
       setReviewText("");
       setReviewScore("");
-      setShowReviewForm(false);
+      setShowReviewForm(false); // Hide form after submission
     } catch (error) {
       console.error("Error submitting review:", error);
     }
   };
 
   return (
-    <div className="home-container">
-      {/* Centered Logo */}
-      <div className="logo-container">
-        <img src={Logo} alt="Best Food App Logo" className="app-logo" />
-      </div>
+    <div>
+      <h2>
+        {citySelected ? `Best Food in ${citySelected}` : "Search for City"}
+      </h2>
 
-      {/* Title */}
-      <h1 className="home-title">Find the best food in your city!</h1>
+      {/* Search Form - No Authentication Required */}
 
-      {/* Search bar */}
       {!citySelected && (
         <form onSubmit={handleCitySearch} className="search-form">
           <input
             type="text"
-            placeholder="Search for cities"
+            placeholder="Enter city"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
           />
-          <button type="submit" className="search-button">
-            <i className="fa fa-search"></i>
-          </button>
+          <button type="submit">Search</button>
         </form>
       )}
 
-      {/* Food search after selecting city */}
       {citySelected && (
         <div>
           <form onSubmit={handleFoodSearch} className="search-form">
@@ -143,11 +136,8 @@ function HomePage() {
               placeholder={`Search for food in ${citySelected}`}
               value={foodSearchTerm}
               onChange={(e) => setFoodSearchTerm(e.target.value)}
-              className="search-input"
             />
-            <button type="submit" className="search-button">
-              Search
-            </button>
+            <button type="submit">Search</button>
           </form>
 
           <div className="food-results">
@@ -172,18 +162,40 @@ function HomePage() {
           </div>
         </div>
       )}
+      {/* Reset City Button */}
+      <div>
+        <button onClick={handleResetCity} className="reset-button">
+          Reset City
+        </button>
+      </div>
 
-      {/* Reset city */}
-      <button onClick={handleResetCity} className="reset-button">
-        Reset City
+      {/* Create a Review Button */}
+      <button
+        className="create-review-btn"
+        onClick={handleCreateReviewClick} // Check login status on button click
+      >
+        Create a Review
       </button>
 
-      {/* Create a review button */}
-      <button className="make-review-btn" onClick={handleCreateReviewClick}>
-        Make a review
-      </button>
+      {/* Search Results */}
+      <div className="search-results">
+        {
+          results.length > 0
+            ? results.map((result) => (
+                <div key={result._id} className="search-result-item">
+                  <h3>{result.name}</h3>
+                  <p>{result.cuisine.join(", ")}</p>
+                  <p>
+                    {result.address.street}, {result.address.city},{" "}
+                    {result.address.province}, {result.address.country}
+                  </p>
+                </div>
+              ))
+            : hasSearched && <p>No results found.</p> // Only show "No results found" after searching
+        }
+      </div>
 
-      {/* Review form */}
+      {/* Review Submission Form */}
       {showReviewForm && (
         <div className="review-form-container">
           <h3>Submit a Review</h3>
@@ -207,22 +219,6 @@ function HomePage() {
           </form>
         </div>
       )}
-
-      {/* Search results */}
-      <div className="search-results">
-        {results.length > 0
-          ? results.map((result) => (
-              <div key={result._id} className="search-result-item">
-                <h3>{result.name}</h3>
-                <p>{result.cuisine.join(", ")}</p>
-                <p>
-                  {result.address.street}, {result.address.city},{" "}
-                  {result.address.province}, {result.address.country}
-                </p>
-              </div>
-            ))
-          : hasSearched && <p>No results found.</p>}
-      </div>
     </div>
   );
 }

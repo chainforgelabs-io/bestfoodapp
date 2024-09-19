@@ -1,4 +1,54 @@
 /* src/pages/HomePage.css */
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+}
+
+.logo-container {
+  margin-bottom: 20px;
+}
+
+.app-logo {
+  width: 150px; /* Adjust size accordingly */
+}
+
+.home-title {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+}
+
+.search-form {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.search-button {
+  padding: 10px;
+  margin-left: 10px;
+  border: none;
+  background-color: #ddd;
+  cursor: pointer;
+}
+
+.make-review-btn {
+  padding: 10px 20px;
+  background-color: #ccc;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
 .search-form {
   margin-bottom: 20px;
   display: flex;
