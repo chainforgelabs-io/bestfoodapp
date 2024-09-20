@@ -7,9 +7,8 @@ import Logo from "../assets/logo.png"; // Import your logo here
 function HomePage() {
   const [searchTerm, setSearchTerm] = useState(""); // City search term
   const [citySelected, setCitySelected] = useState(""); // Selected city
-  const [results, setResults] = useState([]); // Restaurant search results
+  const [results, setResults] = useState([]); // Search results
   const [foodItems, setFoodItems] = useState([]); // Food search results
-  const [activeFilter, setActiveFilter] = useState("Restaurants"); // Active filter ("Restaurants" by default)
   const [showReviewForm, setShowReviewForm] = useState(false); // Review form visibility
   const [reviewText, setReviewText] = useState(""); // Review text
   const [reviewScore, setReviewScore] = useState(""); // Review score
@@ -32,7 +31,6 @@ function HomePage() {
       setResults(response.data);
       setCitySelected(formattedCity); // Set the selected city
       setSearchTerm(""); // Clear search input
-      setActiveFilter("Restaurants"); // Default to restaurants after city search
     } catch (error) {
       console.error("Error searching restaurants by city:", error);
       alert("No restaurants found in this city");
@@ -41,7 +39,9 @@ function HomePage() {
   };
 
   // Search for food items in the selected city
-  const handleFoodSearch = async () => {
+  const handleFoodSearch = async (e) => {
+    e.preventDefault();
+
     if (!citySelected) {
       alert("Please select a city first.");
       return;
@@ -49,7 +49,7 @@ function HomePage() {
 
     try {
       const response = await axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/api/food-items/rank/city/${citySelected}`
+        `${process.env.REACT_APP_API_BASE_URL}/api/food-items/rank/category/${foodSearchTerm}/city/${citySelected}`
       );
 
       setFoodItems(
@@ -77,7 +77,6 @@ function HomePage() {
     setResults([]);
     setCitySelected("");
     setHasSearched(false);
-    setFoodItems([]); // Clear food items when resetting
   };
 
   // Handle review creation
@@ -88,19 +87,6 @@ function HomePage() {
       navigate("/login");
     } else {
       setShowReviewForm(true); // Show review form if authenticated
-    }
-  };
-
-  // Handle filter change
-  const handleFilterChange = (filter) => {
-    setActiveFilter(filter);
-
-    if (filter === "Restaurants") {
-      // Fetch and display restaurant data (already fetched in `results`)
-      setFoodItems([]); // Clear food list when "Restaurants" is selected
-    } else if (filter === "Food") {
-      // Fetch food items based on the selected city
-      handleFoodSearch();
     }
   };
 
@@ -123,8 +109,10 @@ function HomePage() {
     }
   };
 
+  // Render the initial layout (before search) or the layout after the search
   return (
     <div className="home-container">
+      {/* Check if a search has been performed */}
       {!hasSearched ? (
         <>
           {/* Initial layout (before search) */}
@@ -147,7 +135,7 @@ function HomePage() {
         </>
       ) : (
         <>
-          {/* Layout after city search */}
+          {/* New layout (post-search) */}
           <div className="logo-container">
             <img src={Logo} alt="Best Food App Logo" className="app-logo" />
           </div>
@@ -166,80 +154,33 @@ function HomePage() {
             </button>
           </form>
 
+          {/* Add the buttons and list layout based on the second image */}
           <div className="filter-section">
-            <button
-              className={`filter-button ${
-                activeFilter === "Food" ? "active" : ""
-              }`}
-              onClick={() => handleFilterChange("Food")}
-            >
-              Food
-            </button>
-            <button
-              className={`filter-button ${
-                activeFilter === "Restaurants" ? "active" : ""
-              }`}
-              onClick={() => handleFilterChange("Restaurants")}
-            >
-              Restaurants
-            </button>
+            <button className="filter-button">Food</button>
+            <button className="filter-button">Restaurants</button>
           </div>
 
-          {/* Display content based on the selected filter */}
-          {activeFilter === "Restaurants" && (
-            <div className="results-section">
-              {results.length > 0 ? (
-                results.map((result, index) => (
-                  <div key={result._id} className="result-item">
-                    <h3>
-                      {index + 1}. {result.name}
-                    </h3>
-                    <p>{result.cuisine.join(", ")}</p>
-                    <p>
-                      {result.address.street}, {result.address.city},{" "}
-                      {result.address.province}, {result.address.country}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p>No restaurants found in this city.</p>
-              )}
-            </div>
-          )}
-
-          {activeFilter === "Food" && (
-            <div className="results-section">
-              {foodItems.length > 0 ? (
-                foodItems.map((item, index) => (
-                  <div
-                    key={item?.foodItem?._id || index}
-                    className="result-item"
-                  >
-                    <h3>
-                      {index + 1}. {item?.foodItem?.name || "Unnamed Food Item"}
-                    </h3>
-                    <p>
-                      {item?.foodItem?.restaurant?.name || "Unknown Restaurant"}{" "}
-                      (
-                      {item?.foodItem?.restaurant?.address?.street ||
-                        "No street info"}
-                      ,
-                      {item?.foodItem?.restaurant?.address?.city ||
-                        "No city info"}
-                      )
-                    </p>
-
-                    <p>
-                      Admin Score: {item.adminScore || 0}, Community Score:{" "}
-                      {item.communityScore || 0}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p>No food items found in this category.</p>
-              )}
-            </div>
-          )}
+          <div className="food-results">
+            {foodItems.length > 0 ? (
+              foodItems.map((item, index) => (
+                <div key={item._id} className="food-result-item">
+                  <h3>
+                    {index + 1}. {item.name}
+                  </h3>
+                  <p>
+                    {item.restaurant.name} ({item.restaurant.address.street},{" "}
+                    {item.restaurant.address.city})
+                  </p>
+                  <p>
+                    Admin Score: {item.adminScore}, Community Score:{" "}
+                    {item.communityScore}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p>No food items found in this category.</p>
+            )}
+          </div>
         </>
       )}
 

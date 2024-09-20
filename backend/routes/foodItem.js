@@ -175,6 +175,78 @@ router.get("/:foodItemId/score", async (req, res) => {
   }
 });
 
+// Get ranked list of all food items in a city
+router.get("/rank/city/:city", async (req, res) => {
+  try {
+    const { city } = req.params;
+
+    // Find all addresses in the specified city
+    const addresses = await Address.find({ city: city });
+    const addressIds = addresses.map((address) => address._id);
+
+    // Find all restaurants in those addresses
+    const restaurants = await Restaurant.find({
+      address: { $in: addressIds },
+    }).populate("address");
+    const restaurantIds = restaurants.map((restaurant) => restaurant._id);
+
+    // Find all food items for the restaurants in the city
+    const foodItems = await FoodItem.find({
+      restaurant: { $in: restaurantIds },
+    }).populate("restaurant");
+
+    if (!foodItems || foodItems.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No food items found in this city" });
+    }
+
+    // Rank the food items by their admin and community scores
+    const rankByScore = async (items) => {
+      const scores = await Promise.all(
+        items.map(async (item) => {
+          const reviews = await Review.find({ foodItem: item._id });
+
+          const adminReviews = reviews.filter(
+            (review) => review.userRole === "admin"
+          );
+          const communityReviews = reviews.filter(
+            (review) => review.userRole !== "admin"
+          );
+
+          const adminAverageScore = adminReviews.length
+            ? adminReviews.reduce((sum, review) => sum + review.score, 0) /
+              adminReviews.length
+            : 0;
+
+          const communityAverageScore = communityReviews.length
+            ? communityReviews.reduce((sum, review) => sum + review.score, 0) /
+              communityReviews.length
+            : 0;
+
+          const overallAverageScore =
+            adminAverageScore && communityAverageScore
+              ? (adminAverageScore + communityAverageScore) / 2
+              : adminAverageScore || communityAverageScore;
+
+          return { foodItem: item, overallAverageScore };
+        })
+      );
+
+      return scores.sort(
+        (a, b) => b.overallAverageScore - a.overallAverageScore
+      );
+    };
+
+    const rankedItems = await rankByScore(foodItems);
+
+    res.json(rankedItems);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Get ranked list of food items by category and optionally by subCategory
 router.get("/rank/category/:category", async (req, res) => {
   try {
@@ -280,11 +352,9 @@ router.get("/rank/category/:category/city/:city", async (req, res) => {
     const foodItems = await FoodItem.find(query).populate("restaurant");
 
     if (!foodItems || foodItems.length === 0) {
-      return res
-        .status(404)
-        .json({
-          message: `No food items found for the provided criteria in city: ${city}`,
-        });
+      return res.status(404).json({
+        message: `No food items found for the provided criteria in city: ${city}`,
+      });
     }
 
     // Respond with the found food items
