@@ -53,11 +53,9 @@ function HomePage() {
       );
 
       setFoodItems(
-        response.data.sort(
-          (a, b) =>
-            (b.adminScore + b.communityScore) / 2 -
-            (a.adminScore + a.communityScore) / 2
-        )
+        response.data.sort((a, b) => {
+          return b.overallAverageScore - a.overallAverageScore;
+        })
       ); // Sort food items by rank (best to worst)
     } catch (error) {
       console.error("Error searching food items:", error);
@@ -194,11 +192,13 @@ function HomePage() {
                     <h3>
                       {index + 1}. {result.name}
                     </h3>
-                    <p>{result.cuisine.join(", ")}</p>
-                    <p>
-                      {result.address.street}, {result.address.city},{" "}
-                      {result.address.province}, {result.address.country}
-                    </p>
+                    <div>
+                      <p>{result.cuisine.join(", ")}</p>
+                      <p>
+                        {result.address.street}, {result.address.city},{" "}
+                        {result.address.province}, {result.address.country}
+                      </p>
+                    </div>
                   </div>
                 ))
               ) : (
@@ -226,17 +226,25 @@ function HomePage() {
                       ,
                       {item?.foodItem?.restaurant?.address?.city ||
                         "No city info"}
+                      ,
+                      {item?.foodItem?.restaurant?.address?.province ||
+                        "No province info"}
+                      ,
+                      {item?.foodItem?.restaurant?.address?.country ||
+                        "No country info"}
                       )
                     </p>
-
                     <p>
                       Admin Score: {item.adminScore || 0}, Community Score:{" "}
-                      {item.communityScore || 0}
+                      {item.communityScore || 0}, Overall Score:{" "}
+                      {item.overallAverageScore || 0}
                     </p>
                   </div>
                 ))
               ) : (
-                <p>No food items found in this category.</p>
+                <p>
+                  No food items found in this city for the selected category.
+                </p>
               )}
             </div>
           )}

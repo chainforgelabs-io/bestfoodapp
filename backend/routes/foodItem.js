@@ -193,7 +193,12 @@ router.get("/rank/city/:city", async (req, res) => {
     // Find all food items for the restaurants in the city
     const foodItems = await FoodItem.find({
       restaurant: { $in: restaurantIds },
-    }).populate("restaurant");
+    }).populate({
+      path: "restaurant",
+      populate: {
+        path: "address", // Populate the nested address field
+      },
+    });
 
     if (!foodItems || foodItems.length === 0) {
       return res
@@ -201,7 +206,7 @@ router.get("/rank/city/:city", async (req, res) => {
         .json({ message: "No food items found in this city" });
     }
 
-    // Rank the food items by their admin and community scores
+    // Rank the food items by their overall scores
     const rankByScore = async (items) => {
       const scores = await Promise.all(
         items.map(async (item) => {
@@ -217,22 +222,29 @@ router.get("/rank/city/:city", async (req, res) => {
           const adminAverageScore = adminReviews.length
             ? adminReviews.reduce((sum, review) => sum + review.score, 0) /
               adminReviews.length
-            : 0;
+            : item.adminScore || 0; // fallback to item data if no reviews
 
           const communityAverageScore = communityReviews.length
             ? communityReviews.reduce((sum, review) => sum + review.score, 0) /
               communityReviews.length
-            : 0;
+            : item.communityScore || 0; // fallback to item data if no reviews
 
+          // Calculate the overall score
           const overallAverageScore =
             adminAverageScore && communityAverageScore
               ? (adminAverageScore + communityAverageScore) / 2
               : adminAverageScore || communityAverageScore;
 
-          return { foodItem: item, overallAverageScore };
+          return {
+            foodItem: item,
+            adminScore: adminAverageScore,
+            communityScore: communityAverageScore,
+            overallAverageScore,
+          };
         })
       );
 
+      // Sort by overall score from highest to lowest
       return scores.sort(
         (a, b) => b.overallAverageScore - a.overallAverageScore
       );
