@@ -76,6 +76,41 @@ router.get("/search", async (req, res) => {
   }
 });
 
+// Get ranked list of restaurants by cuisine or type in a particular city
+router.get("/rank/type-or-cuisine/city/:city", async (req, res) => {
+  try {
+    const { city } = req.params;
+    const { search } = req.query; // Use a single search term for both type and cuisine
+
+    // Find all addresses in the specified city
+    const addresses = await Address.find({ city: city });
+    const addressIds = addresses.map((address) => address._id);
+
+    // Find all restaurants that match the search term in type or cuisine
+    const query = {
+      address: { $in: addressIds },
+      $or: [
+        { type: new RegExp(search, "i") }, // Match by type
+        { cuisine: { $in: [new RegExp(search, "i")] } }, // Match by cuisine
+      ],
+    };
+
+    const restaurants = await Restaurant.find(query).populate("address");
+
+    if (!restaurants || restaurants.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No restaurants found for the provided criteria" });
+    }
+
+    // Return the restaurant data directly, without score-related information
+    res.json(restaurants);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Get a single restaurant by ID (Public: Anyone can view a restaurant)
 router.get("/:id", async (req, res) => {
   try {

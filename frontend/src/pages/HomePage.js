@@ -15,7 +15,9 @@ function HomePage() {
   const [reviewScore, setReviewScore] = useState(""); // Review score
   const [hasSearched, setHasSearched] = useState(false); // Whether search was performed
   const [foodSearchTerm, setFoodSearchTerm] = useState(""); // Food item search term
+  const [restaurantSearchTerm, setRestaurantSearchTerm] = useState(""); // Restaurant search term
   const [restaurantScores, setRestaurantScores] = useState({}); // Holds the restaurant scores
+  const [suggestions, setSuggestions] = useState([]);
   const navigate = useNavigate(); // For navigation
 
   // Search for restaurants by city
@@ -30,6 +32,7 @@ function HomePage() {
         `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
         { params: { city: formattedCity } }
       );
+      console.log(response.data);
       setResults(response.data);
       setCitySelected(formattedCity); // Set the selected city
       setSearchTerm(""); // Clear search input
@@ -69,20 +72,43 @@ function HomePage() {
   const handleSearch = async (e) => {
     e.preventDefault();
 
+    if (!citySelected) {
+      alert("Please select a city first.");
+      return;
+    }
+
     if (activeFilter === "Restaurants") {
-      // Search restaurants based on type or cuisine
-      const filteredRestaurants = results.filter(
-        (restaurant) =>
-          (restaurant.type &&
-            restaurant.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (restaurant.cuisine &&
-            restaurant.cuisine.some((cuisine) =>
-              cuisine.toLowerCase().includes(searchTerm.toLowerCase())
-            ))
-      );
-      setResults(filteredRestaurants);
+      if (!restaurantSearchTerm) {
+        alert("Please enter a restaurant type or cuisine to search.");
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/rank/type-or-cuisine/city/${citySelected}`,
+          {
+            params: {
+              search: restaurantSearchTerm, // Send single search term for either type or cuisine
+            },
+          }
+        );
+
+        // Log the response for debugging
+        console.log("API Response:", response.data);
+
+        // Filter and sort the results based on overall score
+        const sortedResults = response.data.sort((a, b) => {
+          return b.overallAverageScore - a.overallAverageScore;
+        });
+
+        setResults(sortedResults); // Update state with sorted results
+        console.log("Filtered Results:", sortedResults);
+      } catch (error) {
+        console.error("Error searching restaurants:", error);
+        alert("No restaurants found for the provided criteria.");
+        setResults([]); // Clear results on error
+      }
     } else if (activeFilter === "Food") {
-      // Search food items based on category, type, or subType
       if (!foodSearchTerm) {
         alert("Please enter a food item to search.");
         return;
@@ -97,7 +123,7 @@ function HomePage() {
           response.data.sort((a, b) => {
             return b.overallAverageScore - a.overallAverageScore;
           })
-        ); // Sort food items by rank (best to worst)
+        );
       } catch (error) {
         console.error("Error searching food items:", error);
         alert("No food items found in this city for the selected category.");
@@ -105,6 +131,20 @@ function HomePage() {
       }
     }
   };
+
+  // function that handles fetching suggestions
+  // const fetchSuggestions = async (query) => {
+  //   try {
+  //     const response = await axios.get(
+  //       `${process.env.REACT_APP_API_BASE_URL}/api/suggestions`,
+  //       { params: { searchTerm: query, city: citySelected } }
+  //     );
+  //     // console.log("Suggestions fetched:", response.data);
+  //     setSuggestions(response.data);
+  //   } catch (error) {
+  //     console.error("Error fetching suggestions:", error);
+  //   }
+  // };
 
   // Function to fetch restaurant scores and store them in state
   const fetchRestaurantScores = async (restaurantId) => {
@@ -210,7 +250,10 @@ function HomePage() {
               type="text"
               placeholder="Search for cities"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                // fetchSuggestions(e.target.value); // Fetch suggestions
+              }}
               className="search-input"
             />
             <button type="submit" className="search-button">
@@ -232,14 +275,40 @@ function HomePage() {
               placeholder={`Search for ${
                 activeFilter === "Food" ? "food" : "restaurants"
               } in ${citySelected}`}
-              value={foodSearchTerm}
-              onChange={(e) => setFoodSearchTerm(e.target.value)}
+              value={
+                activeFilter === "Food" ? foodSearchTerm : restaurantSearchTerm
+              }
+              onChange={(e) => {
+                if (activeFilter === "Food") {
+                  setFoodSearchTerm(e.target.value);
+                } else {
+                  setRestaurantSearchTerm(e.target.value);
+                }
+                // fetchSuggestions(e.target.value); // Fetch suggestions for both cases
+              }}
               className="search-input"
             />
             <button type="submit" className="search-button">
               <i className="fa fa-search"></i>
             </button>
           </form>
+
+          {/*dropdown under the search input that displays the suggestions*/}
+          {suggestions.length > 0 && (
+            <ul className="suggestions-list">
+              {suggestions.map((suggestion, index) => (
+                <li
+                  key={index}
+                  onClick={() => {
+                    setFoodSearchTerm(suggestion);
+                    setSuggestions([]); // Clear suggestions once selected
+                  }}
+                >
+                  {suggestion}
+                </li>
+              ))}
+            </ul>
+          )}
 
           <div className="filter-section">
             <button
@@ -278,10 +347,15 @@ function HomePage() {
                         {index + 1}. {result.name}
                       </h3>
                       <div>
-                        <p>{result.cuisine.join(", ")}</p>
                         <p>
-                          {result.address.street}, {result.address.city},{" "}
-                          {result.address.province}, {result.address.country}
+                          {result.cuisine
+                            ? result.cuisine.join(", ")
+                            : "No cuisine info available"}
+                        </p>
+                        <p>
+                          {result.address
+                            ? `${result.address.street}, ${result.address.city}, ${result.address.province}, ${result.address.country}`
+                            : "No address info available"}
                         </p>
                         <p>
                           Admin Score:{" "}
