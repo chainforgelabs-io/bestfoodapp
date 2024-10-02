@@ -48,13 +48,26 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Get restaurants by city (Public: Anyone can view a restaurant)
+// Get restaurants by city, province/state, and country (Public: Anyone can view a restaurant)
 router.get("/search", async (req, res) => {
-  const { city } = req.query;
+  const { city, province, country } = req.query;
 
   try {
-    // Find all addresses in the provided city
-    const addresses = await Address.find({ city: new RegExp(city, "i") }); // Case-insensitive regex search
+    // Find all addresses that match the provided city, province, and country
+    const addresses = await Address.find({
+      city: new RegExp(city, "i"),
+      province: new RegExp(province, "i"),
+      country: new RegExp(country, "i"),
+    });
+
+    // Check if any addresses were found
+    if (!addresses || addresses.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No addresses found for the provided location" });
+    }
+
+    // Extract address IDs to find the corresponding restaurants
     const addressIds = addresses.map((address) => address._id);
 
     // Find all restaurants located at those addresses
@@ -66,7 +79,7 @@ router.get("/search", async (req, res) => {
     if (!restaurants || restaurants.length === 0) {
       return res
         .status(404)
-        .json({ message: "No restaurants found in this city" });
+        .json({ message: "No restaurants found for the provided location" });
     }
 
     res.status(200).json(restaurants);

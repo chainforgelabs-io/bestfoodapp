@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import CitySearch from "../components/CitySearch"; // Adjust the path if necessary
 import "../styles/HomePage.css";
 import Logo from "../assets/logo.png"; // Import your logo here
 
@@ -20,47 +21,70 @@ function HomePage() {
   const [suggestions, setSuggestions] = useState([]);
   const navigate = useNavigate(); // For navigation
 
-  // Search for restaurants by city
+  // Search for restaurants by city, province, and country
   const handleCitySearch = async (e) => {
     e.preventDefault();
-    setHasSearched(true); // Mark search as performed
 
-    const formattedCity = capitalizeWords(searchTerm); // Capitalize city name
+    if (
+      !citySelected ||
+      !citySelected.city ||
+      !citySelected.province ||
+      !citySelected.country
+    ) {
+      alert("Please select a city, province, and country.");
+      return;
+    }
 
     try {
       const response = await axios.get(
         `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
-        { params: { city: formattedCity } }
+        {
+          params: {
+            city: citySelected.city,
+            province: citySelected.province,
+            country: citySelected.country,
+          },
+        }
       );
       console.log(response.data);
       setResults(response.data);
-      setCitySelected(formattedCity); // Set the selected city
-      setSearchTerm(""); // Clear search input
+      setHasSearched(true); // Mark search as performed
       setActiveFilter("Restaurants"); // Default to restaurants after city search
     } catch (error) {
       console.error("Error searching restaurants by city:", error);
-      alert("No restaurants found in this city");
+      alert("No restaurants found in this location.");
       setResults([]);
     }
   };
 
   // Search for food items in the selected city
   const handleFoodSearch = async () => {
-    if (!citySelected) {
-      alert("Please select a city first.");
+    if (
+      !citySelected ||
+      !citySelected.city ||
+      !citySelected.province ||
+      !citySelected.country
+    ) {
+      alert("Please select a city, province, and country.");
       return;
     }
 
     try {
       const response = await axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/api/food-items/rank/city/${citySelected}`
+        `${process.env.REACT_APP_API_BASE_URL}/api/food-items/rank/city/${citySelected.city}`,
+        {
+          params: {
+            province: citySelected.province,
+            country: citySelected.country,
+          },
+        }
       );
 
       setFoodItems(
-        response.data.sort((a, b) => {
-          return b.overallAverageScore - a.overallAverageScore;
-        })
-      ); // Sort food items by rank (best to worst)
+        response.data.sort(
+          (a, b) => b.overallAverageScore - a.overallAverageScore
+        )
+      );
     } catch (error) {
       console.error("Error searching food items:", error);
       alert("No food items found in this city for the selected category.");
@@ -72,8 +96,13 @@ function HomePage() {
   const handleSearch = async (e) => {
     e.preventDefault();
 
-    if (!citySelected) {
-      alert("Please select a city first.");
+    if (
+      !citySelected ||
+      !citySelected.city ||
+      !citySelected.province ||
+      !citySelected.country
+    ) {
+      alert("Please select a city, province, and country.");
       return;
     }
 
@@ -85,9 +114,11 @@ function HomePage() {
 
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/rank/type-or-cuisine/city/${citySelected}`,
+          `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/rank/type-or-cuisine/city/${citySelected.city}`,
           {
             params: {
+              province: citySelected.province,
+              country: citySelected.country,
               search: restaurantSearchTerm, // Send single search term for either type or cuisine
             },
           }
@@ -116,7 +147,13 @@ function HomePage() {
 
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_API_BASE_URL}/api/food-items/rank/category/${foodSearchTerm}/city/${citySelected}`
+          `${process.env.REACT_APP_API_BASE_URL}/api/food-items/rank/category/${foodSearchTerm}/city/${citySelected.city}`,
+          {
+            params: {
+              province: citySelected.province,
+              country: citySelected.country,
+            },
+          }
         );
 
         setFoodItems(
@@ -236,6 +273,20 @@ function HomePage() {
     }
   };
 
+  // Handle form submission when Enter is pressed
+  const handleEnterPress = () => {
+    if (
+      citySelected &&
+      citySelected.city &&
+      citySelected.province &&
+      citySelected.country
+    ) {
+      handleCitySearch({ preventDefault: () => {} }); // Call the city search function
+    } else {
+      console.error("Incomplete city, province, or country information.");
+    }
+  };
+
   return (
     <div className="home-container">
       {!hasSearched ? (
@@ -246,15 +297,10 @@ function HomePage() {
           </div>
           <h1 className="home-title">Find the best food in your city!</h1>
           <form onSubmit={handleCitySearch} className="search-form">
-            <input
-              type="text"
-              placeholder="Search for cities"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                // fetchSuggestions(e.target.value); // Fetch suggestions
-              }}
-              className="search-input"
+            {/* Pass down the onSelectCity method */}
+            <CitySearch
+              onSelectCity={setCitySelected}
+              onEnterPress={handleEnterPress}
             />
             <button type="submit" className="search-button">
               <i className="fa fa-search"></i>
@@ -267,14 +313,17 @@ function HomePage() {
           <div className="logo-container">
             <img src={Logo} alt="Best Food App Logo" className="app-logo" />
           </div>
-          <h1 className="home-title">Find the best food in {citySelected}</h1>
+          <h1 className="home-title">
+            Find the best food in {citySelected.city}, {citySelected.province},{" "}
+            {citySelected.country}
+          </h1>
 
           <form onSubmit={handleSearch} className="search-form">
             <input
               type="text"
               placeholder={`Search for ${
                 activeFilter === "Food" ? "food" : "restaurants"
-              } in ${citySelected}`}
+              } in ${citySelected.city}`}
               value={
                 activeFilter === "Food" ? foodSearchTerm : restaurantSearchTerm
               }
@@ -342,7 +391,11 @@ function HomePage() {
                     return bScore - aScore; // Sort descending by overall score
                   })
                   .map((result, index) => (
-                    <div key={result._id} className="result-item">
+                    <div
+                      key={result._id}
+                      className="result-item"
+                      onClick={() => navigate(`/restaurant/${result._id}`)}
+                    >
                       <h3>
                         {index + 1}. {result.name}
                       </h3>
@@ -393,7 +446,13 @@ function HomePage() {
                     <h3>
                       {index + 1}. {item?.foodItem?.name || "Unnamed Food Item"}
                     </h3>
-                    <p>
+                    <p
+                      onClick={() =>
+                        navigate(
+                          `/restaurant/${item?.foodItem?.restaurant?._id}`
+                        )
+                      }
+                    >
                       {item?.foodItem?.restaurant?.name || "Unknown Restaurant"}{" "}
                       (
                       {item?.foodItem?.restaurant?.address?.street ||

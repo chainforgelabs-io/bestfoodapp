@@ -7,6 +7,22 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   profilePicture: { type: String, default: "" },
   bio: { type: String, default: "" },
+  age: { type: Number, min: 0 },
+  sex: { type: String, enum: ["male", "female", "other"] }, // Gender options
+  location: {
+    country: { type: String },
+    state: { type: String },
+    city: { type: String },
+  },
+  incomeRange: {
+    type: String,
+    enum: ["<25k", "25k-50k", "50k-75k", "75k-100k", "100k-150k", ">150k"],
+  }, // Income brackets
+  maritalStatus: {
+    type: String,
+    enum: ["single", "married", "divorced", "widowed"],
+  },
+  occupation: { type: String },
   role: { type: String, enum: ["user", "admin"], default: "user" }, // Add role field
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],

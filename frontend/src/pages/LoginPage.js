@@ -1,50 +1,60 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../styles/LoginPage.css"; // Style your page accordingly
 
-function LoginPage() {
+const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Make API call to login the user
-      const response = await axios.post("/api/auth/login", {
-        email,
-        password,
-      });
-      // Save token to localStorage or sessionStorage
-      localStorage.setItem("token", response.data.token);
-      console.log("Login successful!");
-      // Redirect to the Home page or Profile page after login
-    } catch (error) {
-      console.error("Login failed:", error);
+      // Send login request to backend
+      const { data } = await axios.post(
+        `${process.env.REACT_APP_API_BASE_URL}/api/auth/login`,
+        { email, password }
+      );
+
+      // Store token in localStorage
+      localStorage.setItem("token", data.token);
+
+      // Redirect to the profile page or home page
+      navigate("/profile");
+    } catch (err) {
+      setError("Invalid email or password");
     }
   };
 
   return (
-    <div className="login-container">
+    <div className="login-page">
       <h2>Login</h2>
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+      {error && <p className="error">{error}</p>}
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label>Email:</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label>Password:</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
         <button type="submit">Login</button>
       </form>
     </div>
   );
-}
+};
 
 export default LoginPage;

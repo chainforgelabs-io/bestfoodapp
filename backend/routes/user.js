@@ -25,13 +25,31 @@ router.get("/points", protect, async (req, res) => {
 // Create a new user (Registration - no protection needed here)
 router.post("/", async (req, res) => {
   try {
-    const { username, email, password, profilePicture, bio } = req.body;
+    const {
+      username,
+      email,
+      password,
+      profilePicture,
+      bio,
+      age,
+      sex,
+      location,
+      incomeRange,
+      maritalStatus,
+      occupation,
+    } = req.body;
     const user = new User({
       username,
       email,
-      password, // In a real-world application, make sure to hash the password before saving
+      password, // Make sure to hash this in a real-world app
       profilePicture,
       bio,
+      age,
+      sex,
+      location,
+      incomeRange,
+      maritalStatus,
+      occupation,
     });
     const savedUser = await user.save();
     res.status(201).json(savedUser);
@@ -48,9 +66,11 @@ router.get("/profile", protect, (req, res) => {
 // Update User Profile (Protected: Only the authenticated user can update their own profile)
 router.put("/profile", protect, async (req, res) => {
   try {
-    const updatedData = req.body;
+    const updatedData = {
+      ...req.body, // Make sure only allowed fields are updated
+      updatedAt: Date.now(),
+    };
 
-    // Find the user by ID and update their profile
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       updatedData,
@@ -58,7 +78,7 @@ router.put("/profile", protect, async (req, res) => {
         new: true,
         runValidators: true,
       }
-    ).select("-password"); // Don't return the password
+    ).select("-password"); // Exclude the password field from the response
 
     res.status(200).json(updatedUser);
   } catch (error) {

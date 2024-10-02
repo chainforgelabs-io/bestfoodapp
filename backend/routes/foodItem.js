@@ -117,12 +117,48 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
     const foodItems = await FoodItem.find({
       restaurant: req.params.restaurantId,
     });
+
     if (!foodItems || foodItems.length === 0) {
       return res
         .status(404)
         .json({ message: "No food items found for this restaurant" });
     }
-    res.json(foodItems);
+
+    // Initialize an array to store food items with their overall scores
+    let scoredItems = [];
+
+    // Iterate over each food item and calculate the overall score
+    foodItems.forEach((item) => {
+      let totalScore = 0;
+      let scoreCount = 0;
+
+      // Check if the admin score is greater than zero
+      if (item.adminScore && item.adminScore > 0) {
+        totalScore += item.adminScore;
+        scoreCount++;
+      }
+
+      // Check if the community score is greater than zero
+      if (item.communityScore && item.communityScore > 0) {
+        totalScore += item.communityScore;
+        scoreCount++;
+      }
+
+      // Calculate the overall average score, disregarding zero scores
+      const overallAverageScore = scoreCount > 0 ? totalScore / scoreCount : 0;
+
+      // Push the food item and its overall score to the scoredItems array
+      scoredItems.push({
+        ...item._doc, // Spread the food item data (._doc is used to access the plain object version)
+        overallAverageScore,
+      });
+    });
+
+    // Sort the scored items by overall score (highest to lowest)
+    scoredItems.sort((a, b) => b.overallAverageScore - a.overallAverageScore);
+
+    // Return the ranked list of food items
+    res.status(200).json(scoredItems);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -235,16 +271,33 @@ router.get("/:foodItemId/score", async (req, res) => {
 router.get("/rank/city/:city", async (req, res) => {
   try {
     const { city } = req.params;
+    const { province, country } = req.query; // Get province and country from query params
 
-    // Find all addresses in the specified city
-    const addresses = await Address.find({ city: city });
+    // Find all addresses in the specified city, province, and country
+    const addresses = await Address.find({
+      city: city,
+      province: province,
+      country: country,
+    });
     const addressIds = addresses.map((address) => address._id);
+
+    if (addressIds.length === 0) {
+      return res.status(404).json({
+        message: `No addresses found in ${city}, ${province}, ${country}`,
+      });
+    }
 
     // Find all restaurants in those addresses
     const restaurants = await Restaurant.find({
       address: { $in: addressIds },
     }).populate("address");
     const restaurantIds = restaurants.map((restaurant) => restaurant._id);
+
+    if (restaurantIds.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No restaurants found in this city." });
+    }
 
     // Find all food items for the restaurants in the city
     const foodItems = await FoodItem.find({
