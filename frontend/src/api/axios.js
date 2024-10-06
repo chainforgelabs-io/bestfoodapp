@@ -1,6 +1,11 @@
 import axios from "axios";
 
-axios.interceptors.request.use(
+const instance = axios.create({
+  baseURL: "http://localhost:5000", // This will ensure all requests go to localhost:5000
+});
+
+// Optional: Token interceptors to include token in every request
+instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -11,4 +16,4 @@ axios.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-export default axios;
+export default instance;

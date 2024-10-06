@@ -98,14 +98,86 @@ router.delete("/profile", protect, async (req, res) => {
   }
 });
 
-// Get a user's profile by ID (Protected: Only authenticated users should view user profiles)
+// Route to fetch user profile by ID
+// Get user details, reviews, followers, and following
 router.get("/:id", protect, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
+    // Find user by ID and populate followers and following before executing the query
+    const user = await User.findById(req.params.id)
+      .populate("followers", "username") // Get usernames of followers
+      .populate("following", "username") // Get usernames of people the user is following
+      .select("-password"); // Exclude password field
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find all reviews by the user
+    const reviews = await Review.find({ user: req.params.id });
+
+    res.status(200).json({
+      user, // Populated user with followers and following
+      reviews, // User's reviews
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Get all reviews by a specific user
+router.get("/:id/reviews", protect, async (req, res) => {
+  try {
+    const reviews = await Review.find({ user: req.params.id });
+
+    if (!reviews || reviews.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No reviews found for this user" });
+    }
+
+    res.status(200).json(reviews);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Get all followers of a specific user
+router.get("/:id/followers", protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).populate(
+      "followers",
+      "username"
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user.followers);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Get all users that a specific user is following
+router.get("/:id/following", protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).populate(
+      "following",
+      "username"
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user.following);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

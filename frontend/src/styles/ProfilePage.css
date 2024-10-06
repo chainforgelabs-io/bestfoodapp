@@ -1,42 +1,113 @@
-/* src/pages/ProfilePage.css */
+/* Profile page container */
 .profile-container {
-  max-width: 800px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f9f9fc; /* Light background */
   padding: 20px;
-}
-
-.user-info {
   text-align: center;
-  margin-bottom: 30px;
 }
 
-.profile-picture {
+.logout-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #ff4b4b;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.logout-button:hover {
+  background-color: #ff1f1f;
+}
+
+/* User info section */
+.user-info {
+  background-color: #efe4fc; /* Light purple background */
+  padding: 20px;
+  border: 2px solid #ccc;
+  border-radius: 15px;
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.user-info img.profile-picture {
   width: 150px;
   height: 150px;
   border-radius: 50%;
-  margin-bottom: 10px;
+  object-fit: cover;
+  margin-bottom: 15px;
 }
 
 .user-info h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
   margin-bottom: 10px;
 }
 
-.user-reviews,
-.followers-section,
-.following-section {
-  margin-top: 20px;
+.user-info p {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 5px;
 }
 
-.user-reviews ul,
+/* User reviews section */
+.user-reviews {
+  width: 100%;
+  max-width: 600px;
+}
+
+.user-reviews h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.user-reviews ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.user-reviews li {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 10px;
+}
+
+/* Followers and Following sections */
+.followers-section,
+.following-section {
+  width: 100%;
+  max-width: 600px;
+  margin-top: 30px;
+}
+
+.followers-section h3,
+.following-section h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
 .followers-section ul,
 .following-section ul {
   list-style-type: none;
   padding: 0;
 }
 
-.user-reviews li,
 .followers-section li,
 .following-section li {
-  border-bottom: 1px solid #ddd;
-  padding: 10px 0;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
 }
