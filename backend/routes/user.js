@@ -6,6 +6,8 @@ const Restaurant = require("../models/Restaurant");
 const Review = require("../models/Review");
 const { protect } = require("../middleware/authMiddleware"); // Import the protect middleware
 
+const bcrypt = require("bcryptjs");
+
 // Get the current user's points (Protected: Only authenticated users can view their points)
 router.get("/points", protect, async (req, res) => {
   try {
@@ -24,37 +26,81 @@ router.get("/points", protect, async (req, res) => {
 
 // Create a new user (Registration - no protection needed here)
 router.post("/", async (req, res) => {
+  console.log("Received request body:", req.body);
   try {
     const {
       username,
       email,
       password,
+      firstName, // Added field
+      lastName, // Added field
       profilePicture,
       bio,
-      age,
+      dateOfBirth,
       sex,
-      location,
+      location: { city, province, country },
       incomeRange,
       maritalStatus,
       occupation,
     } = req.body;
+
+    // Check if the username or email is already taken
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: "Username or email is already taken.",
+      });
+    }
+
+    // Create a new user object, without hashing the password here
     const user = new User({
       username,
       email,
-      password, // Make sure to hash this in a real-world app
+      password,
+      firstName, // Optional field
+      lastName, // Optional field
       profilePicture,
       bio,
-      age,
+      dateOfBirth,
       sex,
-      location,
+      location: {
+        city,
+        province,
+        country,
+      },
       incomeRange,
       maritalStatus,
       occupation,
     });
+
+    // Save the new user to the database
     const savedUser = await user.save();
     res.status(201).json(savedUser);
   } catch (err) {
+    console.error(err.message);
     res.status(400).json({ message: err.message });
+  }
+});
+
+// Check if username or email is already taken
+router.post("/checkAvailability", async (req, res) => {
+  try {
+    const { username, email } = req.body;
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: "Username or email is already taken.",
+      });
+    }
+    res.status(200).json({ message: "Username and email are available." });
+  } catch (error) {
+    res.status(500).json({ message: "Error checking availability." });
   }
 });
 

@@ -5,14 +5,22 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  firstName: {
+    type: String,
+    required: false,
+  },
+  lastName: {
+    type: String,
+    required: false,
+  },
   profilePicture: { type: String, default: "" },
   bio: { type: String, default: "" },
-  age: { type: Number, min: 0 },
+  dateOfBirth: { type: Date, required: true },
   sex: { type: String, enum: ["male", "female", "other"] }, // Gender options
   location: {
-    country: { type: String },
-    state: { type: String },
     city: { type: String },
+    province: { type: String },
+    country: { type: String },
   },
   incomeRange: {
     type: String,

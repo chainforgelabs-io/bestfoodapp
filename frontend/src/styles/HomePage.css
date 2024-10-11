@@ -49,6 +49,7 @@
 
 .search-input {
   flex: 1;
+  width: 400px;
   padding: 10px;
   border: 2px solid #ccc;
   border-radius: 10px;

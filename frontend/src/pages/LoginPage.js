@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useNavigate, Link } from "react-router-dom";
+import axios from "../api/axios";
 import "../styles/LoginPage.css"; // Style your page accordingly
 
 const LoginPage = () => {
@@ -18,12 +18,15 @@ const LoginPage = () => {
         { email, password }
       );
 
+      console.log("Login successful:", data);
+
       // Store token in localStorage
       localStorage.setItem("token", data.token);
 
       // Redirect to the profile page or home page
       navigate("/profile");
     } catch (err) {
+      console.error("Login failed:", err.response ? err.response.data : err);
       setError("Invalid email or password");
     }
   };
@@ -32,27 +35,36 @@ const LoginPage = () => {
     <div className="login-page">
       <h2>Login</h2>
       {error && <p className="error">{error}</p>}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="login-form">
         <div className="form-group">
-          <label>Email:</label>
           <input
             type="email"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className="login-input"
           />
         </div>
         <div className="form-group">
-          <label>Password:</label>
           <input
             type="password"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            className="login-input"
           />
         </div>
-        <button type="submit">Login</button>
+        <button type="submit" className="login-btn">
+          Login
+        </button>
       </form>
+
+      {/* Add link to register page */}
+      <p>
+        Don't have an account? <Link to="/register">Register here</Link>
+      </p>
     </div>
   );
 };

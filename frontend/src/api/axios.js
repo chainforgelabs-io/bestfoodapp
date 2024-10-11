@@ -16,4 +16,17 @@ instance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Response interceptor to handle expired tokens
+instance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Token is expired or invalid, log the user out
+      localStorage.removeItem("token");
+      window.location.href = "/login"; // Redirect to login
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default instance;
