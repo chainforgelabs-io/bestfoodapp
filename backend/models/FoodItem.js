@@ -28,6 +28,13 @@ const foodItemSchema = new mongoose.Schema({
   price: {
     type: Number,
   },
+  tags: {
+    type: [String], // Array of optional tags (e.g., ["spicy", "vegan"])
+  },
+  sizeOptions: {
+    type: String,
+    enum: ["small", "medium", "large", "extra large"], // Array of optional size options (e.g., ["small", "medium", "large"])
+  },
   adminScore: {
     type: Number,
     default: 0,

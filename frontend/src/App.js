@@ -10,6 +10,7 @@ import FeedPage from "./pages/FeedPage";
 import LeaderboardsPage from "./pages/LeaderboardsPage";
 import Navbar from "./components/Navbar"; // Assuming you have a Navbar component for navigation
 import ProtectedRoute from "./components/ProtectedRoute";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 function App() {
   return (
@@ -37,6 +38,10 @@ function App() {
           <Route path="/leaderboards" element={<LeaderboardsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route
+            path="/reset-password/:token"
+            element={<ResetPasswordPage />}
+          />
         </Routes>
       </div>
     </Router>

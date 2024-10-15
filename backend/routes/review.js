@@ -48,6 +48,8 @@ router.post("/", protect, async (req, res) => {
       ambianceRating,
       comment,
       photos,
+      tags,
+      sizeOptions,
       purchaseDate,
     } = req.body;
 
@@ -78,6 +80,8 @@ router.post("/", protect, async (req, res) => {
       ambianceRating: ambianceRating || undefined,
       comment,
       photos,
+      tags,
+      sizeOptions,
       purchaseDate: moment(purchaseDate, "MM-DD-YYYY").toDate(), // Convert to a Date object
     });
 

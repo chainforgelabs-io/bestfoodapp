@@ -5,6 +5,8 @@ const FoodItem = require("../models/FoodItem");
 const Restaurant = require("../models/Restaurant");
 const Review = require("../models/Review");
 const { protect } = require("../middleware/authMiddleware"); // Import the protect middleware
+const { sendPasswordResetEmail } = require("../utils/emailService");
+const crypto = require("crypto");
 
 const bcrypt = require("bcryptjs");
 
@@ -82,6 +84,79 @@ router.post("/", async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(400).json({ message: err.message });
+  }
+});
+
+// POST route to request password reset
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate a token for the reset link (valid for a limited time)
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpire = Date.now() + 3600000; // 1 hour
+
+    // Log the generated token and its expiration
+    console.log(`Generated token: ${resetToken}`);
+    console.log(`Current time: ${new Date()}`);
+    console.log(`Token expires at: ${new Date(user.resetPasswordExpire)}`);
+
+    await user.save();
+
+    // Confirm that the user has been updated properly
+    const updatedUser = await User.findOne({ email });
+    console.log(`User after token generation: ${updatedUser}`);
+
+    // Send the email with the reset token
+    await sendPasswordResetEmail(email, resetToken);
+    res.json({ message: "Password reset email sent" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error sending email" });
+  }
+});
+
+// Serve the reset password page, or redirect to a frontend URL to handle it
+// user.js - Reset password route
+router.post("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  console.log("Received reset token:", token); // Log the token received in the request
+  console.log("New password from request:", password); // Log the password from the request body
+
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpire: { $gt: Date.now() }, // Ensure token is not expired
+    });
+
+    console.log(`User found: ${user}`);
+
+    if (!user) {
+      console.log("User not found or token expired"); // Log when the token is invalid or expired
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    // Log token expiration and current time to check why it's expired
+    console.log(`Token expires at: ${new Date(user.resetPasswordExpire)}`);
+    console.log(`Current time: ${new Date(Date.now())}`);
+
+    user.password = password; // Assign new password
+    user.resetPasswordToken = undefined; // Clear reset token
+    user.resetPasswordExpire = undefined; // Clear token expiration
+    await user.save();
+
+    console.log("Password reset successful for user:", user.email); // Log success message
+    res.status(200).json({ message: "Password has been reset successfully" });
+  } catch (err) {
+    console.error("Error during password reset:", err); // Log any error that happens
+    res.status(400).json({ message: "Error resetting password." });
   }
 });
 

@@ -38,6 +38,13 @@ const reviewSchema = new mongoose.Schema({
   photos: {
     type: [String], // Array of photo URLs or paths
   },
+  tags: {
+    type: [String], // Array of optional tags (e.g., ["spicy", "vegan"])
+  },
+  sizeOptions: {
+    type: String,
+    enum: ["small", "medium", "large", "extra large"], // Array of optional size options (e.g., ["small", "medium", "large"])
+  },
   purchaseDate: {
     // Add this new field for the purchase date
     type: Date,
