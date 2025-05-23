@@ -8,18 +8,17 @@ import RegisterPage from "./pages/RegisterPage";
 import ProfilePage from "./pages/ProfilePage";
 import FeedPage from "./pages/FeedPage";
 import LeaderboardsPage from "./pages/LeaderboardsPage";
-import Navbar from "./components/Navbar"; // Assuming you have a Navbar component for navigation
+import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ReviewSubmissionPage from "./pages/ReviewSubmissionPage";
+import AddRestaurantPage from "./pages/AddRestaurantPage";
 
 function App() {
   return (
     <Router>
       <div>
-        {/* Add Navbar if needed */}
         <Navbar />
-
-        {/* Route configuration */}
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route
@@ -38,10 +37,12 @@ function App() {
           <Route path="/leaderboards" element={<LeaderboardsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/submit-review" element={<ReviewSubmissionPage />} />
           <Route
             path="/reset-password/:token"
             element={<ResetPasswordPage />}
           />
+          <Route path="/add-restaurant" element={<AddRestaurantPage />} />
         </Routes>
       </div>
     </Router>

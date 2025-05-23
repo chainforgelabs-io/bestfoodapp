@@ -235,9 +235,9 @@ function HomePage() {
     const token = localStorage.getItem("token");
     if (!token) {
       alert("You must be logged in to perform this action.");
-      navigate("/login");
+      navigate("/login"); // Redirect to login if not authenticated
     } else {
-      setShowReviewForm(true); // Show review form if authenticated
+      navigate("/submit-review"); // Navigate to the Review Submission page
     }
   };
 

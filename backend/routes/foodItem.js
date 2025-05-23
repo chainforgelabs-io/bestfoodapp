@@ -122,6 +122,29 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Fetches food items by restaurant ID
+router.get("/search", async (req, res) => {
+  try {
+    const { restaurantId } = req.query;
+
+    if (!restaurantId) {
+      return res.status(400).json({ message: "Restaurant ID is required" });
+    }
+
+    const foodItems = await FoodItem.find({ restaurant: restaurantId });
+
+    if (!foodItems) {
+      return res
+        .status(404)
+        .json({ message: "No food items found for this restaurant" });
+    }
+
+    res.json(foodItems);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Get all food items from restaurant id (Public: Anyone can view food items by restaurant)
 router.get("/restaurant/:restaurantId", async (req, res) => {
   try {

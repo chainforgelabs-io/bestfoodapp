@@ -1,0 +1,42 @@
+.food-item-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.food-item-form input {
+  width: 90%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 2px solid #ccc;
+  border-radius: 5px;
+}
+
+.add-food-item-btn {
+  padding: 10px 20px;
+  background-color: #b08bd4;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s;
+}
+
+.add-food-item-btn:hover {
+  background-color: #9562d4;
+}
+
+.food-items-list {
+  margin-top: 20px;
+}
+
+.food-items-list li {
+  background-color: #efe4fc;
+  padding: 10px;
+  margin-bottom: 5px;
+  border-radius: 5px;
+  list-style-type: none;
+  text-align: left;
+}

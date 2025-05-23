@@ -53,29 +53,57 @@ router.get("/search", async (req, res) => {
   const { city, province, country } = req.query;
 
   try {
-    // Find all addresses that match the provided city, province, and country
+    // Handle both 'province' and 'state' fields, and abbreviations
+    const provinceAbbreviations = {
+      "Saskatchewan": ["SK", "Saskatchewan"],
+      "Alberta": ["AB", "Alberta"],
+      "British Columbia": ["BC", "British Columbia"],
+      "Ontario": ["ON", "Ontario"],
+      "Quebec": ["QC", "Quebec"],
+      "New York": ["NY", "New York"],
+      "California": ["CA", "California"],
+      // Add more as needed
+    };
+
+    const countryAbbreviations = {
+      "Canada": ["Canada", "CA"],
+      "United States": ["USA", "US", "United States"],
+      // Add more as needed
+    };
+
+    // Get possible province/state values
+    const provinceValues = provinceAbbreviations[province] || [province];
+    const countryValues = countryAbbreviations[country] || [country];
+
+    // Search with flexible field names and values
     const addresses = await Address.find({
-      city: new RegExp(city, "i"),
-      province: new RegExp(province, "i"),
-      country: new RegExp(country, "i"),
+      $and: [
+        { city: new RegExp(city, "i") },
+        {
+          $or: [
+            {
+              province: { $in: provinceValues.map((p) => new RegExp(p, "i")) },
+            },
+            { state: { $in: provinceValues.map((p) => new RegExp(p, "i")) } },
+          ],
+        },
+        { country: { $in: countryValues.map((c) => new RegExp(c, "i")) } },
+      ],
     });
 
-    // Check if any addresses were found
+    // If no addresses found
     if (!addresses || addresses.length === 0) {
       return res
         .status(404)
         .json({ message: "No addresses found for the provided location" });
     }
 
-    // Extract address IDs to find the corresponding restaurants
+    // Extract address IDs and find corresponding restaurants
     const addressIds = addresses.map((address) => address._id);
-
-    // Find all restaurants located at those addresses
     const restaurants = await Restaurant.find({
       address: { $in: addressIds },
     }).populate("address");
 
-    // Check if any restaurants were found
     if (!restaurants || restaurants.length === 0) {
       return res
         .status(404)

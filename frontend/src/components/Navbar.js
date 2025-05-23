@@ -7,7 +7,7 @@ function Navbar() {
     <nav>
       <ul>
         <li>
-          <NavLink exact to="/">
+          <NavLink to="/" end>
             Home
           </NavLink>
         </li>
