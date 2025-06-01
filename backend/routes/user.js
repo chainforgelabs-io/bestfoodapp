@@ -10,22 +10,18 @@ const crypto = require("crypto");
 
 const bcrypt = require("bcryptjs");
 
-// Get the current user's points (Protected: Only authenticated users can view their points)
-router.get("/points", protect, async (req, res) => {
+// Get all users (for debugging - remove in production)
+router.get("/", async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("points");
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.status(200).json({ points: user.points });
+    const users = await User.find({}).select("-password");
+    res.status(200).json(users);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
+// Get the current user's points (Protected: Only authenticated users can view their points)
 // Create a new user (Registration - no protection needed here)
 router.post("/", async (req, res) => {
   console.log("Received request body:", req.body);
@@ -89,13 +85,42 @@ router.post("/", async (req, res) => {
 
 // POST route to request password reset
 router.post("/forgot-password", async (req, res) => {
+  console.log("=== FORGOT PASSWORD ROUTE HIT ===");
+  console.log("Request body:", req.body);
+
   const { email } = req.body;
+  console.log("Email from request:", email);
+  console.log("Email length:", email.length);
+  console.log("Email trimmed:", email.trim());
+
   try {
+    console.log("Searching for user with email:", email);
+
+    // Let's also try to find all users to see what emails exist
+    const allUsers = await User.find({}).select("email username");
+    console.log(
+      "All users in database:",
+      allUsers.map((u) => ({ email: u.email, username: u.username }))
+    );
+
+    // Try case-insensitive search
+    const userCaseInsensitive = await User.findOne({
+      email: { $regex: new RegExp(`^${email}$`, "i") },
+    });
+    console.log(
+      "Case-insensitive search result:",
+      userCaseInsensitive ? "FOUND" : "NOT FOUND"
+    );
+
     const user = await User.findOne({ email });
+    console.log("User found:", user ? "YES" : "NO");
+
     if (!user) {
+      console.log("User not found, returning 404");
       return res.status(404).json({ message: "User not found" });
     }
 
+    console.log("User found, generating reset token...");
     // Generate a token for the reset link (valid for a limited time)
     const resetToken = crypto.randomBytes(32).toString("hex");
     user.resetPasswordToken = resetToken;
@@ -106,17 +131,22 @@ router.post("/forgot-password", async (req, res) => {
     console.log(`Current time: ${new Date()}`);
     console.log(`Token expires at: ${new Date(user.resetPasswordExpire)}`);
 
+    console.log("Saving user with reset token...");
     await user.save();
 
     // Confirm that the user has been updated properly
     const updatedUser = await User.findOne({ email });
-    console.log(`User after token generation: ${updatedUser}`);
+    console.log(
+      `User after token generation: ${updatedUser ? "SAVED" : "NOT SAVED"}`
+    );
 
+    console.log("Attempting to send password reset email...");
     // Send the email with the reset token
     await sendPasswordResetEmail(email, resetToken);
+    console.log("Email sent successfully");
     res.json({ message: "Password reset email sent" });
   } catch (err) {
-    console.error(err);
+    console.error("ERROR in forgot-password route:", err);
     res.status(500).json({ message: "Error sending email" });
   }
 });

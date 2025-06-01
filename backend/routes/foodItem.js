@@ -309,9 +309,12 @@ router.get("/rank/city/:city", async (req, res) => {
 
     // Find all addresses in the specified city, province, and country
     const addresses = await Address.find({
-      city: city,
-      province: province,
-      country: country,
+      city: new RegExp(city, "i"), // Case-insensitive
+      $or: [
+        { province: new RegExp(province, "i") },
+        { province: new RegExp("Saskatchewan", "i") }, // Also check full name
+      ],
+      country: new RegExp(country, "i"),
     });
     const addressIds = addresses.map((address) => address._id);
 

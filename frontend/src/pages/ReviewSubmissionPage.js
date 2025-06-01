@@ -55,8 +55,7 @@ function ReviewSubmissionPage() {
         try {
           // Pre-fetch all food items for the selected restaurant
           const response = await axios.get(
-            `http://localhost:5000/api/food-items/search`,
-            { params: { restaurantId: formData.restaurantId } } // Fetch all food items for the restaurant
+            `http://localhost:5000/api/food-items/restaurant/${formData.restaurantId}`
           );
 
           // Store the fetched food items in the formData
