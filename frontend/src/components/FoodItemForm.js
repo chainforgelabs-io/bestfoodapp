@@ -3,7 +3,11 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "../styles/FoodItemForm.css";
 
-function FoodItemForm({ restaurantId, onFoodItemsUpdated }) {
+function FoodItemForm({
+  restaurantId,
+  onFoodItemsUpdated,
+  existingFoodItems = [],
+}) {
   const [foodItem, setFoodItem] = useState({
     name: "",
     category: "",
@@ -19,15 +23,24 @@ function FoodItemForm({ restaurantId, onFoodItemsUpdated }) {
 
   const navigate = useNavigate();
 
-  // Fetch food items based on the selected restaurant's ID and search term
+  // Handle food item search and show suggestions
   const handleFoodItemSearch = (event) => {
-    const searchTerm = event.target.value.toLowerCase();
+    const searchTerm = event.target.value;
 
-    const filteredItems = formData.foodItems.filter((item) =>
-      item.name.toLowerCase().includes(searchTerm)
-    );
+    // Update the food item name
+    setFoodItem({ ...foodItem, name: searchTerm });
 
-    setFilteredFoodItems(filteredItems); // Update the list displayed
+    if (searchTerm.length > 0) {
+      // Filter existing food items from the restaurant based on search term
+      const filteredItems = existingFoodItems.filter((item) =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFoodSuggestions(filteredItems);
+      setShowFoodSuggestions(true);
+    } else {
+      setShowFoodSuggestions(false);
+      setFoodSuggestions([]);
+    }
   };
 
   // Autofill the form when a food item is selected

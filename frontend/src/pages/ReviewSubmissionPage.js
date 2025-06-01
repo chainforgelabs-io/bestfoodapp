@@ -150,12 +150,53 @@ function ReviewSubmissionPage() {
   // Submit the entire form at the end
   const handleSubmit = async () => {
     try {
-      await axios.post("/api/reviews", formData);
-      alert("Review submitted successfully!");
-      navigate("/home");
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("You must be logged in to submit a review.");
+        navigate("/login");
+        return;
+      }
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      };
+
+      // Create reviews for each food item
+      const reviewPromises = formData.foodItems.map(async (foodItem, index) => {
+        const reviewData = {
+          restaurantId: formData.restaurantId,
+          foodItem: foodItem._id, // Use the food item ID from the fetched data
+          score: formData.ratings[index] || 50, // Use the rating or default to 50
+          comment: "", // You can add a comment field if needed
+          photos: formData.photos || [], // Photos array
+          purchaseDate:
+            formData.purchaseDate || new Date().toLocaleDateString("en-US"), // Format: MM/DD/YYYY
+        };
+
+        return axios.post(
+          `http://localhost:5000/api/reviews`, // Use explicit backend URL
+          reviewData,
+          config
+        );
+      });
+
+      // Submit all reviews
+      await Promise.all(reviewPromises);
+
+      alert("Reviews submitted successfully!");
+      navigate("/");
     } catch (error) {
       console.error("Error submitting review:", error);
-      alert("Error submitting review.");
+      if (error.response?.status === 401) {
+        alert("You must be logged in to submit a review.");
+        navigate("/login");
+      } else {
+        alert("Error submitting review. Please try again.");
+      }
     }
   };
 
@@ -292,6 +333,7 @@ function ReviewSubmissionPage() {
           <FoodItemForm
             restaurantId={formData.restaurantId} // Pass the restaurant ID
             onFoodItemsUpdated={(foodItems) => handleUpdate({ foodItems })} // Update food items in formData
+            existingFoodItems={formData.foodItems} // Pass the fetched food items
           />
           <button onClick={handlePrevious}>Previous</button>
           <button onClick={handleNext}>Next</button>
@@ -300,22 +342,30 @@ function ReviewSubmissionPage() {
 
       {/* Step 4: Add Ratings */}
       {step === 4 && (
-        <div>
-          <h2>Rate Food Items</h2>
-          {formData.foodItems.map((foodItem, index) => (
-            <div key={index}>
-              <h3>{foodItem.name}</h3>
-              <RatingScale
-                onRatingChange={(rating) => {
-                  const updatedRatings = [...formData.ratings];
-                  updatedRatings[index] = rating;
-                  handleUpdate({ ratings: updatedRatings });
-                }}
-              />
-            </div>
-          ))}
-          <button onClick={handlePrevious}>Previous</button>
-          <button onClick={handleNext}>Next</button>
+        <div className="rating-step">
+          <h2>Rate Your Food Items</h2>
+          <div className="food-ratings-container">
+            {formData.foodItems.map((foodItem, index) => (
+              <div key={index} className="food-rating-item">
+                <RatingScale
+                  foodItemName={foodItem.name}
+                  onRatingChange={(rating) => {
+                    const updatedRatings = [...formData.ratings];
+                    updatedRatings[index] = rating;
+                    handleUpdate({ ratings: updatedRatings });
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="step-nav-buttons">
+            <button onClick={handlePrevious} className="step-button">
+              Previous
+            </button>
+            <button onClick={handleNext} className="step-button">
+              Next
+            </button>
+          </div>
         </div>
       )}
 
