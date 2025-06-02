@@ -1,0 +1,120 @@
+/* Notification - Modern styling with animations */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1100;
+  min-width: 300px;
+  max-width: 500px;
+  animation: slideInRight 0.4s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  background: white;
+  border-left: 4px solid;
+}
+
+.notification-success .notification-content {
+  border-left-color: #28a745;
+  background: linear-gradient(135deg, #f8fff9 0%, #f0fff1 100%);
+}
+
+.notification-error .notification-content {
+  border-left-color: #dc3545;
+  background: linear-gradient(135deg, #fff8f8 0%, #fff0f0 100%);
+}
+
+.notification-info .notification-content {
+  border-left-color: #b08bd4;
+  background: linear-gradient(135deg, #fafbff 0%, #f9f9fc 100%);
+}
+
+.notification-icon {
+  font-size: 1.2rem;
+  font-weight: bold;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.notification-success .notification-icon {
+  background: #28a745;
+}
+
+.notification-error .notification-icon {
+  background: #dc3545;
+}
+
+.notification-info .notification-icon {
+  background: #b08bd4;
+}
+
+.notification-message {
+  flex: 1;
+  font-weight: 500;
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.notification-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #666;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+  }
+
+  .notification-content {
+    padding: 14px 16px;
+  }
+
+  .notification-message {
+    font-size: 0.85rem;
+  }
+}

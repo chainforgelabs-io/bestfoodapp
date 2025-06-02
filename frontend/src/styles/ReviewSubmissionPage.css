@@ -496,3 +496,51 @@
     gap: 10px;
   }
 }
+
+/* Restaurant options styling */
+.restaurant-options {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.add-restaurant-btn {
+  background: linear-gradient(135deg, #f0f4ff, #e8f0ff);
+  border: 2px dashed #b08bd4;
+  color: #b08bd4;
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.add-restaurant-btn:hover {
+  background: linear-gradient(135deg, #e8f0ff, #d8e8ff);
+  border-color: #9562d4;
+  color: #9562d4;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(176, 139, 212, 0.2);
+}
+
+.add-restaurant-btn span {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.suggestion-item.add-restaurant-option {
+  background: linear-gradient(135deg, #f9f9fc, #f0f4ff);
+  border-radius: 8px;
+  margin: 4px 8px;
+  transition: all 0.3s ease;
+}
+
+.suggestion-item.add-restaurant-option:hover {
+  background: linear-gradient(135deg, #e8f0ff, #d8e8ff);
+  transform: translateX(4px);
+}

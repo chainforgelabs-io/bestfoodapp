@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import CitySearch from "../components/CitySearch";
 import FoodItemForm from "../components/FoodItemForm";
 import RatingScale from "../components/RatingScale";
+import RestaurantModal from "../components/RestaurantModal";
+import Notification from "../components/Notification";
 import axios from "axios";
 import "../styles/ReviewSubmissionPage.css";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -25,6 +27,12 @@ function ReviewSubmissionPage() {
   const [restaurantSuggestions, setRestaurantSuggestions] = useState([]);
   const [activeSuggestion, setActiveSuggestion] = useState(0);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showRestaurantModal, setShowRestaurantModal] = useState(false);
+  const [notification, setNotification] = useState({
+    isVisible: false,
+    message: "",
+    type: "success",
+  });
   const navigate = useNavigate();
 
   // Validate Step 1
@@ -143,6 +151,42 @@ function ReviewSubmissionPage() {
         setRestaurantSuggestions(filteredRestaurants);
       } catch (error) {
         console.error("Error searching restaurants:", error);
+      }
+    }
+  };
+
+  // Handle when a restaurant is added via modal
+  const handleRestaurantAdded = async (newRestaurant) => {
+    // Show success notification
+    setNotification({
+      isVisible: true,
+      message: `Restaurant "${newRestaurant.name}" added successfully! You can now search for it.`,
+      type: "success",
+    });
+
+    // Refresh the restaurant search to include the new restaurant
+    if (formData.restaurant) {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
+          {
+            params: {
+              city: formData.location.city,
+              province: formData.location.province,
+              country: formData.location.country,
+            },
+          }
+        );
+
+        const filteredRestaurants = response.data.filter((restaurant) =>
+          restaurant.name
+            .toLowerCase()
+            .includes(formData.restaurant.toLowerCase())
+        );
+
+        setRestaurantSuggestions(filteredRestaurants);
+      } catch (error) {
+        console.error("Error refreshing restaurants:", error);
       }
     }
   };
@@ -429,12 +473,8 @@ function ReviewSubmissionPage() {
                         </li>
                       ))}
                       <li
-                        className="suggestion-item"
-                        onClick={() =>
-                          navigate("/add-restaurant", {
-                            state: { formData, step: 2 },
-                          })
-                        }
+                        className="suggestion-item add-restaurant-option"
+                        onClick={() => setShowRestaurantModal(true)}
                         style={{
                           borderTop: "1px solid #eee",
                           fontWeight: "bold",
@@ -446,6 +486,17 @@ function ReviewSubmissionPage() {
                     </ul>
                   )}
                 </form>
+
+                {/* Add Restaurant Button */}
+                <div className="restaurant-options">
+                  <button
+                    type="button"
+                    onClick={() => setShowRestaurantModal(true)}
+                    className="add-restaurant-btn"
+                  >
+                    <span>+</span> Can't find your restaurant? Add it here
+                  </button>
+                </div>
               </div>
 
               <div className="form-navigation">
