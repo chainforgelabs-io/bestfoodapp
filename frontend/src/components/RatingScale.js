@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../styles/RatingScale.css";
 
-function RatingScale({ onRatingChange, foodItemName }) {
-  const [rating, setRating] = useState(50);
+function RatingScale({ onRatingChange, foodItemName, initialRating = 50 }) {
+  const [rating, setRating] = useState(initialRating);
   const [showInfo, setShowInfo] = useState(false);
+
+  useEffect(() => {
+    onRatingChange(rating);
+  }, []);
 
   const handleRatingChange = (newRating) => {
     setRating(newRating);

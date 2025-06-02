@@ -33,7 +33,7 @@ const foodItemSchema = new mongoose.Schema({
   },
   sizeOptions: {
     type: String,
-    enum: ["small", "medium", "large", "extra large"], // Array of optional size options (e.g., ["small", "medium", "large"])
+    enum: ["", "small", "medium", "large", "extra large"], // Allow empty string
   },
   adminScore: {
     type: Number,

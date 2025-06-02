@@ -158,6 +158,17 @@ function ReviewSubmissionPage() {
         return;
       }
 
+      // Validate required data
+      if (!formData.restaurantId) {
+        alert("Restaurant is required.");
+        return;
+      }
+
+      if (!formData.purchaseDate) {
+        alert("Purchase date is required.");
+        return;
+      }
+
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -165,35 +176,76 @@ function ReviewSubmissionPage() {
         },
       };
 
+      // Format purchase date to MM-DD-YYYY as required by backend
+      const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const year = date.getFullYear();
+        return `${month}-${day}-${year}`;
+      };
+
+      const formattedPurchaseDate = formatDate(formData.purchaseDate);
+
       // Create reviews for each food item
+      console.log("DEBUG: formData.foodItems:", formData.foodItems);
+
       const reviewPromises = formData.foodItems.map(async (foodItem, index) => {
+        console.log("DEBUG: Processing foodItem:", foodItem);
+
+        const rating = formData.ratings[index];
+
+        if (!rating) {
+          throw new Error(`Rating is required for ${foodItem.name}`);
+        }
+
+        // Check if foodItem has _id
+        if (!foodItem._id) {
+          throw new Error(
+            `Food item "${foodItem.name}" does not have an ID. It may not have been saved to the database.`
+          );
+        }
+
         const reviewData = {
           restaurantId: formData.restaurantId,
-          foodItem: foodItem._id, // Use the food item ID from the fetched data
-          score: formData.ratings[index] || 50, // Use the rating or default to 50
-          comment: "", // You can add a comment field if needed
-          photos: formData.photos || [], // Photos array
-          purchaseDate:
-            formData.purchaseDate || new Date().toLocaleDateString("en-US"), // Format: MM/DD/YYYY
+          foodItem: foodItem._id,
+          score: parseInt(rating),
+          comment: "",
+          photos: formData.photos || [],
+          tags: [],
+          purchaseDate: formattedPurchaseDate,
         };
 
+        console.log("Sending review data:", reviewData);
+
         return axios.post(
-          `http://localhost:5000/api/reviews`, // Use explicit backend URL
+          `http://localhost:5000/api/reviews`,
           reviewData,
           config
         );
       });
 
       // Submit all reviews
-      await Promise.all(reviewPromises);
+      const results = await Promise.all(reviewPromises);
+      console.log("All reviews submitted:", results); // Debug log
 
       alert("Reviews submitted successfully!");
       navigate("/");
     } catch (error) {
       console.error("Error submitting review:", error);
+      console.error("Error response:", error.response?.data); // More detailed error
+
       if (error.response?.status === 401) {
         alert("You must be logged in to submit a review.");
         navigate("/login");
+      } else if (error.response?.status === 400) {
+        alert(
+          `Bad request: ${
+            error.response?.data?.message || "Please check your data"
+          }`
+        );
+      } else if (error.message.includes("Rating is required")) {
+        alert(error.message);
       } else {
         alert("Error submitting review. Please try again.");
       }
@@ -398,22 +450,15 @@ function ReviewSubmissionPage() {
             <strong>Restaurant:</strong> {formData.restaurant}
           </div>
           <div className="summary-item">
-            <strong>Food Items:</strong>
+            <strong>Food Items & Ratings:</strong>
             <ul>
               {formData.foodItems.map((item, index) => (
                 <li key={index}>
                   {item.name} - {item.category} ({item.subCategory}), Price: $
-                  {item.price}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="summary-item">
-            <strong>Ratings:</strong>
-            <ul>
-              {formData.ratings.map((rating, index) => (
-                <li key={index}>
-                  Item {index + 1}: {rating}
+                  {item.price} -{" "}
+                  <strong>
+                    Rating: {formData.ratings[index] || "Not rated"}/100
+                  </strong>
                 </li>
               ))}
             </ul>
@@ -426,10 +471,18 @@ function ReviewSubmissionPage() {
               onChange={(e) =>
                 setFormData({ ...formData, purchaseDate: e.target.value })
               }
+              required
+              style={{ marginLeft: "10px", padding: "5px" }}
             />
           </div>
-          <button onClick={handlePrevious}>Previous</button>
-          <button onClick={handleSubmit}>Submit Review</button>
+          <div className="step-nav-buttons">
+            <button onClick={handlePrevious} className="step-button">
+              Previous
+            </button>
+            <button onClick={handleSubmit} className="step-button primary">
+              Submit Review
+            </button>
+          </div>
         </div>
       )}
     </div>
