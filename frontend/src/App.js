@@ -12,6 +12,7 @@ import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ReviewSubmissionPage from "./pages/ReviewSubmissionPage";
+import ReviewSuccessPage from "./pages/ReviewSuccessPage";
 import AddRestaurantPage from "./pages/AddRestaurantPage";
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/submit-review" element={<ReviewSubmissionPage />} />
+          <Route path="/review-success" element={<ReviewSuccessPage />} />
           <Route
             path="/reset-password/:token"
             element={<ResetPasswordPage />}

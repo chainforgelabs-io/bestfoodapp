@@ -229,8 +229,8 @@ function ReviewSubmissionPage() {
       const results = await Promise.all(reviewPromises);
       console.log("All reviews submitted:", results); // Debug log
 
-      alert("Reviews submitted successfully!");
-      navigate("/");
+      // Navigate to success page
+      navigate("/review-success");
     } catch (error) {
       console.error("Error submitting review:", error);
       console.error("Error response:", error.response?.data); // More detailed error
