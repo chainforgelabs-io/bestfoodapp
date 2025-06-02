@@ -1,125 +1,257 @@
-/* General layout for restaurant-container */
+/* RestaurantPage - Modern styling with animations inspired by HomePage */
 .restaurant-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #f9f9fc; /* Light background color */
+  background: linear-gradient(135deg, #f9f9fc 0%, #f0f4ff 100%);
   padding: 20px;
   text-align: center;
+  position: relative;
+  animation: fadeInUp 0.8s ease-out;
 }
 
-/* Logo */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Logo animations */
 .logo-container {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  animation: fadeInDown 0.8s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .app-logo {
   width: 150px;
   height: auto;
+  transition: transform 0.3s ease;
 }
 
-/* Title for the page */
+.app-logo:hover {
+  transform: scale(1.05);
+}
+
+/* Title animations */
 .restaurant-title {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #000; /* Darker text color */
-  margin-bottom: 20px;
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 30px;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
 }
 
-/* Search form */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Search form styling */
 .search-form {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   width: 100%;
-  max-width: 600px;
+  max-width: 800px;
+  background: white;
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 8px 32px rgba(176, 139, 212, 0.15);
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.search-form:hover {
+  box-shadow: 0 12px 40px rgba(176, 139, 212, 0.25);
+  transform: translateY(-2px);
 }
 
 .search-input {
   flex: 1;
-  padding: 10px;
-  border: 2px solid #ccc;
-  border-radius: 10px;
-  font-size: 1rem;
+  padding: 16px 20px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
   color: #333;
-  margin-right: 10px;
+  background: transparent;
+  outline: none;
+  font-weight: 500;
+}
+
+.search-input::placeholder {
+  color: #999;
 }
 
 .search-button {
-  padding: 10px 20px;
-  background-color: #b08bd4; /* Light purple */
-  color: #fff;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-button:hover {
-  background-color: #9562d4; /* Darker purple on hover */
+  background: linear-gradient(135deg, #9562d4, #8449c7);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(176, 139, 212, 0.4);
 }
 
-/* Results section for restaurant reviews */
+/* Results section */
 .results-section {
   width: 100%;
-  padding: 0 50px;
+  max-width: 1000px;
+  padding: 0 20px;
+  animation: fadeInUp 0.8s ease-out 0.8s both;
 }
 
 .result-item {
-  background-color: #efe4fc; /* Light purple background */
-  border: 2px solid #ccc;
-  border-radius: 15px;
-  padding: 15px 20px;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  animation: slideInUp 0.6s ease-out;
+  display: block;
+}
+
+.result-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.result-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.result-item:hover::before {
+  transform: scaleY(1);
 }
 
 .result-item h3 {
-  font-size: 1.25rem;
-  font-weight: bold;
-  margin-bottom: 5px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .result-item p {
   font-size: 1rem;
   color: #666;
+  line-height: 1.6;
+  margin-bottom: 8px;
 }
 
-/* Reset button */
-.reset-button {
-  padding: 10px 20px;
-  background-color: #ff6666;
-  color: #fff;
+/* Action buttons */
+.reset-button,
+.make-review-btn {
+  padding: 14px 28px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  margin-bottom: 20px;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  margin: 8px;
+}
+
+.reset-button {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  color: white;
+  animation: fadeInUp 0.8s ease-out 1s both;
 }
 
 .reset-button:hover {
-  background-color: #cc3333;
+  background: linear-gradient(135deg, #ee5a6f, #e74c3c);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(238, 90, 111, 0.4);
 }
 
-/* Review button */
 .make-review-btn {
-  padding: 10px 20px;
-  background-color: #b08bd4;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s;
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  color: white;
+  animation: fadeInUp 0.8s ease-out 1.2s both;
 }
 
 .make-review-btn:hover {
-  background-color: #9562d4;
+  background: linear-gradient(135deg, #45a049, #3d8b40);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .restaurant-title {
+    font-size: 2rem;
+  }
+
+  .search-form {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .results-section {
+    padding: 0 10px;
+  }
+
+  .result-item {
+    padding: 16px;
+  }
 }

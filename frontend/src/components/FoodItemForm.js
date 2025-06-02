@@ -178,260 +178,181 @@ function FoodItemForm({
   };
 
   return (
-    <div>
-      <h3>Add Food Items to Review</h3>
-      <p>Search for existing items or create new ones:</p>
-
-      <form onSubmit={(e) => e.preventDefault()} className="search-form">
-        <input
-          type="text"
-          placeholder="Search for existing food items..."
-          className="search-input"
-          value={searchTerm}
-          onChange={handleFoodItemSearch}
-          onKeyDown={handleKeyDown}
-          required
-        />
-        {showFoodSuggestions && foodSuggestions.length > 0 && (
-          <ul className="suggestions-list">
-            {foodSuggestions.map((item, index) => (
-              <li
-                key={item._id}
-                className={
-                  index === activeSuggestion ? "active-suggestion" : ""
-                }
-                onClick={() => handleSelectExistingFoodItem(item)}
-              >
-                {item.name} - {item.category}
-                {item.subType && ` (${item.subType})`}
-                {item.price && ` - $${item.price}`}
-              </li>
-            ))}
-          </ul>
-        )}
-      </form>
-
-      <div
-        style={{
-          marginTop: "20px",
-          padding: "15px",
-          border: "1px solid #ddd",
-          borderRadius: "8px",
-        }}
-      >
-        <h4>Create New Food Item:</h4>
-        <p style={{ fontSize: "14px", color: "#666", marginBottom: "15px" }}>
-          Fill out all fields below to create a new food item:
+    <div className="food-item-form">
+      <div className="food-item-form-container">
+        <h3 className="form-title">Add Food Items to Review</h3>
+        <p className="form-subtitle">
+          Search for existing items or create new ones
         </p>
 
-        <div style={{ marginBottom: "10px" }}>
-          <label
-            style={{
-              display: "block",
-              fontWeight: "bold",
-              marginBottom: "5px",
-            }}
-          >
-            Food Name: *
-          </label>
+        <form onSubmit={(e) => e.preventDefault()}>
           <input
             type="text"
-            placeholder="e.g., Birria Tacos, Cheeseburger, Margherita Pizza"
-            value={foodItem.name}
-            onChange={(e) => setFoodItem({ ...foodItem, name: e.target.value })}
+            placeholder="Search for existing food items..."
+            className="form-input"
+            value={searchTerm}
+            onChange={handleFoodItemSearch}
+            onKeyDown={handleKeyDown}
             required
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
           />
-        </div>
-
-        <div style={{ marginBottom: "10px" }}>
-          <label
-            style={{
-              display: "block",
-              fontWeight: "bold",
-              marginBottom: "5px",
-            }}
-          >
-            Category: *
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., Mains, Appetizers, Sides, Desserts"
-            value={foodItem.category}
-            onChange={(e) =>
-              setFoodItem({ ...foodItem, category: e.target.value })
-            }
-            required
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "10px" }}>
-          <label
-            style={{
-              display: "block",
-              fontWeight: "bold",
-              marginBottom: "5px",
-            }}
-          >
-            Type: *
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., Tacos, Burger, Pizza, Pasta, Sandwich"
-            value={foodItem.type}
-            onChange={(e) => setFoodItem({ ...foodItem, type: e.target.value })}
-            required
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "10px" }}>
-          <label
-            style={{
-              display: "block",
-              fontWeight: "bold",
-              marginBottom: "5px",
-            }}
-          >
-            Sub-type (Optional):
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., Cheese Burger, Veggie Pizza, Beef Tacos"
-            value={foodItem.subType}
-            onChange={(e) =>
-              setFoodItem({ ...foodItem, subType: e.target.value })
-            }
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "10px" }}>
-          <label
-            style={{
-              display: "block",
-              fontWeight: "bold",
-              marginBottom: "5px",
-            }}
-          >
-            Size (Optional):
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., small, medium, large, extra large"
-            value={foodItem.size}
-            onChange={(e) => setFoodItem({ ...foodItem, size: e.target.value })}
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "10px" }}>
-          <label
-            style={{
-              display: "block",
-              fontWeight: "bold",
-              marginBottom: "5px",
-            }}
-          >
-            Price (Optional):
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            placeholder="e.g., 6.99"
-            value={foodItem.price}
-            onChange={(e) =>
-              setFoodItem({ ...foodItem, price: e.target.value })
-            }
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "10px" }}>
-          <label
-            style={{
-              display: "block",
-              fontWeight: "bold",
-              marginBottom: "5px",
-            }}
-          >
-            Tags (Optional):
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., spicy, vegan, gluten-free (comma-separated)"
-            value={foodItem.tags}
-            onChange={(e) => setFoodItem({ ...foodItem, tags: e.target.value })}
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
-        </div>
-
-        <button
-          onClick={handleAddFoodItem}
-          style={{
-            marginTop: "10px",
-            padding: "10px 20px",
-            background: "#28a745",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
-        >
-          Create & Add New Food Item
-        </button>
-      </div>
-
-      {/* Display added food items */}
-      <div style={{ marginTop: "20px" }}>
-        <h4>Food Items Added to Review:</h4>
-        {foodItems.length === 0 ? (
-          <p>No food items added yet.</p>
-        ) : (
-          <ul>
-            {foodItems.map((item, index) => (
-              <li
-                key={index}
-                style={{
-                  padding: "8px",
-                  margin: "5px 0",
-                  background: "#f8f9fa",
-                  borderRadius: "4px",
-                }}
-              >
-                <strong>{item.name}</strong> - {item.category} (
-                {item.subType || "No subtype"}), ${item.price}
-                {item._id && (
-                  <span style={{ color: "green", fontSize: "12px" }}>
-                    {" "}
-                    ✓ Saved
-                  </span>
-                )}
-                <button
-                  onClick={() => {
-                    const updatedItems = foodItems.filter(
-                      (_, i) => i !== index
-                    );
-                    setFoodItems(updatedItems);
-                    onFoodItemsUpdated(updatedItems);
-                  }}
-                  style={{
-                    marginLeft: "10px",
-                    padding: "2px 8px",
-                    background: "#dc3545",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "3px",
-                    fontSize: "12px",
-                  }}
+          {showFoodSuggestions && foodSuggestions.length > 0 && (
+            <ul className="suggestions-dropdown">
+              {foodSuggestions.map((item, index) => (
+                <li
+                  key={item._id}
+                  className={`suggestion-item ${
+                    index === activeSuggestion ? "active" : ""
+                  }`}
+                  onClick={() => handleSelectExistingFoodItem(item)}
                 >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+                  {item.name} - {item.category}
+                  {item.subType && ` (${item.subType})`}
+                  {item.price && ` - $${item.price}`}
+                </li>
+              ))}
+            </ul>
+          )}
+        </form>
+
+        <div className="create-food-section">
+          <h4 className="section-title">Create New Food Item</h4>
+          <p className="section-subtitle">
+            Fill out all fields below to create a new food item
+          </p>
+
+          <div className="form-group">
+            <label className="form-label">Food Name *</label>
+            <input
+              type="text"
+              placeholder="e.g., Birria Tacos, Cheeseburger, Margherita Pizza"
+              value={foodItem.name}
+              onChange={(e) =>
+                setFoodItem({ ...foodItem, name: e.target.value })
+              }
+              required
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Category *</label>
+            <input
+              type="text"
+              placeholder="e.g., Mains, Appetizers, Sides, Desserts"
+              value={foodItem.category}
+              onChange={(e) =>
+                setFoodItem({ ...foodItem, category: e.target.value })
+              }
+              required
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Type *</label>
+            <input
+              type="text"
+              placeholder="e.g., Tacos, Burger, Pizza, Pasta, Sandwich"
+              value={foodItem.type}
+              onChange={(e) =>
+                setFoodItem({ ...foodItem, type: e.target.value })
+              }
+              required
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Sub-type (Optional)</label>
+            <input
+              type="text"
+              placeholder="e.g., Cheese Burger, Veggie Pizza, Beef Tacos"
+              value={foodItem.subType}
+              onChange={(e) =>
+                setFoodItem({ ...foodItem, subType: e.target.value })
+              }
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Size (Optional)</label>
+            <input
+              type="text"
+              placeholder="e.g., small, medium, large, extra large"
+              value={foodItem.size}
+              onChange={(e) =>
+                setFoodItem({ ...foodItem, size: e.target.value })
+              }
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Price (Optional)</label>
+            <input
+              type="number"
+              step="0.01"
+              placeholder="e.g., 6.99"
+              value={foodItem.price}
+              onChange={(e) =>
+                setFoodItem({ ...foodItem, price: e.target.value })
+              }
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Tags (Optional)</label>
+            <input
+              type="text"
+              placeholder="e.g., spicy, vegan, gluten-free (comma-separated)"
+              value={foodItem.tags}
+              onChange={(e) =>
+                setFoodItem({ ...foodItem, tags: e.target.value })
+              }
+              className="form-input"
+            />
+          </div>
+
+          <button onClick={handleAddFoodItem} className="add-food-item-btn">
+            Create & Add New Food Item
+          </button>
+        </div>
+
+        {/* Display added food items */}
+        <div className="food-items-list">
+          <h3>Food Items Added to Review</h3>
+          {foodItems.length === 0 ? (
+            <p className="no-items-message">No food items added yet.</p>
+          ) : (
+            <ul>
+              {foodItems.map((item, index) => (
+                <li key={index}>
+                  <div className="food-item-info">
+                    <strong>{item.name}</strong> - {item.category} (
+                    {item.subType || "No subtype"}), ${item.price}
+                    {item._id && (
+                      <span className="saved-indicator">✓ Saved</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const updatedItems = foodItems.filter(
+                        (_, i) => i !== index
+                      );
+                      setFoodItems(updatedItems);
+                      onFoodItemsUpdated(updatedItems);
+                    }}
+                    className="remove-btn"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

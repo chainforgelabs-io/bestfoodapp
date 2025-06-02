@@ -253,238 +253,371 @@ function ReviewSubmissionPage() {
   };
 
   return (
-    <div className="review-form-container">
-      {/* Step 1: Select Location */}
-      {step === 1 && (
-        <div className="review-step">
-          <h2>Select Location</h2>
-          <CitySearch
-            onSelectCity={(selectedCity) =>
-              setFormData({
-                ...formData,
-                location: {
-                  city: selectedCity.city,
-                  province: selectedCity.province,
-                  country: selectedCity.country,
-                },
-              })
-            }
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault(); // Prevent unintended navigation or submission
-                handleNext();
-              }
-            }}
-          />
-          <input
-            type="text"
-            placeholder="City"
-            value={formData.location.city}
-            className="review-input"
-            readOnly
-          />
-          {errors.city && <span className="error-text">{errors.city}</span>}
-          <input
-            type="text"
-            placeholder="Province"
-            value={formData.location.province}
-            className="review-input"
-            readOnly
-          />
-          {errors.province && (
-            <span className="error-text">{errors.province}</span>
-          )}
-          <input
-            type="text"
-            placeholder="Country"
-            value={formData.location.country}
-            className="review-input"
-            readOnly
-          />
-          {errors.country && (
-            <span className="error-text">{errors.country}</span>
-          )}
-          <div className="step-nav-buttons">
-            <button onClick={handleNext} className="step-button">
-              Next
-            </button>
+    <div className="submission-container">
+      <div className="form-section">
+        <div className="form-header">
+          <h1 className="form-title">Submit Your Review</h1>
+          <p className="form-subtitle">
+            Share your dining experience with the community
+          </p>
+
+          <div className="step-indicator">
+            <div
+              className={`step ${step >= 1 ? "active" : ""} ${
+                step > 1 ? "completed" : ""
+              }`}
+            >
+              <span className="step-number">1</span>
+              <span>Location</span>
+            </div>
+            <div
+              className={`step ${step >= 2 ? "active" : ""} ${
+                step > 2 ? "completed" : ""
+              }`}
+            >
+              <span className="step-number">2</span>
+              <span>Restaurant</span>
+            </div>
+            <div
+              className={`step ${step >= 3 ? "active" : ""} ${
+                step > 3 ? "completed" : ""
+              }`}
+            >
+              <span className="step-number">3</span>
+              <span>Food Items</span>
+            </div>
+            <div
+              className={`step ${step >= 4 ? "active" : ""} ${
+                step > 4 ? "completed" : ""
+              }`}
+            >
+              <span className="step-number">4</span>
+              <span>Ratings</span>
+            </div>
+            <div
+              className={`step ${step >= 5 ? "active" : ""} ${
+                step > 5 ? "completed" : ""
+              }`}
+            >
+              <span className="step-number">5</span>
+              <span>Photos</span>
+            </div>
+            <div className={`step ${step >= 6 ? "active" : ""}`}>
+              <span className="step-number">6</span>
+              <span>Review</span>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Step 2: Select Restaurant */}
-      {step === 2 && (
-        <div className="review-step">
-          <h2>
-            Select Restaurant for {formData.location.city},{" "}
-            {formData.location.province}, {formData.location.country}
-          </h2>
-          <form onSubmit={(e) => e.preventDefault()} className="search-form">
-            <input
-              type="text"
-              placeholder="Search Restaurant"
-              className="search-input"
-              value={formData.restaurant}
-              onChange={handleRestaurantSearch}
-              onKeyDown={handleKeyDown}
-            />
-            {showSuggestions && restaurantSuggestions.length > 0 && (
-              <ul className="suggestions-list">
-                {restaurantSuggestions.map((restaurant, index) => (
-                  <li
-                    key={restaurant._id}
-                    className={
-                      index === activeSuggestion ? "active-suggestion" : ""
-                    }
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        restaurant: restaurant.name,
-                        restaurantId: restaurant._id,
-                        address: restaurant.address.street,
-                      });
-                      setShowSuggestions(false); // Hide suggestions after selection
-                    }}
-                  >
-                    {restaurant.name} - {restaurant.address.street}
-                  </li>
-                ))}
-                <li
-                  className="add-restaurant-option"
-                  onClick={() =>
-                    navigate("/add-restaurant", {
-                      state: { formData, step: 2 },
+        <div className="form-content">
+          <div className="progress-bar">
+            <div
+              className="progress-fill"
+              style={{ width: `${(step / 6) * 100}%` }}
+            ></div>
+          </div>
+
+          {/* Step 1: Select Location */}
+          {step === 1 && (
+            <div className="form-step active">
+              <div className="form-group">
+                <label className="form-label">Select Your Location</label>
+                <CitySearch
+                  onSelectCity={(selectedCity) =>
+                    setFormData({
+                      ...formData,
+                      location: {
+                        city: selectedCity.city,
+                        province: selectedCity.province,
+                        country: selectedCity.country,
+                      },
                     })
                   }
-                >
-                  + Add a new restaurant
-                </li>
-              </ul>
-            )}
-
-            <div className="step-nav-buttons">
-              <button onClick={handlePrevious} className="step-button">
-                Previous
-              </button>
-              <button
-                type="button"
-                onClick={handleNext}
-                className="step-button"
-              >
-                Next
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Step 3: Add Food Items */}
-      {step === 3 && (
-        <div>
-          <h2>Add Food Items</h2>
-          <FoodItemForm
-            restaurantId={formData.restaurantId} // Pass the restaurant ID
-            onFoodItemsUpdated={(foodItems) => handleUpdate({ foodItems })} // Update food items in formData
-            existingFoodItems={formData.foodItems} // Pass the fetched food items
-          />
-          <button onClick={handlePrevious}>Previous</button>
-          <button onClick={handleNext}>Next</button>
-        </div>
-      )}
-
-      {/* Step 4: Add Ratings */}
-      {step === 4 && (
-        <div className="rating-step">
-          <h2>Rate Your Food Items</h2>
-          <div className="food-ratings-container">
-            {formData.foodItems.map((foodItem, index) => (
-              <div key={index} className="food-rating-item">
-                <RatingScale
-                  foodItemName={foodItem.name}
-                  onRatingChange={(rating) => {
-                    const updatedRatings = [...formData.ratings];
-                    updatedRatings[index] = rating;
-                    handleUpdate({ ratings: updatedRatings });
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleNext();
+                    }
                   }}
                 />
               </div>
-            ))}
-          </div>
-          <div className="step-nav-buttons">
-            <button onClick={handlePrevious} className="step-button">
-              Previous
-            </button>
-            <button onClick={handleNext} className="step-button">
-              Next
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* Step 5: Add Photos */}
-      {step === 5 && (
-        <div>
-          <h2>Upload Photos</h2>
-          <input
-            type="file"
-            multiple
-            onChange={(e) => {
-              const files = Array.from(e.target.files);
-              handleUpdate({ photos: files });
-            }}
-          />
-          <button onClick={handlePrevious}>Previous</button>
-          <button onClick={handleNext}>Next</button>
-        </div>
-      )}
+              <div className="form-group">
+                <input
+                  type="text"
+                  placeholder="City"
+                  value={formData.location.city}
+                  className="form-input"
+                  readOnly
+                />
+                {errors.city && (
+                  <span className="form-error">{errors.city}</span>
+                )}
+              </div>
 
-      {/* Step 6: Confirm Review */}
-      {step === 6 && (
-        <div className="step-summary">
-          <h2>Review Your Submission</h2>
-          <div className="summary-item">
-            <strong>Location:</strong>{" "}
-            {`${formData.location.city}, ${formData.location.province}, ${formData.location.country}`}
-          </div>
-          <div className="summary-item">
-            <strong>Restaurant:</strong> {formData.restaurant}
-          </div>
-          <div className="summary-item">
-            <strong>Food Items & Ratings:</strong>
-            <ul>
-              {formData.foodItems.map((item, index) => (
-                <li key={index}>
-                  {item.name} - {item.category} ({item.subCategory}), Price: $
-                  {item.price} -{" "}
-                  <strong>
-                    Rating: {formData.ratings[index] || "Not rated"}/100
-                  </strong>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="summary-item">
-            <strong>Purchase Date:</strong>
-            <input
-              type="date"
-              value={formData.purchaseDate}
-              onChange={(e) =>
-                setFormData({ ...formData, purchaseDate: e.target.value })
-              }
-              required
-              style={{ marginLeft: "10px", padding: "5px" }}
-            />
-          </div>
-          <div className="step-nav-buttons">
-            <button onClick={handlePrevious} className="step-button">
-              Previous
-            </button>
-            <button onClick={handleSubmit} className="step-button primary">
-              Submit Review
-            </button>
-          </div>
+              <div className="form-group">
+                <input
+                  type="text"
+                  placeholder="Province"
+                  value={formData.location.province}
+                  className="form-input"
+                  readOnly
+                />
+                {errors.province && (
+                  <span className="form-error">{errors.province}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <input
+                  type="text"
+                  placeholder="Country"
+                  value={formData.location.country}
+                  className="form-input"
+                  readOnly
+                />
+                {errors.country && (
+                  <span className="form-error">{errors.country}</span>
+                )}
+              </div>
+
+              <div className="form-navigation">
+                <div></div>
+                <button onClick={handleNext} className="nav-button btn-primary">
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Select Restaurant */}
+          {step === 2 && (
+            <div className="form-step active">
+              <div className="form-group">
+                <label className="form-label">
+                  Select Restaurant for {formData.location.city},{" "}
+                  {formData.location.province}, {formData.location.country}
+                </label>
+                <form onSubmit={(e) => e.preventDefault()}>
+                  <input
+                    type="text"
+                    placeholder="Search Restaurant"
+                    className="form-input"
+                    value={formData.restaurant}
+                    onChange={handleRestaurantSearch}
+                    onKeyDown={handleKeyDown}
+                  />
+                  {showSuggestions && restaurantSuggestions.length > 0 && (
+                    <ul className="suggestions-dropdown">
+                      {restaurantSuggestions.map((restaurant, index) => (
+                        <li
+                          key={restaurant._id}
+                          className={`suggestion-item ${
+                            index === activeSuggestion ? "active" : ""
+                          }`}
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              restaurant: restaurant.name,
+                              restaurantId: restaurant._id,
+                              address: restaurant.address.street,
+                            });
+                            setShowSuggestions(false);
+                          }}
+                        >
+                          {restaurant.name} - {restaurant.address.street}
+                        </li>
+                      ))}
+                      <li
+                        className="suggestion-item"
+                        onClick={() =>
+                          navigate("/add-restaurant", {
+                            state: { formData, step: 2 },
+                          })
+                        }
+                        style={{
+                          borderTop: "1px solid #eee",
+                          fontWeight: "bold",
+                          color: "#b08bd4",
+                        }}
+                      >
+                        + Add a new restaurant
+                      </li>
+                    </ul>
+                  )}
+                </form>
+              </div>
+
+              <div className="form-navigation">
+                <button
+                  onClick={handlePrevious}
+                  className="nav-button btn-secondary"
+                >
+                  Previous
+                </button>
+                <button onClick={handleNext} className="nav-button btn-primary">
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Add Food Items */}
+          {step === 3 && (
+            <div className="form-step active">
+              <div className="form-group">
+                <label className="form-label">Add Food Items</label>
+                <FoodItemForm
+                  restaurantId={formData.restaurantId}
+                  onFoodItemsUpdated={(foodItems) =>
+                    handleUpdate({ foodItems })
+                  }
+                  existingFoodItems={formData.foodItems}
+                />
+              </div>
+
+              <div className="form-navigation">
+                <button
+                  onClick={handlePrevious}
+                  className="nav-button btn-secondary"
+                >
+                  Previous
+                </button>
+                <button onClick={handleNext} className="nav-button btn-primary">
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Add Ratings */}
+          {step === 4 && (
+            <div className="form-step active">
+              <div className="form-group">
+                <label className="form-label">Rate Your Food Items</label>
+                <div className="food-ratings-container">
+                  {formData.foodItems.map((foodItem, index) => (
+                    <div key={index} className="food-rating-item">
+                      <RatingScale
+                        foodItemName={foodItem.name}
+                        onRatingChange={(rating) => {
+                          const updatedRatings = [...formData.ratings];
+                          updatedRatings[index] = rating;
+                          handleUpdate({ ratings: updatedRatings });
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-navigation">
+                <button
+                  onClick={handlePrevious}
+                  className="nav-button btn-secondary"
+                >
+                  Previous
+                </button>
+                <button onClick={handleNext} className="nav-button btn-primary">
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Add Photos */}
+          {step === 5 && (
+            <div className="form-step active">
+              <div className="form-group">
+                <label className="form-label">Upload Photos (Optional)</label>
+                <input
+                  type="file"
+                  multiple
+                  className="form-input"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files);
+                    handleUpdate({ photos: files });
+                  }}
+                  style={{ padding: "12px" }}
+                />
+              </div>
+
+              <div className="form-navigation">
+                <button
+                  onClick={handlePrevious}
+                  className="nav-button btn-secondary"
+                >
+                  Previous
+                </button>
+                <button onClick={handleNext} className="nav-button btn-primary">
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 6: Confirm Review */}
+          {step === 6 && (
+            <div className="form-step active">
+              <div className="form-group">
+                <label className="form-label">Review Your Submission</label>
+
+                <div className="summary-item">
+                  <strong>Location:</strong>{" "}
+                  {`${formData.location.city}, ${formData.location.province}, ${formData.location.country}`}
+                </div>
+
+                <div className="summary-item">
+                  <strong>Restaurant:</strong> {formData.restaurant}
+                </div>
+
+                <div className="summary-item">
+                  <strong>Food Items & Ratings:</strong>
+                  <ul>
+                    {formData.foodItems.map((item, index) => (
+                      <li key={index}>
+                        {item.name} - {item.category} ({item.subCategory}),
+                        Price: ${item.price} -{" "}
+                        <strong>
+                          Rating: {formData.ratings[index] || "Not rated"}/100
+                        </strong>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Purchase Date:</label>
+                  <input
+                    type="date"
+                    value={formData.purchaseDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, purchaseDate: e.target.value })
+                    }
+                    required
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-navigation">
+                <button
+                  onClick={handlePrevious}
+                  className="nav-button btn-secondary"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  className="nav-button btn-success"
+                >
+                  Submit Review
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

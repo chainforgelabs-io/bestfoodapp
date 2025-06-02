@@ -1,58 +1,136 @@
+/* LoginPage - Modern styling with animations inspired by HomePage */
 .login-page {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #f9f9fc;
+  background: linear-gradient(135deg, #f9f9fc 0%, #f0f4ff 100%);
   padding: 20px;
   text-align: center;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-page h2 {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #000;
-  margin-bottom: 20px;
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 30px;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-form {
   width: 100%;
   max-width: 500px;
-  background-color: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(176, 139, 212, 0.15);
+  animation: slideInUp 0.8s ease-out 0.4s both;
 }
 
 .login-input {
-  width: 90%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 2px solid #ccc;
-  border-radius: 5px;
+  width: 100%;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  border: 2px solid #eee;
+  border-radius: 12px;
   font-size: 1rem;
+  color: #333;
+  background: white;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: #b08bd4;
+  box-shadow: 0 0 0 3px rgba(176, 139, 212, 0.1);
+  transform: translateY(-2px);
 }
 
 .login-btn {
-  padding: 10px 20px;
-  background-color: #b08bd4;
+  width: 100%;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
   margin-top: 10px;
-  transition: background-color 0.3s;
 }
 
 .login-btn:hover {
-  background-color: #9562d4;
+  background: linear-gradient(135deg, #9562d4, #8449c7);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(176, 139, 212, 0.4);
 }
 
 .submit-btn {
-  background-color: #4caf50;
+  background: linear-gradient(135deg, #4caf50, #45a049);
 }
 
 .submit-btn:hover {
-  background-color: #45a049;
+  background: linear-gradient(135deg, #45a049, #3d8b40);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+/* Links and additional text */
+.login-page a {
+  color: #b08bd4;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.login-page a:hover {
+  color: #9562d4;
+}
+
+.login-page p {
+  color: #666;
+  margin-top: 20px;
+  animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .login-form {
+    padding: 20px;
+    margin: 10px;
+  }
+
+  .login-page h2 {
+    font-size: 2rem;
+  }
 }

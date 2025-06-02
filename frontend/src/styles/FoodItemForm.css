@@ -1,42 +1,294 @@
+/* FoodItemForm - Modern styling with animations inspired by HomePage */
 .food-item-form {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f9f9fc 0%, #f0f4ff 100%);
+  padding: 20px;
+  animation: fadeInUp 0.8s ease-out;
 }
 
-.food-item-form input {
-  width: 90%;
-  padding: 10px;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.food-item-form-container {
+  max-width: 600px;
+  width: 100%;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(176, 139, 212, 0.15);
+  padding: 40px;
+  animation: slideInUp 0.8s ease-out 0.2s both;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 10px;
-  border: 2px solid #ccc;
-  border-radius: 5px;
+  text-align: center;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+.form-subtitle {
+  color: #666;
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 1rem;
+  animation: fadeInUp 0.8s ease-out 0.5s both;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #eee;
+  border-radius: 12px;
+  font-size: 1rem;
+  color: #333;
+  background: white;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #b08bd4;
+  box-shadow: 0 0 0 3px rgba(176, 139, 212, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Suggestions dropdown */
+.suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  list-style: none;
+  margin: 8px 0 0 0;
+  padding: 8px 0;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.suggestion-item {
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-weight: 500;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+  background: linear-gradient(135deg, #f0f4ff, #f9f9fc);
+}
+
+.create-food-section {
+  margin-top: 30px;
+  padding: 30px;
+  border: 2px solid #f0f4ff;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fafbff 0%, #f9f9fc 100%);
+  animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.section-subtitle {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
 }
 
 .add-food-item-btn {
-  padding: 10px 20px;
-  background-color: #b08bd4;
+  width: 100%;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
   margin-top: 10px;
-  transition: background-color 0.3s;
 }
 
 .add-food-item-btn:hover {
-  background-color: #9562d4;
+  background: linear-gradient(135deg, #9562d4, #8449c7);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(176, 139, 212, 0.4);
 }
 
 .food-items-list {
-  margin-top: 20px;
+  margin-top: 30px;
+  animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+.food-items-list h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.no-items-message {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 20px;
 }
 
 .food-items-list li {
-  background-color: #efe4fc;
-  padding: 10px;
-  margin-bottom: 5px;
-  border-radius: 5px;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 15px;
   list-style-type: none;
-  text-align: left;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  animation: slideInUp 0.6s ease-out;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.food-items-list li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.food-items-list li:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.food-items-list li:hover::before {
+  transform: scaleY(1);
+}
+
+.food-item-info {
+  flex: 1;
+}
+
+.saved-indicator {
+  color: #28a745;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.remove-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.remove-btn:hover {
+  background: linear-gradient(135deg, #ee5a6f, #e74c3c);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(238, 90, 111, 0.4);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .food-item-form-container {
+    padding: 20px;
+    margin: 10px;
+  }
+
+  .form-title {
+    font-size: 1.8rem;
+  }
+
+  .create-food-section {
+    padding: 20px;
+  }
+
+  .food-items-list li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .remove-btn {
+    align-self: flex-end;
+  }
 }

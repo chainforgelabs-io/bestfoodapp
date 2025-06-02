@@ -304,6 +304,7 @@ function HomePage() {
             />
             <button type="submit" className="search-button">
               <i className="fa fa-search"></i>
+              <span style={{ marginLeft: "8px" }}>Search</span>
             </button>
           </form>
         </>
@@ -339,6 +340,7 @@ function HomePage() {
             />
             <button type="submit" className="search-button">
               <i className="fa fa-search"></i>
+              <span style={{ marginLeft: "8px" }}>Search</span>
             </button>
           </form>
 

@@ -1,51 +1,120 @@
+/* AddRestaurantPage - Modern styling with animations inspired by HomePage */
 .add-restaurant-form-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #f9f9fc;
+  background: linear-gradient(135deg, #f9f9fc 0%, #f0f4ff 100%);
   padding: 20px;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .add-restaurant-form-container h2 {
-  font-size: 2rem;
-  margin-bottom: 20px;
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 30px;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .add-restaurant-form-container form {
   width: 100%;
-  max-width: 500px;
-  background-color: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(176, 139, 212, 0.15);
+  animation: slideInUp 0.8s ease-out 0.4s both;
 }
 
-.add-restaurant-form-container input {
-  width: 90%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 2px solid #ccc;
-  border-radius: 5px;
+.add-restaurant-form-container input,
+.add-restaurant-form-container select,
+.add-restaurant-form-container textarea {
+  width: 100%;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  border: 2px solid #eee;
+  border-radius: 12px;
   font-size: 1rem;
+  color: #333;
+  background: white;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.add-restaurant-form-container input:focus,
+.add-restaurant-form-container select:focus,
+.add-restaurant-form-container textarea:focus {
+  outline: none;
+  border-color: #b08bd4;
+  box-shadow: 0 0 0 3px rgba(176, 139, 212, 0.1);
+  transform: translateY(-2px);
 }
 
 .add-restaurant-form-container button {
-  padding: 10px 20px;
-  background-color: #4caf50;
+  width: 100%;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #4caf50, #45a049);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  margin-top: 10px;
 }
 
 .add-restaurant-form-container button:hover {
-  background-color: #45a049;
+  background: linear-gradient(135deg, #45a049, #3d8b40);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
 .error-text {
-  color: red;
-  margin-top: 10px;
+  color: #dc3545;
+  font-size: 0.9rem;
+  margin-top: 8px;
+  font-weight: 500;
+  animation: fadeInUp 0.3s ease-out;
+  text-align: center;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .add-restaurant-form-container form {
+    padding: 20px;
+    margin: 10px;
+  }
+
+  .add-restaurant-form-container h2 {
+    font-size: 2rem;
+  }
 }
