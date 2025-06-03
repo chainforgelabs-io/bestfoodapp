@@ -294,17 +294,15 @@
   flex: 1;
 }
 
-.saved-indicator {
-  color: #28a745;
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-left: 10px;
+.food-item-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
+.edit-btn,
 .remove-btn {
   padding: 8px 16px;
-  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
-  color: white;
   border: none;
   border-radius: 8px;
   font-size: 0.8rem;
@@ -313,10 +311,33 @@
   transition: all 0.3s ease;
 }
 
+.edit-btn {
+  background: linear-gradient(135deg, #6c63ff, #5a52d5);
+  color: white;
+}
+
+.edit-btn:hover {
+  background: linear-gradient(135deg, #5a52d5, #4c46b6);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.4);
+}
+
+.remove-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  color: white;
+}
+
 .remove-btn:hover {
   background: linear-gradient(135deg, #ee5a6f, #e74c3c);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(238, 90, 111, 0.4);
+}
+
+.saved-indicator {
+  color: #28a745;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 10px;
 }
 
 /* Mobile responsiveness */

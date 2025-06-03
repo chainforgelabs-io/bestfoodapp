@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Notification from "./Notification";
+import EditFoodItemModal from "./EditFoodItemModal";
 import "../styles/FoodItemForm.css";
 
 function FoodItemForm({
@@ -25,6 +26,8 @@ function FoodItemForm({
   const [activeSuggestion, setActiveSuggestion] = useState(0); // Track active suggestion for keyboard navigation
   const [searchTerm, setSearchTerm] = useState(""); // Separate search term
   const [isCreateSectionExpanded, setIsCreateSectionExpanded] = useState(false); // Track if create section is expanded
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Track edit modal visibility
+  const [editingFoodItem, setEditingFoodItem] = useState(null); // Store the food item being edited
   const [notification, setNotification] = useState({
     isVisible: false,
     message: "",
@@ -214,6 +217,20 @@ function FoodItemForm({
     }
   };
 
+  // Handle opening the edit modal
+  const handleEditFoodItem = (item, index) => {
+    setEditingFoodItem({ ...item, index }); // Store the item with its index
+    setIsEditModalOpen(true);
+  };
+
+  // Handle when a food item is updated in the modal
+  const handleFoodItemUpdated = (updatedFoodItem) => {
+    const updatedFoodItems = [...foodItems];
+    updatedFoodItems[editingFoodItem.index] = updatedFoodItem;
+    setFoodItems(updatedFoodItems);
+    onFoodItemsUpdated(updatedFoodItems);
+  };
+
   return (
     <div className="food-item-form">
       <div className="food-item-form-container">
@@ -267,18 +284,26 @@ function FoodItemForm({
                       <span className="saved-indicator">✓ Saved</span>
                     )}
                   </div>
-                  <button
-                    onClick={() => {
-                      const updatedItems = foodItems.filter(
-                        (_, i) => i !== index
-                      );
-                      setFoodItems(updatedItems);
-                      onFoodItemsUpdated(updatedItems);
-                    }}
-                    className="remove-btn"
-                  >
-                    Remove
-                  </button>
+                  <div className="food-item-actions">
+                    <button
+                      onClick={() => handleEditFoodItem(item, index)}
+                      className="edit-btn"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        const updatedItems = foodItems.filter(
+                          (_, i) => i !== index
+                        );
+                        setFoodItems(updatedItems);
+                        onFoodItemsUpdated(updatedItems);
+                      }}
+                      className="remove-btn"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -417,6 +442,14 @@ function FoodItemForm({
         type={notification.type}
         isVisible={notification.isVisible}
         onClose={() => setNotification({ ...notification, isVisible: false })}
+      />
+
+      {/* Edit Food Item Modal */}
+      <EditFoodItemModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        foodItem={editingFoodItem}
+        onFoodItemUpdated={handleFoodItemUpdated}
       />
     </div>
   );
