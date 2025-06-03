@@ -31,7 +31,7 @@ function HomePage() {
       !citySelected.province ||
       !citySelected.country
     ) {
-      alert("Please select a city, province, and country.");
+      // Just return without the alert - the form validation will handle this
       return;
     }
 
@@ -52,8 +52,9 @@ function HomePage() {
       setActiveFilter("Restaurants"); // Default to restaurants after city search
     } catch (error) {
       console.error("Error searching restaurants by city:", error);
-      alert("No restaurants found in this location.");
       setResults([]);
+      setHasSearched(true); // Still mark search as performed even if no results
+      setActiveFilter("Restaurants"); // Default to restaurants after city search
     }
   };
 
@@ -65,7 +66,7 @@ function HomePage() {
       !citySelected.province ||
       !citySelected.country
     ) {
-      alert("Please select a city, province, and country.");
+      // Return silently - the UI will show the proper state
       return;
     }
 
@@ -87,7 +88,6 @@ function HomePage() {
       );
     } catch (error) {
       console.error("Error searching food items:", error);
-      alert("No food items found in this city for the selected category.");
       setFoodItems([]);
     }
   };
@@ -108,8 +108,25 @@ function HomePage() {
 
     if (activeFilter === "Restaurants") {
       if (!restaurantSearchTerm) {
-        alert("Please enter a restaurant type or cuisine to search.");
-        return;
+        // Return silently - user can search without a term to see all restaurants
+        try {
+          const response = await axios.get(
+            `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
+            {
+              params: {
+                city: citySelected.city,
+                province: citySelected.province,
+                country: citySelected.country,
+              },
+            }
+          );
+          setResults(response.data);
+          return;
+        } catch (error) {
+          console.error("Error searching restaurants:", error);
+          setResults([]);
+          return;
+        }
       }
 
       try {
@@ -136,12 +153,12 @@ function HomePage() {
         console.log("Filtered Results:", sortedResults);
       } catch (error) {
         console.error("Error searching restaurants:", error);
-        alert("No restaurants found for the provided criteria.");
         setResults([]); // Clear results on error
       }
     } else if (activeFilter === "Food") {
       if (!foodSearchTerm) {
-        alert("Please enter a food item to search.");
+        // Allow search without specific term - will show all food in the city
+        handleFoodSearch();
         return;
       }
 
@@ -163,7 +180,6 @@ function HomePage() {
         );
       } catch (error) {
         console.error("Error searching food items:", error);
-        alert("No food items found in this city for the selected category.");
         setFoodItems([]);
       }
     }
@@ -431,7 +447,21 @@ function HomePage() {
                     </div>
                   ))
               ) : (
-                <p>No restaurants found in this city.</p>
+                <div className="no-results-container">
+                  <p className="no-results-message">
+                    No food reviews yet for {citySelected.city},{" "}
+                    {citySelected.province}
+                  </p>
+                  <p className="no-results-suggestion">
+                    Be the first to review a restaurant in this city!
+                  </p>
+                  <button
+                    className="make-review-btn-inline"
+                    onClick={handleCreateReviewClick}
+                  >
+                    Make a Review
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -477,9 +507,21 @@ function HomePage() {
                   </div>
                 ))
               ) : (
-                <p>
-                  No food items found in this city for the selected category.
-                </p>
+                <div className="no-results-container">
+                  <p className="no-results-message">
+                    No food reviews yet for {citySelected.city},{" "}
+                    {citySelected.province}
+                  </p>
+                  <p className="no-results-suggestion">
+                    Be the first to review a restaurant in this city!
+                  </p>
+                  <button
+                    className="make-review-btn-inline"
+                    onClick={handleCreateReviewClick}
+                  >
+                    Make a Review
+                  </button>
+                </div>
               )}
             </div>
           )}
