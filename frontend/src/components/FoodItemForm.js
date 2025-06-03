@@ -24,6 +24,7 @@ function FoodItemForm({
   const [showFoodSuggestions, setShowFoodSuggestions] = useState(false); // Control dropdown
   const [activeSuggestion, setActiveSuggestion] = useState(0); // Track active suggestion for keyboard navigation
   const [searchTerm, setSearchTerm] = useState(""); // Separate search term
+  const [isCreateSectionExpanded, setIsCreateSectionExpanded] = useState(false); // Track if create section is expanded
   const [notification, setNotification] = useState({
     isVisible: false,
     message: "",
@@ -250,112 +251,6 @@ function FoodItemForm({
           )}
         </div>
 
-        <div className="create-food-section">
-          <h4 className="section-title">Create New Food Item</h4>
-          <p className="section-subtitle">
-            Fill out all fields below to create a new food item
-          </p>
-
-          <div className="form-group">
-            <label className="form-label">Food Name *</label>
-            <input
-              type="text"
-              placeholder="e.g., Birria Tacos, Cheeseburger, Margherita Pizza"
-              value={foodItem.name}
-              onChange={(e) =>
-                setFoodItem({ ...foodItem, name: e.target.value })
-              }
-              required
-              className="form-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Category *</label>
-            <input
-              type="text"
-              placeholder="e.g., Mains, Appetizers, Sides, Desserts"
-              value={foodItem.category}
-              onChange={(e) =>
-                setFoodItem({ ...foodItem, category: e.target.value })
-              }
-              required
-              className="form-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Type *</label>
-            <input
-              type="text"
-              placeholder="e.g., Tacos, Burger, Pizza, Pasta, Sandwich"
-              value={foodItem.type}
-              onChange={(e) =>
-                setFoodItem({ ...foodItem, type: e.target.value })
-              }
-              required
-              className="form-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Sub-type (Optional)</label>
-            <input
-              type="text"
-              placeholder="e.g., Cheese Burger, Veggie Pizza, Beef Tacos"
-              value={foodItem.subType}
-              onChange={(e) =>
-                setFoodItem({ ...foodItem, subType: e.target.value })
-              }
-              className="form-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Size (Optional)</label>
-            <input
-              type="text"
-              placeholder="e.g., small, medium, large, extra large"
-              value={foodItem.size}
-              onChange={(e) =>
-                setFoodItem({ ...foodItem, size: e.target.value })
-              }
-              className="form-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Price (Optional)</label>
-            <input
-              type="number"
-              step="0.01"
-              placeholder="e.g., 6.99"
-              value={foodItem.price}
-              onChange={(e) =>
-                setFoodItem({ ...foodItem, price: e.target.value })
-              }
-              className="form-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Tags (Optional)</label>
-            <input
-              type="text"
-              placeholder="e.g., spicy, vegan, gluten-free (comma-separated)"
-              value={foodItem.tags}
-              onChange={(e) =>
-                setFoodItem({ ...foodItem, tags: e.target.value })
-              }
-              className="form-input"
-            />
-          </div>
-
-          <button onClick={handleAddFoodItem} className="add-food-item-btn">
-            Create & Add New Food Item
-          </button>
-        </div>
-
         {/* Display added food items */}
         <div className="food-items-list">
           <h3>Food Items Added to Review</h3>
@@ -388,6 +283,131 @@ function FoodItemForm({
               ))}
             </ul>
           )}
+        </div>
+
+        <div className="create-food-section">
+          <div
+            className="section-header"
+            onClick={() => setIsCreateSectionExpanded(!isCreateSectionExpanded)}
+          >
+            <h4 className="section-title">Create New Food Item</h4>
+            <span
+              className={`collapse-icon ${
+                isCreateSectionExpanded ? "expanded" : ""
+              }`}
+            >
+              ▼
+            </span>
+          </div>
+
+          <div
+            className={`section-content ${
+              isCreateSectionExpanded ? "expanded" : "collapsed"
+            }`}
+          >
+            <p className="section-subtitle">
+              Fill out all fields below to create a new food item
+            </p>
+
+            <div className="form-group">
+              <label className="form-label">Food Name *</label>
+              <input
+                type="text"
+                placeholder="e.g., Birria Tacos, Cheeseburger, Margherita Pizza"
+                value={foodItem.name}
+                onChange={(e) =>
+                  setFoodItem({ ...foodItem, name: e.target.value })
+                }
+                required
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Category *</label>
+              <input
+                type="text"
+                placeholder="e.g., Mains, Appetizers, Sides, Desserts"
+                value={foodItem.category}
+                onChange={(e) =>
+                  setFoodItem({ ...foodItem, category: e.target.value })
+                }
+                required
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Type *</label>
+              <input
+                type="text"
+                placeholder="e.g., Tacos, Burger, Pizza, Pasta, Sandwich"
+                value={foodItem.type}
+                onChange={(e) =>
+                  setFoodItem({ ...foodItem, type: e.target.value })
+                }
+                required
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Sub-type (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g., Cheese Burger, Veggie Pizza, Beef Tacos"
+                value={foodItem.subType}
+                onChange={(e) =>
+                  setFoodItem({ ...foodItem, subType: e.target.value })
+                }
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Size (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g., small, medium, large, extra large"
+                value={foodItem.size}
+                onChange={(e) =>
+                  setFoodItem({ ...foodItem, size: e.target.value })
+                }
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Price (Optional)</label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="e.g., 6.99"
+                value={foodItem.price}
+                onChange={(e) =>
+                  setFoodItem({ ...foodItem, price: e.target.value })
+                }
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Tags (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g., spicy, vegan, gluten-free (comma-separated)"
+                value={foodItem.tags}
+                onChange={(e) =>
+                  setFoodItem({ ...foodItem, tags: e.target.value })
+                }
+                className="form-input"
+              />
+            </div>
+
+            <button onClick={handleAddFoodItem} className="add-food-item-btn">
+              Create & Add New Food Item
+            </button>
+          </div>
         </div>
       </div>
 
