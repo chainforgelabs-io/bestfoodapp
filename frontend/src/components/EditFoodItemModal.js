@@ -68,6 +68,10 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
         return;
       }
 
+      // Debug: Check token
+      console.log("Token exists:", !!token);
+      console.log("Token length:", token.length);
+
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -118,13 +122,30 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
       }, 1500);
     } catch (error) {
       console.error("Error updating food item:", error);
-      setNotification({
-        isVisible: true,
-        message: `Error updating food item: ${
-          error.response?.data?.message || error.message
-        }`,
-        type: "error",
-      });
+
+      // Better error handling for different types of errors
+      if (error.response?.status === 401) {
+        setNotification({
+          isVisible: true,
+          message:
+            "Your session has expired. Please log in again to edit food items.",
+          type: "error",
+        });
+      } else if (error.response?.status === 403) {
+        setNotification({
+          isVisible: true,
+          message: "You don't have permission to edit this food item.",
+          type: "error",
+        });
+      } else {
+        setNotification({
+          isVisible: true,
+          message: `Error updating food item: ${
+            error.response?.data?.message || error.message
+          }`,
+          type: "error",
+        });
+      }
     } finally {
       setIsLoading(false);
     }

@@ -1219,9 +1219,10 @@ router.put("/:id", protect, async (req, res) => {
     if (!foodItem)
       return res.status(404).json({ message: "Food item not found" });
 
-    if (foodItem.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ msg: "Unauthorized action" });
-    }
+    // Allow any authenticated user to edit food items for community collaboration
+    // if (foodItem.createdBy.toString() !== req.user._id.toString()) {
+    //   return res.status(403).json({ msg: "Unauthorized action" });
+    // }
 
     const updatedFoodItem = await FoodItem.findByIdAndUpdate(
       req.params.id,
