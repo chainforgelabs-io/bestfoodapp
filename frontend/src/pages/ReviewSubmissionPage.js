@@ -24,6 +24,7 @@ function ReviewSubmissionPage() {
     photos: [],
     purchaseDate: "",
   });
+  const [existingFoodItems, setExistingFoodItems] = useState([]); // Separate state for all existing food items for search
   const [errors, setErrors] = useState({});
   const [restaurantSuggestions, setRestaurantSuggestions] = useState([]);
   const [activeSuggestion, setActiveSuggestion] = useState(0);
@@ -89,11 +90,8 @@ function ReviewSubmissionPage() {
             `http://localhost:5000/api/food-items/restaurant/${formData.restaurantId}`
           );
 
-          // Store the fetched food items in the formData
-          setFormData((prevData) => ({
-            ...prevData,
-            foodItems: response.data, // Store all food items fetched from the API
-          }));
+          // Store the fetched food items in existingFoodItems for search, keep formData.foodItems empty for selected items
+          setExistingFoodItems(response.data);
 
           // Move to Step 3
           setStep(step + 1);
@@ -105,6 +103,7 @@ function ReviewSubmissionPage() {
             console.log(
               "No food items found for this restaurant - proceeding with empty list"
             );
+            setExistingFoodItems([]); // Start with empty array for new restaurants
             setFormData((prevData) => ({
               ...prevData,
               foodItems: [], // Start with empty array for new restaurants
@@ -583,13 +582,12 @@ function ReviewSubmissionPage() {
           {step === 3 && (
             <div className="form-step active">
               <div className="form-group">
-                <label className="form-label">Add Food Items</label>
                 <FoodItemForm
                   restaurantId={formData.restaurantId}
                   onFoodItemsUpdated={(foodItems) =>
                     handleUpdate({ foodItems })
                   }
-                  existingFoodItems={formData.foodItems}
+                  existingFoodItems={existingFoodItems}
                 />
               </div>
 
