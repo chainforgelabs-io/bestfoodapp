@@ -645,16 +645,23 @@ function ReviewSubmissionPage() {
             <div className="form-step active">
               <div className="form-group">
                 <label className="form-label">Upload Photos (Optional)</label>
-                <input
-                  type="file"
-                  multiple
-                  className="form-input"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files);
-                    handleUpdate({ photos: files });
-                  }}
-                  style={{ padding: "12px" }}
-                />
+                <div className="photo-upload-container">
+                  <div className="coming-soon-message">
+                    📸 Photo upload feature coming soon!
+                  </div>
+                  <div className="photo-upload-disabled">
+                    <input
+                      type="file"
+                      multiple
+                      className="form-input photo-input-disabled"
+                      disabled
+                      style={{ padding: "12px" }}
+                    />
+                    <div className="disabled-overlay">
+                      <span className="coming-soon-text">Coming Soon</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="form-navigation">
