@@ -234,7 +234,6 @@ function HomePage() {
   const handleCreateReviewClick = () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("You must be logged in to perform this action.");
       navigate("/login"); // Redirect to login if not authenticated
     } else {
       navigate("/submit-review"); // Navigate to the Review Submission page

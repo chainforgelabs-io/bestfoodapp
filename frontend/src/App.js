@@ -38,13 +38,27 @@ function App() {
           <Route path="/leaderboards" element={<LeaderboardsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/submit-review" element={<ReviewSubmissionPage />} />
+          <Route
+            path="/submit-review"
+            element={
+              <ProtectedRoute>
+                <ReviewSubmissionPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/review-success" element={<ReviewSuccessPage />} />
           <Route
             path="/reset-password/:token"
             element={<ResetPasswordPage />}
           />
-          <Route path="/add-restaurant" element={<AddRestaurantPage />} />
+          <Route
+            path="/add-restaurant"
+            element={
+              <ProtectedRoute>
+                <AddRestaurantPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </Router>

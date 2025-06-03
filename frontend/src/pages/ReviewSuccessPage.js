@@ -43,6 +43,13 @@ function ReviewSuccessPage() {
         <div className="success-stats">
           <p>🎉 You're helping build the best food community!</p>
         </div>
+
+        {/* Celebration Particles */}
+        <div className="celebration-particles">
+          {[...Array(16)].map((_, i) => (
+            <div key={i} className={`particle particle-${i + 1}`}></div>
+          ))}
+        </div>
       </div>
     </div>
   );

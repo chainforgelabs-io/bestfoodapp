@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Notification from "./Notification";
 import "../styles/FoodItemForm.css";
 
 function FoodItemForm({
@@ -23,6 +24,11 @@ function FoodItemForm({
   const [showFoodSuggestions, setShowFoodSuggestions] = useState(false); // Control dropdown
   const [activeSuggestion, setActiveSuggestion] = useState(0); // Track active suggestion for keyboard navigation
   const [searchTerm, setSearchTerm] = useState(""); // Separate search term
+  const [notification, setNotification] = useState({
+    isVisible: false,
+    message: "",
+    type: "error",
+  });
 
   const navigate = useNavigate();
 
@@ -106,7 +112,11 @@ function FoodItemForm({
   // Create a new food item in the database
   const handleAddFoodItem = async () => {
     if (!foodItem.name || !foodItem.category || !foodItem.type) {
-      alert("Food name, category, and type are required.");
+      setNotification({
+        isVisible: true,
+        message: "Food name, category, and type are required.",
+        type: "error",
+      });
       return;
     }
 
@@ -114,7 +124,11 @@ function FoodItemForm({
       const token = localStorage.getItem("token");
 
       if (!token) {
-        alert("You must be logged in to add food items.");
+        setNotification({
+          isVisible: true,
+          message: "You must be logged in to add food items.",
+          type: "error",
+        });
         return;
       }
 
@@ -169,11 +183,13 @@ function FoodItemForm({
       });
     } catch (error) {
       console.error("Error creating food item:", error);
-      alert(
-        `Error creating food item: ${
+      setNotification({
+        isVisible: true,
+        message: `Error creating food item: ${
           error.response?.data?.message || error.message
-        }`
-      );
+        }`,
+        type: "error",
+      });
     }
   };
 

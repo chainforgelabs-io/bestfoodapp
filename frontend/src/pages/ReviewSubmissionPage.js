@@ -4,6 +4,7 @@ import FoodItemForm from "../components/FoodItemForm";
 import RatingScale from "../components/RatingScale";
 import RestaurantModal from "../components/RestaurantModal";
 import Notification from "../components/Notification";
+import SuccessOverlay from "../components/SuccessOverlay";
 import axios from "axios";
 import "../styles/ReviewSubmissionPage.css";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -28,10 +29,12 @@ function ReviewSubmissionPage() {
   const [activeSuggestion, setActiveSuggestion] = useState(0);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showRestaurantModal, setShowRestaurantModal] = useState(false);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+  const [addedRestaurantName, setAddedRestaurantName] = useState("");
   const [notification, setNotification] = useState({
     isVisible: false,
     message: "",
-    type: "success",
+    type: "error",
   });
   const navigate = useNavigate();
 
@@ -76,6 +79,25 @@ function ReviewSubmissionPage() {
           setStep(step + 1);
         } catch (error) {
           console.error("Error fetching food items for the restaurant:", error);
+
+          // If 404 (no food items found), continue with empty array
+          if (error.response?.status === 404) {
+            console.log(
+              "No food items found for this restaurant - proceeding with empty list"
+            );
+            setFormData((prevData) => ({
+              ...prevData,
+              foodItems: [], // Start with empty array for new restaurants
+            }));
+            setStep(step + 1);
+          } else {
+            // For other errors, show an error message
+            setNotification({
+              isVisible: true,
+              message: "Error loading restaurant data. Please try again.",
+              type: "error",
+            });
+          }
         }
       } else {
         console.error("Restaurant ID not found. Please select a restaurant.");
@@ -157,12 +179,9 @@ function ReviewSubmissionPage() {
 
   // Handle when a restaurant is added via modal
   const handleRestaurantAdded = async (newRestaurant) => {
-    // Show success notification
-    setNotification({
-      isVisible: true,
-      message: `Restaurant "${newRestaurant.name}" added successfully! You can now search for it.`,
-      type: "success",
-    });
+    // Show success overlay
+    setAddedRestaurantName(newRestaurant.name);
+    setShowSuccessOverlay(true);
 
     // Refresh the restaurant search to include the new restaurant
     if (formData.restaurant) {
@@ -197,19 +216,31 @@ function ReviewSubmissionPage() {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        alert("You must be logged in to submit a review.");
+        setNotification({
+          isVisible: true,
+          message: "You must be logged in to submit a review.",
+          type: "error",
+        });
         navigate("/login");
         return;
       }
 
       // Validate required data
       if (!formData.restaurantId) {
-        alert("Restaurant is required.");
+        setNotification({
+          isVisible: true,
+          message: "Restaurant is required.",
+          type: "error",
+        });
         return;
       }
 
       if (!formData.purchaseDate) {
-        alert("Purchase date is required.");
+        setNotification({
+          isVisible: true,
+          message: "Purchase date is required.",
+          type: "error",
+        });
         return;
       }
 
@@ -280,18 +311,32 @@ function ReviewSubmissionPage() {
       console.error("Error response:", error.response?.data); // More detailed error
 
       if (error.response?.status === 401) {
-        alert("You must be logged in to submit a review.");
+        setNotification({
+          isVisible: true,
+          message: "You must be logged in to submit a review.",
+          type: "error",
+        });
         navigate("/login");
       } else if (error.response?.status === 400) {
-        alert(
-          `Bad request: ${
+        setNotification({
+          isVisible: true,
+          message: `Bad request: ${
             error.response?.data?.message || "Please check your data"
-          }`
-        );
+          }`,
+          type: "error",
+        });
       } else if (error.message.includes("Rating is required")) {
-        alert(error.message);
+        setNotification({
+          isVisible: true,
+          message: error.message,
+          type: "error",
+        });
       } else {
-        alert("Error submitting review. Please try again.");
+        setNotification({
+          isVisible: true,
+          message: "Error submitting review. Please try again.",
+          type: "error",
+        });
       }
     }
   };
@@ -669,6 +714,29 @@ function ReviewSubmissionPage() {
           )}
         </div>
       </div>
+
+      {/* Restaurant Modal */}
+      <RestaurantModal
+        isOpen={showRestaurantModal}
+        onClose={() => setShowRestaurantModal(false)}
+        locationData={formData.location}
+        onRestaurantAdded={handleRestaurantAdded}
+      />
+
+      {/* Success Overlay */}
+      <SuccessOverlay
+        isVisible={showSuccessOverlay}
+        onClose={() => setShowSuccessOverlay(false)}
+        restaurantName={addedRestaurantName}
+      />
+
+      {/* Error Notification */}
+      <Notification
+        message={notification.message}
+        type={notification.type}
+        isVisible={notification.isVisible}
+        onClose={() => setNotification({ ...notification, isVisible: false })}
+      />
     </div>
   );
 }
