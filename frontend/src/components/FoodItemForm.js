@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Notification from "./Notification";
@@ -31,6 +31,26 @@ function FoodItemForm({
   });
 
   const navigate = useNavigate();
+
+  // Handle clicking outside the food suggestions dropdown to close it
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (showFoodSuggestions) {
+        const searchContainer = document.querySelector(
+          ".food-search-input-container"
+        );
+        if (searchContainer && !searchContainer.contains(e.target)) {
+          setShowFoodSuggestions(false);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [showFoodSuggestions]);
 
   // Handle keyboard navigation like restaurant search
   const handleKeyDown = (e) => {
@@ -201,7 +221,7 @@ function FoodItemForm({
           Search for existing items or create new ones
         </p>
 
-        <form onSubmit={(e) => e.preventDefault()}>
+        <div className="food-search-input-container">
           <input
             type="text"
             placeholder="Search for existing food items..."
@@ -228,7 +248,7 @@ function FoodItemForm({
               ))}
             </ul>
           )}
-        </form>
+        </div>
 
         <div className="create-food-section">
           <h4 className="section-title">Create New Food Item</h4>
@@ -370,6 +390,14 @@ function FoodItemForm({
           )}
         </div>
       </div>
+
+      {/* Error Notification */}
+      <Notification
+        message={notification.message}
+        type={notification.type}
+        isVisible={notification.isVisible}
+        onClose={() => setNotification({ ...notification, isVisible: false })}
+      />
     </div>
   );
 }

@@ -11,9 +11,9 @@ function Navbar() {
             Home
           </NavLink>
         </li>
-        <li>
+        {/* <li>
           <NavLink to="/feed">Feed</NavLink>
-        </li>
+        </li> */}
         <li>
           <NavLink to="/leaderboards">Leaderboards</NavLink>
         </li>

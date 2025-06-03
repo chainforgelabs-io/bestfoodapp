@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CitySearch from "../components/CitySearch";
 import FoodItemForm from "../components/FoodItemForm";
 import RatingScale from "../components/RatingScale";
@@ -37,6 +37,26 @@ function ReviewSubmissionPage() {
     type: "error",
   });
   const navigate = useNavigate();
+
+  // Handle clicking outside the suggestions dropdown to close it
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (showSuggestions) {
+        const searchContainer = document.querySelector(
+          ".search-input-container"
+        );
+        if (searchContainer && !searchContainer.contains(e.target)) {
+          setShowSuggestions(false);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [showSuggestions]);
 
   // Validate Step 1
   const validateStep1 = () => {
@@ -487,7 +507,8 @@ function ReviewSubmissionPage() {
                   Select Restaurant for {formData.location.city},{" "}
                   {formData.location.province}, {formData.location.country}
                 </label>
-                <form onSubmit={(e) => e.preventDefault()}>
+
+                <div className="search-input-container">
                   <input
                     type="text"
                     placeholder="Search Restaurant"
@@ -530,7 +551,7 @@ function ReviewSubmissionPage() {
                       </li>
                     </ul>
                   )}
-                </form>
+                </div>
 
                 {/* Add Restaurant Button */}
                 <div className="restaurant-options">
