@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useJsApiLoader } from "@react-google-maps/api";
+import React, { useState, useRef } from "react";
+import { useJsApiLoader, Autocomplete } from "@react-google-maps/api";
 
 const libraries = ["places"];
 
@@ -16,9 +16,9 @@ const provinceMapping = {
 };
 
 const CitySearch = ({ onSelectCity, onEnterPress }) => {
+  const [autocomplete, setAutocomplete] = useState(null);
   const [city, setCity] = useState("");
   const inputRef = useRef(null);
-  const autocompleteRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -26,77 +26,49 @@ const CitySearch = ({ onSelectCity, onEnterPress }) => {
     libraries: libraries,
   });
 
-  useEffect(() => {
-    if (isLoaded && inputRef.current && !autocompleteRef.current) {
-      // Initialize the new PlaceAutocompleteElement
-      try {
-        // Try using the new PlaceAutocompleteElement if available
-        if (window.google?.maps?.places?.PlaceAutocompleteElement) {
-          const autocomplete =
-            new window.google.maps.places.PlaceAutocompleteElement({
-              componentRestrictions: { country: ["us", "ca"] }, // Limit to US and Canada
-              fields: ["address_components", "geometry", "name"],
-              types: ["(cities)"],
-            });
-
-          autocomplete.addEventListener("gmp-placeselect", (event) => {
-            handlePlaceChanged(event.place);
-          });
-
-          inputRef.current.appendChild(autocomplete);
-          autocompleteRef.current = autocomplete;
-        } else {
-          // Fallback to the old Autocomplete for backwards compatibility
-          const autocomplete = new window.google.maps.places.Autocomplete(
-            inputRef.current,
-            {
-              componentRestrictions: { country: ["us", "ca"] },
-              fields: ["address_components", "geometry", "name"],
-              types: ["(cities)"],
-            }
-          );
-
-          autocomplete.addListener("place_changed", () => {
-            const place = autocomplete.getPlace();
-            handlePlaceChanged(place);
-          });
-
-          autocompleteRef.current = autocomplete;
-        }
-      } catch (error) {
-        console.warn("Error initializing Google Places Autocomplete:", error);
-      }
-    }
-  }, [isLoaded]);
+  // Load the autocomplete instance
+  const handleLoad = (autocompleteInstance) => {
+    setAutocomplete(autocompleteInstance);
+  };
 
   // Handle place selection and extract city, province, and country
-  const handlePlaceChanged = (place) => {
-    if (place && place.address_components) {
-      const cityName =
-        place.address_components.find((comp) => comp.types.includes("locality"))
-          ?.long_name || "";
-      const provinceLong =
-        place.address_components.find((comp) =>
-          comp.types.includes("administrative_area_level_1")
-        )?.long_name || "";
-      const country =
-        place.address_components.find((comp) => comp.types.includes("country"))
-          ?.long_name || "";
+  const handlePlaceChanged = () => {
+    if (autocomplete) {
+      const place = autocomplete.getPlace();
+      if (place && place.address_components) {
+        const cityName =
+          place.address_components.find((comp) =>
+            comp.types.includes("locality")
+          )?.long_name || "";
+        const provinceLong =
+          place.address_components.find((comp) =>
+            comp.types.includes("administrative_area_level_1")
+          )?.long_name || "";
+        const country =
+          place.address_components.find((comp) =>
+            comp.types.includes("country")
+          )?.long_name || "";
 
-      // Map province to abbreviation if it exists in our mapping
-      const province = provinceMapping[provinceLong] || provinceLong;
+        // Map province to abbreviation if it exists in our mapping
+        const province = provinceMapping[provinceLong] || provinceLong;
 
-      if (cityName && province && country) {
-        const formattedCity = `${cityName}, ${provinceLong}, ${country}`;
-        setCity(formattedCity);
-        onSelectCity({ city: cityName, province, country });
-        return true; // City has been selected properly
+        if (cityName && province && country) {
+          const formattedCity = `${cityName}, ${provinceLong}, ${country}`;
+          setCity(formattedCity);
+          onSelectCity({ city: cityName, province, country });
+          return true; // City has been selected properly
+        } else {
+          console.error("Could not extract city, province, or country.");
+          return false; // City selection failed
+        }
       } else {
-        console.error("Could not extract city, province, or country.");
-        return false; // City selection failed
+        console.error(
+          "Place selection did not return valid address components."
+        );
+        return false;
       }
     } else {
-      console.error("Place selection did not return valid address components.");
+      console.error("Autocomplete instance is not loaded.");
       return false;
     }
   };
@@ -105,7 +77,8 @@ const CitySearch = ({ onSelectCity, onEnterPress }) => {
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (onEnterPress) {
+      const placeSelected = handlePlaceChanged();
+      if (placeSelected && onEnterPress) {
         onEnterPress();
       }
     } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -151,21 +124,31 @@ const CitySearch = ({ onSelectCity, onEnterPress }) => {
         tabIndex="-1"
         aria-hidden="true"
       />
-      <input
-        ref={inputRef}
-        type="text"
-        value={city}
-        placeholder="Enter city"
-        onChange={(e) => setCity(e.target.value)}
-        onKeyDown={handleKeyDown}
-        className="search-input"
-        autoComplete="off"
-        name="google-maps-search"
-        data-form-type="other"
-        role="combobox"
-        id="google-places-autocomplete"
-        onFocus={handleFocus}
-      />
+      <Autocomplete
+        onLoad={handleLoad}
+        onPlaceChanged={handlePlaceChanged}
+        options={{
+          componentRestrictions: { country: ["us", "ca"] },
+          fields: ["address_components", "geometry", "name"],
+          types: ["(cities)"],
+        }}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          value={city}
+          placeholder="Enter city"
+          onChange={(e) => setCity(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="search-input"
+          autoComplete="off"
+          name="google-maps-search"
+          data-form-type="other"
+          role="combobox"
+          id="google-places-autocomplete"
+          onFocus={handleFocus}
+        />
+      </Autocomplete>
     </div>
   );
 };
