@@ -21,13 +21,14 @@ router.post("/register", async (req, res) => {
 
     // Generate JWT
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "1h", // Default to 1 hour for registration
     });
 
     // Respond with token and user info
     res.status(201).json({
       token,
       user: { id: user._id, email: user.email, username: user.username },
+      expiresIn: "1h",
     });
   } catch (err) {
     console.error(err);
@@ -37,7 +38,7 @@ router.post("/register", async (req, res) => {
 
 // Login a user and return a token
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, keepLoggedIn } = req.body;
 
   console.log("Login attempt:", { email, password });
 
@@ -58,15 +59,19 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
 
-    // Generate JWT
+    // Generate JWT with different expiration times based on keepLoggedIn preference
+    const expirationTime = keepLoggedIn ? "30d" : "1h"; // 30 days if keep logged in, otherwise 1 hour
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: expirationTime,
     });
+
+    console.log(`Token generated with expiration: ${expirationTime}`);
 
     // Respond with token and user info
     res.json({
       token,
       user: { id: user._id, email: user.email, username: user.username },
+      expiresIn: expirationTime,
     });
   } catch (err) {
     console.error("Login error:", err);

@@ -9,7 +9,24 @@ instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // Check if token is expired before sending it
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const now = Date.now() / 1000;
+
+        if (payload.exp < now) {
+          // Token is expired, remove it and don't send it
+          localStorage.removeItem("token");
+          console.log("Removed expired token from localStorage");
+        } else {
+          // Token is still valid, include it in the request
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (error) {
+        // Invalid token format, remove it
+        localStorage.removeItem("token");
+        console.log("Removed invalid token from localStorage");
+      }
     }
     return config;
   },
@@ -21,9 +38,17 @@ instance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Token is expired or invalid, log the user out
+      // Token is expired or invalid, remove it from storage
       localStorage.removeItem("token");
-      window.location.href = "/login"; // Redirect to login
+
+      // Only redirect to login if this was a protected route (not a public search)
+      // We can tell this by checking if the request had an Authorization header
+      if (error.config?.headers?.Authorization) {
+        console.log(
+          "Unauthorized access to protected route, redirecting to login"
+        );
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   }

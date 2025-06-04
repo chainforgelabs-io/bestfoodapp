@@ -95,21 +95,54 @@ const CitySearch = ({ onSelectCity, onEnterPress }) => {
     }
   };
 
+  // Handle focus to disable autocomplete
+  const handleFocus = (e) => {
+    e.target.setAttribute("readonly", true);
+    setTimeout(() => {
+      e.target.removeAttribute("readonly");
+    }, 100);
+  };
+
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
 
   return (
-    <Autocomplete onLoad={handleLoad} onPlaceChanged={handlePlaceChanged}>
+    <div>
+      {/* Hidden dummy inputs to trick Chrome autocomplete - placed outside Autocomplete */}
       <input
         type="text"
-        value={city}
-        placeholder="Enter city"
-        onChange={(e) => setCity(e.target.value)}
-        onKeyDown={handleKeyDown} // Trigger search on Enter
-        className="search-input"
+        style={{ position: "absolute", left: "-9999px", opacity: 0 }}
+        autoComplete="off"
+        tabIndex="-1"
+        aria-hidden="true"
       />
-    </Autocomplete>
+      <input
+        type="password"
+        style={{ position: "absolute", left: "-9999px", opacity: 0 }}
+        autoComplete="off"
+        tabIndex="-1"
+        aria-hidden="true"
+      />
+      <Autocomplete onLoad={handleLoad} onPlaceChanged={handlePlaceChanged}>
+        <input
+          type="text"
+          value={city}
+          placeholder="Enter city"
+          onChange={(e) => setCity(e.target.value)}
+          onKeyDown={handleKeyDown} // Trigger search on Enter
+          className="search-input"
+          autocomplete="off"
+          autoComplete="off"
+          autoFill="off"
+          name="google-maps-search"
+          data-form-type="other"
+          role="combobox"
+          id="google-places-autocomplete"
+          onFocus={handleFocus}
+        />
+      </Autocomplete>
+    </div>
   );
 };
 

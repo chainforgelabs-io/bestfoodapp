@@ -123,6 +123,82 @@
   animation: fadeInUp 0.8s ease-out 0.6s both;
 }
 
+/* Password input with toggle styling */
+.password-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.password-input {
+  padding-right: 50px; /* Make room for the toggle button */
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: #b08bd4;
+}
+
+.password-toggle:hover {
+  background: rgba(176, 139, 212, 0.1);
+  transform: translateY(-50%) scale(1.1);
+  color: #9562d4;
+}
+
+.password-toggle:focus {
+  outline: none;
+  background: rgba(176, 139, 212, 0.15);
+  box-shadow: 0 0 0 2px rgba(176, 139, 212, 0.3);
+  color: #9562d4;
+}
+
+/* Checkbox styling */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.login-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #b08bd4;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-checkbox:hover {
+  transform: scale(1.1);
+}
+
+.checkbox-label {
+  color: #333;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.3s ease;
+}
+
+.checkbox-label:hover {
+  color: #b08bd4;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .login-form {
@@ -132,5 +208,15 @@
 
   .login-page h2 {
     font-size: 2rem;
+  }
+
+  .password-toggle {
+    font-size: 1.1rem;
+    width: 28px;
+    height: 28px;
+  }
+
+  .password-input {
+    padding-right: 45px; /* Adjust for smaller toggle button on mobile */
   }
 }

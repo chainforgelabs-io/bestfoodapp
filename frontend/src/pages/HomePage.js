@@ -134,8 +134,6 @@ function HomePage() {
           `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/rank/type-or-cuisine/city/${citySelected.city}`,
           {
             params: {
-              province: citySelected.province,
-              country: citySelected.country,
               search: restaurantSearchTerm, // Send single search term for either type or cuisine
             },
           }
@@ -152,8 +150,45 @@ function HomePage() {
         setResults(sortedResults); // Update state with sorted results
         console.log("Filtered Results:", sortedResults);
       } catch (error) {
-        console.error("Error searching restaurants:", error);
-        setResults([]); // Clear results on error
+        console.warn(
+          "Restaurant search endpoint not available, trying basic search:",
+          error.message
+        );
+        // Fallback to basic restaurant search if the ranking endpoint fails
+        try {
+          const response = await axios.get(
+            `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
+            {
+              params: {
+                city: citySelected.city,
+                province: citySelected.province,
+                country: citySelected.country,
+              },
+            }
+          );
+          // Filter restaurants by the search term locally
+          const filteredResults = restaurantSearchTerm
+            ? response.data.filter(
+                (restaurant) =>
+                  restaurant.name
+                    .toLowerCase()
+                    .includes(restaurantSearchTerm.toLowerCase()) ||
+                  restaurant.type
+                    ?.toLowerCase()
+                    .includes(restaurantSearchTerm.toLowerCase()) ||
+                  restaurant.cuisine?.some((c) =>
+                    c.toLowerCase().includes(restaurantSearchTerm.toLowerCase())
+                  )
+              )
+            : response.data;
+          setResults(filteredResults);
+        } catch (fallbackError) {
+          console.error(
+            "Both restaurant search methods failed:",
+            fallbackError
+          );
+          setResults([]); // Clear results on error
+        }
       }
     } else if (activeFilter === "Food") {
       if (!foodSearchTerm) {
@@ -207,7 +242,22 @@ function HomePage() {
       );
       return response.data;
     } catch (error) {
-      console.error("Error fetching restaurant scores:", error);
+      // Handle 404 and other errors gracefully - don't log them as errors since some restaurants may not have scores yet
+      if (error.response?.status === 404) {
+        // Restaurant doesn't have any food items or scores yet
+        return {
+          adminAverageScore: 0,
+          communityAverageScore: 0,
+          overallAverageScore: 0,
+        };
+      }
+      // For other errors, still return default scores but log the error
+      console.warn(
+        "Error fetching restaurant scores for restaurant",
+        restaurantId,
+        ":",
+        error.message
+      );
       return {
         adminAverageScore: 0,
         communityAverageScore: 0,
