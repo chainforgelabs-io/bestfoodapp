@@ -668,4 +668,272 @@ router.get("/cuisine/:type", async (req, res) => {
   }
 });
 
+// GET /api/leaderboards/categories - Get all available categories from database
+router.get("/categories", async (req, res) => {
+  try {
+    const { city, province, country } = req.query;
+
+    let query = {};
+    if (city) {
+      // If city is specified, filter by location
+      const addresses = await Address.find({
+        ...(city && { city: new RegExp(city, "i") }),
+        ...(province && { province: new RegExp(province, "i") }),
+        ...(country && { country: new RegExp(country, "i") }),
+      });
+      const addressIds = addresses.map((addr) => addr._id);
+      const restaurants = await Restaurant.find({
+        address: { $in: addressIds },
+      });
+      const restaurantIds = restaurants.map((r) => r._id);
+      query = { restaurant: { $in: restaurantIds } };
+    }
+
+    // Get unique food types, categories, subtypes
+    const [foodTypes, categories, subTypes, cuisineTypes, restaurantTypes] =
+      await Promise.all([
+        FoodItem.distinct("type", query),
+        FoodItem.distinct("category", query),
+        FoodItem.distinct("subType", query),
+        Restaurant.distinct("cuisine"),
+        Restaurant.distinct("type"),
+      ]);
+
+    // Filter out null/undefined values and sort
+    const result = {
+      foodTypes: foodTypes.filter(Boolean).sort(),
+      categories: categories.filter(Boolean).sort(),
+      subTypes: subTypes.filter(Boolean).sort(),
+      cuisineTypes: cuisineTypes.flat().filter(Boolean).sort(),
+      restaurantTypes: restaurantTypes.filter(Boolean).sort(),
+    };
+
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    res.status(500).json({ error: "Failed to fetch categories" });
+  }
+});
+
+// GET /api/leaderboards/filtered - Advanced filtering for city-specific data
+router.get("/filtered", async (req, res) => {
+  try {
+    const {
+      city,
+      province,
+      country,
+      category,
+      foodType,
+      subType,
+      cuisine,
+      restaurantType,
+    } = req.query;
+
+    console.log("Filtering request:", {
+      city,
+      province,
+      country,
+      category,
+      cuisine,
+      restaurantType,
+      foodType,
+      subType,
+    });
+
+    // Find addresses in the specified location
+    const addressQuery = {
+      ...(city && { city: new RegExp(city, "i") }),
+      // Temporarily remove province/country filtering to debug
+      // ...(province && { province: new RegExp(province, "i") }),
+      // ...(country && { country: new RegExp(country, "i") }),
+    };
+
+    const addresses = await Address.find(addressQuery);
+    const addressIds = addresses.map((addr) => addr._id);
+    console.log(`Found ${addresses.length} addresses in ${city}`);
+    console.log(
+      "Address details:",
+      addresses.map((addr) => ({
+        id: addr._id,
+        city: addr.city,
+        street: addr.street,
+      }))
+    );
+
+    // Build restaurant query - make cuisine filtering more permissive
+    const restaurantQuery = {
+      address: { $in: addressIds },
+      // Only filter by cuisine if it's specifically provided (not "All")
+      ...(cuisine &&
+        cuisine !== "All" && {
+          cuisine: { $regex: new RegExp(cuisine, "i") },
+        }),
+      ...(restaurantType && {
+        type: { $regex: new RegExp(restaurantType, "i") },
+      }),
+    };
+
+    console.log("Restaurant query:", restaurantQuery);
+
+    const restaurants = await Restaurant.find(restaurantQuery).populate(
+      "address"
+    );
+    console.log(`Found ${restaurants.length} restaurants after filtering`);
+    console.log(
+      "Restaurant details:",
+      restaurants.map((r) => ({
+        id: r._id,
+        name: r.name,
+        addressId: r.address,
+      }))
+    );
+
+    // Let's also check how many total restaurants exist with ANY address in this city
+    const allAddressesInCity = await Address.find({
+      city: new RegExp(city, "i"),
+    });
+    const allAddressIdsInCity = allAddressesInCity.map((addr) => addr._id);
+    const allRestaurantsInCity = await Restaurant.find({
+      address: { $in: allAddressIdsInCity },
+    });
+    console.log(
+      `DEBUG: Total addresses in ${city}: ${allAddressesInCity.length}`
+    );
+    console.log(
+      `DEBUG: Total restaurants in ${city}: ${allRestaurantsInCity.length}`
+    );
+    console.log(
+      `DEBUG: All restaurant names in ${city}:`,
+      allRestaurantsInCity.map((r) => r.name)
+    );
+
+    if (category === "restaurants" || category === "cuisines") {
+      // Return restaurants with calculated scores
+      const restaurantsWithScores = await Promise.all(
+        restaurants.map(async (restaurant) => {
+          try {
+            const foodItems = await FoodItem.find({
+              restaurant: restaurant._id,
+            });
+
+            if (foodItems.length === 0) {
+              return {
+                ...restaurant._doc,
+                adminScore: null,
+                communityScore: null,
+                overallScore: null,
+                hasValidScore: false,
+              };
+            }
+
+            let totalScore = 0;
+            let validScores = 0;
+
+            foodItems.forEach((item) => {
+              const itemScore = calculateOverallScore(
+                item.adminScore,
+                item.communityScore
+              );
+              if (itemScore > 0) {
+                totalScore += itemScore;
+                validScores++;
+              }
+            });
+
+            if (validScores > 0) {
+              const avgScore = totalScore / validScores;
+              return {
+                ...restaurant._doc,
+                adminScore: Math.round(avgScore),
+                communityScore: 0,
+                overallScore: Math.round(avgScore),
+                hasValidScore: true,
+              };
+            }
+
+            return {
+              ...restaurant._doc,
+              adminScore: null,
+              communityScore: null,
+              overallScore: null,
+              hasValidScore: false,
+            };
+          } catch (error) {
+            console.error(
+              `Error calculating score for restaurant ${restaurant._id}:`,
+              error
+            );
+            return {
+              ...restaurant._doc,
+              adminScore: null,
+              communityScore: null,
+              overallScore: null,
+              hasValidScore: false,
+            };
+          }
+        })
+      );
+
+      // Show restaurants with valid scores first, then those without
+      const withScores = restaurantsWithScores.filter((r) => r.hasValidScore);
+      const withoutScores = restaurantsWithScores.filter(
+        (r) => !r.hasValidScore
+      );
+
+      const sortedWithScores = withScores.sort(
+        (a, b) => (b.overallScore || 0) - (a.overallScore || 0)
+      );
+
+      // Combine: scored restaurants first, then unscored ones
+      const finalResults = [...sortedWithScores, ...withoutScores].slice(0, 10);
+
+      console.log(
+        `Returning ${finalResults.length} restaurants (${withScores.length} with scores, ${withoutScores.length} without)`
+      );
+      res.json(finalResults);
+    } else if (category === "food-items") {
+      // Build food item query
+      const foodQuery = {
+        restaurant: { $in: restaurants.map((r) => r._id) },
+        ...(foodType &&
+          foodType !== "All" && {
+            type: { $regex: new RegExp(foodType, "i") },
+          }),
+        ...(subType &&
+          subType !== "All" && {
+            subType: { $regex: new RegExp(subType, "i") },
+          }),
+      };
+
+      console.log("Food item query:", foodQuery);
+
+      const foodItems = await FoodItem.find(foodQuery).populate({
+        path: "restaurant",
+        populate: { path: "address" },
+      });
+
+      // Calculate scores and sort
+      const scoredItems = foodItems
+        .map((item) => ({
+          ...item._doc,
+          calculatedScore: calculateOverallScore(
+            item.adminScore,
+            item.communityScore
+          ),
+        }))
+        .filter((item) => item.calculatedScore > 0)
+        .sort((a, b) => b.calculatedScore - a.calculatedScore)
+        .slice(0, 10);
+
+      console.log(`Returning ${scoredItems.length} food items`);
+      res.json(scoredItems);
+    } else {
+      res.status(400).json({ error: "Invalid category specified" });
+    }
+  } catch (error) {
+    console.error("Error in filtered leaderboards:", error);
+    res.status(500).json({ error: "Failed to fetch filtered leaderboards" });
+  }
+});
+
 module.exports = router;

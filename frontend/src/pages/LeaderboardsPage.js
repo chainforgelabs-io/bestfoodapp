@@ -15,13 +15,22 @@ function LeaderboardsPage() {
   // State management
   const [activeCategory, setActiveCategory] = useState("restaurants");
   const [selectedCity, setSelectedCity] = useState(null);
-  const [selectedFoodCategory, setSelectedFoodCategory] = useState("Burger");
-  const [selectedCuisine, setCuisine] = useState("Italian");
+  const [selectedFoodCategory, setSelectedFoodCategory] = useState("All"); // Default to "All" to show all food items
+  const [selectedCuisine, setCuisine] = useState("All"); // Default to "All" to show all restaurants
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [globalLeaderboards, setGlobalLeaderboards] = useState({});
   const [loading, setLoading] = useState(false);
   const [categoryLoading, setCategoryLoading] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Dynamic categories from database
+  const [availableCategories, setAvailableCategories] = useState({
+    foodTypes: [],
+    categories: [],
+    subTypes: [],
+    cuisineTypes: [],
+    restaurantTypes: [],
+  });
 
   // Available categories with fixed icons
   const mainCategories = [
@@ -30,32 +39,40 @@ function LeaderboardsPage() {
     { id: "cuisines", label: "Cuisines", icon: "fa-solid fa-drumstick-bite" },
   ];
 
-  // Updated food categories to match database types
-  const foodCategories = [
-    "Burger",
-    "Pizza",
-    "Tacos",
-    "Burrito",
-    "Hot Dog",
-    "Fried Rice",
-    "Fries",
-    "Churro",
-  ];
+  // Updated food categories to match database types - now dynamic
+  const foodCategories =
+    availableCategories.foodTypes.length > 0
+      ? ["All", ...availableCategories.foodTypes]
+      : [
+          "All",
+          "Burger",
+          "Pizza",
+          "Tacos",
+          "Burrito",
+          "Hot Dog",
+          "Fried Rice",
+          "Fries",
+          "Churro",
+        ];
 
-  const cuisineTypes = [
-    "Italian",
-    "Asian",
-    "Mexican",
-    "American",
-    "Indian",
-    "French",
-    "Thai",
-    "Chinese",
-    "Japanese",
-    "Mediterranean",
-    "Vietnamese",
-    "Fast Food",
-  ];
+  const cuisineTypes =
+    availableCategories.cuisineTypes.length > 0
+      ? ["All", ...availableCategories.cuisineTypes]
+      : [
+          "All",
+          "Italian",
+          "Asian",
+          "Mexican",
+          "American",
+          "Indian",
+          "French",
+          "Thai",
+          "Chinese",
+          "Japanese",
+          "Mediterranean",
+          "Vietnamese",
+          "Fast Food",
+        ];
 
   // Enhanced global leaderboard categories with new additions
   const globalCategories = [
@@ -187,145 +204,122 @@ function LeaderboardsPage() {
     }
   };
 
+  // Fetch dynamic categories from database
+  const fetchAvailableCategories = async () => {
+    try {
+      let endpoint = `${API_BASE_URL}/api/leaderboards/categories`;
+      const params = {};
+
+      // If city is selected, filter categories by city
+      if (selectedCity) {
+        params.city = selectedCity.city;
+        params.province = selectedCity.province;
+        params.country = selectedCity.country;
+      }
+
+      const response = await axios.get(endpoint, { params });
+      setAvailableCategories(response.data);
+      console.log("Available categories loaded:", response.data);
+    } catch (error) {
+      console.error("Error fetching available categories:", error);
+      // Keep default fallback categories
+    }
+  };
+
   // Fetch data based on current selections
   const fetchLeaderboardData = async () => {
     if (!selectedCity) return;
 
     setLoading(true);
     try {
-      let endpoint = "";
-      let params = {};
+      // Use the new advanced filtering endpoint
+      const endpoint = `${API_BASE_URL}/api/leaderboards/filtered`;
+      const params = {
+        city: selectedCity.city,
+        province: selectedCity.province,
+        country: selectedCity.country,
+        category: activeCategory,
+      };
 
-      switch (activeCategory) {
-        case "restaurants":
-          // Use the search endpoint that exists
-          endpoint = `${API_BASE_URL}/api/restaurants/search`;
-          params = {
-            city: selectedCity.city,
-            province: selectedCity.province,
-            country: selectedCity.country,
-          };
-          break;
-
-        case "food-items":
-          // Use the correct food items endpoint with the type field
-          endpoint = `${API_BASE_URL}/api/food-items/rank/category/${selectedFoodCategory}/city/${selectedCity.city}`;
-          break;
-
-        case "cuisines":
-          // Use restaurant search for cuisines
-          endpoint = `${API_BASE_URL}/api/restaurants/search`;
-          params = {
-            city: selectedCity.city,
-            province: selectedCity.province,
-            country: selectedCity.country,
-          };
-          break;
+      // Add specific filtering based on category
+      if (activeCategory === "food-items" && selectedFoodCategory !== "All") {
+        params.foodType = selectedFoodCategory;
+        // Could add subType filtering here if needed
+      } else if (
+        (activeCategory === "restaurants" || activeCategory === "cuisines") &&
+        selectedCuisine !== "All"
+      ) {
+        // Only filter by cuisine when a specific cuisine is selected (not "All")
+        params.cuisine = selectedCuisine;
+        // Could add restaurantType filtering here if needed
       }
 
-      if (endpoint) {
-        const response = await axios.get(endpoint, { params });
-        let data = response.data;
+      const response = await axios.get(endpoint, { params });
+      const data = response.data;
 
-        // Filter by cuisine if searching restaurants or cuisines
-        if (
-          (activeCategory === "restaurants" || activeCategory === "cuisines") &&
-          selectedCuisine
-        ) {
-          data = data.filter(
-            (item) =>
-              item.cuisine &&
-              item.cuisine.some((c) =>
-                c.toLowerCase().includes(selectedCuisine.toLowerCase())
-              )
-          );
-        }
-
-        // Calculate real scores for restaurants if this is a restaurant category
-        if (activeCategory === "restaurants" || activeCategory === "cuisines") {
-          if (data && data.length > 0) {
-            const restaurantsWithScores = await Promise.all(
-              data.map(async (restaurant) => {
-                try {
-                  // Get all food items for this restaurant
-                  const foodItemsResponse = await axios.get(
-                    `${API_BASE_URL}/api/food-items/restaurant/${restaurant._id}`
-                  );
-
-                  if (
-                    foodItemsResponse.data &&
-                    foodItemsResponse.data.length > 0
-                  ) {
-                    const foodItems = foodItemsResponse.data;
-                    let totalScore = 0;
-                    let validScores = 0;
-
-                    // Calculate average of all food item scores
-                    foodItems.forEach((item) => {
-                      // Use the backend's calculated overallAverageScore first
-                      const itemScore = item.overallAverageScore || 0;
-
-                      if (itemScore > 0) {
-                        totalScore += itemScore;
-                        validScores++;
-                      }
-                    });
-
-                    if (validScores > 0) {
-                      const avgScore = totalScore / validScores;
-                      return {
-                        ...restaurant,
-                        adminScore: Math.round(avgScore),
-                        communityScore: 0,
-                        overallScore: Math.round(avgScore),
-                        hasValidScore: true,
-                      };
-                    }
-                  }
-
-                  // No valid scores found
-                  return {
-                    ...restaurant,
-                    adminScore: null,
-                    communityScore: null,
-                    overallScore: null,
-                    hasValidScore: false,
-                  };
-                } catch (error) {
-                  console.warn(
-                    `Failed to fetch food items for restaurant ${restaurant._id}:`,
-                    error
-                  );
-                  return {
-                    ...restaurant,
-                    adminScore: null,
-                    communityScore: null,
-                    overallScore: null,
-                    hasValidScore: false,
-                  };
-                }
-              })
-            );
-
-            // Sort by overall score (highest first), but handle null scores
-            data = restaurantsWithScores.sort((a, b) => {
-              if (!a.hasValidScore && !b.hasValidScore) return 0;
-              if (!a.hasValidScore) return 1;
-              if (!b.hasValidScore) return -1;
-              return (b.overallScore || 0) - (a.overallScore || 0);
-            });
-          }
-        }
-
-        setLeaderboardData(data.slice(0, 10)); // Top 10
-      }
+      // Data is already scored and sorted from the backend
+      setLeaderboardData(data);
     } catch (error) {
-      console.warn(
-        "API unavailable for city data, using mock data:",
-        error.message
-      );
-      // Use mock data when API is unavailable
-      setLeaderboardData([]);
+      console.warn("Error fetching filtered leaderboard data:", error.message);
+
+      // Fallback to original endpoints if new endpoint fails
+      try {
+        let fallbackEndpoint = "";
+        let fallbackParams = {};
+
+        switch (activeCategory) {
+          case "restaurants":
+            fallbackEndpoint = `${API_BASE_URL}/api/restaurants/search`;
+            fallbackParams = {
+              city: selectedCity.city,
+              province: selectedCity.province,
+              country: selectedCity.country,
+            };
+            break;
+
+          case "food-items":
+            fallbackEndpoint = `${API_BASE_URL}/api/food-items/rank/category/${selectedFoodCategory}/city/${selectedCity.city}`;
+            break;
+
+          case "cuisines":
+            fallbackEndpoint = `${API_BASE_URL}/api/restaurants/search`;
+            fallbackParams = {
+              city: selectedCity.city,
+              province: selectedCity.province,
+              country: selectedCity.country,
+            };
+            break;
+        }
+
+        if (fallbackEndpoint) {
+          const fallbackResponse = await axios.get(fallbackEndpoint, {
+            params: fallbackParams,
+          });
+          let fallbackData = fallbackResponse.data;
+
+          // Apply cuisine filtering for restaurants/cuisines
+          if (
+            (activeCategory === "restaurants" ||
+              activeCategory === "cuisines") &&
+            selectedCuisine
+          ) {
+            fallbackData = fallbackData.filter(
+              (item) =>
+                item.cuisine &&
+                item.cuisine.some((c) =>
+                  c.toLowerCase().includes(selectedCuisine.toLowerCase())
+                )
+            );
+          }
+
+          setLeaderboardData(fallbackData.slice(0, 10));
+        } else {
+          setLeaderboardData([]);
+        }
+      } catch (fallbackError) {
+        console.error("Fallback endpoint also failed:", fallbackError);
+        setLeaderboardData([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -342,6 +336,11 @@ function LeaderboardsPage() {
       }
     }
   }, [activeCategory, selectedCity, selectedFoodCategory, selectedCuisine]);
+
+  // Effect to fetch available categories when city changes or on initial load
+  useEffect(() => {
+    fetchAvailableCategories();
+  }, [selectedCity]); // Fetch categories when city changes
 
   // Handle city selection
   const handleCitySelect = (city) => {
@@ -367,11 +366,17 @@ function LeaderboardsPage() {
 
     switch (activeCategory) {
       case "restaurants":
-        return `Best ${selectedCuisine} Restaurants in ${selectedCity.city}`;
+        return selectedCuisine === "All"
+          ? `All Restaurants in ${selectedCity.city}`
+          : `Best ${selectedCuisine} Restaurants in ${selectedCity.city}`;
       case "food-items":
-        return `Best ${selectedFoodCategory} in ${selectedCity.city}`;
+        return selectedFoodCategory === "All"
+          ? `All Food Items in ${selectedCity.city}`
+          : `Best ${selectedFoodCategory} in ${selectedCity.city}`;
       case "cuisines":
-        return `Top ${selectedCuisine} Spots in ${selectedCity.city}`;
+        return selectedCuisine === "All"
+          ? `All Cuisine Types in ${selectedCity.city}`
+          : `Top ${selectedCuisine} Spots in ${selectedCity.city}`;
       default:
         return `Leaderboards for ${selectedCity.city}`;
     }
