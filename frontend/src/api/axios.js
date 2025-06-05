@@ -9,23 +9,29 @@ instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
-      // Check if token is expired before sending it
+      // Always include the token in the request - let the server validate it
+      // Only remove it if we get a 401 response
+      config.headers.Authorization = `Bearer ${token}`;
+
+      // Optional: Log token expiration info for debugging
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
         const now = Date.now() / 1000;
+        const timeUntilExpiry = payload.exp - now;
 
-        if (payload.exp < now) {
-          // Token is expired, remove it and don't send it
-          localStorage.removeItem("token");
-          console.log("Removed expired token from localStorage");
+        if (timeUntilExpiry > 0) {
+          console.log(
+            `Token valid for ${Math.floor(
+              timeUntilExpiry / 3600
+            )} hours, ${Math.floor((timeUntilExpiry % 3600) / 60)} minutes`
+          );
         } else {
-          // Token is still valid, include it in the request
-          config.headers.Authorization = `Bearer ${token}`;
+          console.log("Token appears expired, but letting server validate");
         }
       } catch (error) {
-        // Invalid token format, remove it
-        localStorage.removeItem("token");
-        console.log("Removed invalid token from localStorage");
+        console.log(
+          "Could not parse token expiration, letting server validate"
+        );
       }
     }
     return config;
@@ -40,6 +46,8 @@ instance.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // Token is expired or invalid, remove it from storage
       localStorage.removeItem("token");
+      localStorage.removeItem("keepLoggedIn");
+      console.log("Token was invalid/expired - removed from localStorage");
 
       // Only redirect to login if this was a protected route (not a public search)
       // We can tell this by checking if the request had an Authorization header

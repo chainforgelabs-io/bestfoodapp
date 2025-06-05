@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "../api/axios";
+import tokenUtils from "../utils/auth";
 import "../styles/LoginPage.css"; // Style your page accordingly
 
 const LoginPage = () => {
@@ -13,6 +14,18 @@ const LoginPage = () => {
   const [isForgotPassword, setIsForgotPassword] = useState(false); // New state for forgot password
   const [resetMessage, setResetMessage] = useState(""); // Message for reset email sent
   const navigate = useNavigate();
+
+  // Check if user is already logged in when component mounts
+  useEffect(() => {
+    if (tokenUtils.isAuthenticated()) {
+      console.log("User is already authenticated, redirecting to profile");
+      const tokenInfo = tokenUtils.getTokenInfo();
+      if (tokenInfo) {
+        console.log("Current token info:", tokenInfo);
+      }
+      navigate("/profile");
+    }
+  }, [navigate]);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -27,20 +40,30 @@ const LoginPage = () => {
       );
 
       console.log("Login successful:", data);
-      localStorage.setItem("token", data.token);
 
-      // Store the keep logged in preference and expiration info for future reference
-      if (keepLoggedIn) {
-        localStorage.setItem("keepLoggedIn", "true");
-        console.log("Extended session enabled - token expires in 30 days");
-      } else {
-        localStorage.removeItem("keepLoggedIn");
-        console.log("Standard session - token expires in 1 hour");
+      // Use token utilities to store the token
+      tokenUtils.setToken(data.token, keepLoggedIn);
+
+      // Log token information for debugging
+      const tokenInfo = tokenUtils.getTokenInfo();
+      if (tokenInfo) {
+        console.log("Token stored successfully:", {
+          expiresAt: tokenInfo.expiresAt,
+          hoursUntilExpiry: tokenInfo.hoursUntilExpiry,
+          keepLoggedIn: tokenInfo.keepLoggedIn,
+          sessionDuration: data.expiresIn,
+        });
       }
 
-      // Log token expiration time for user info
-      if (data.expiresIn) {
-        console.log(`Session duration: ${data.expiresIn}`);
+      // Additional logging for debugging
+      if (keepLoggedIn) {
+        console.log("✅ Extended session enabled - token expires in 30 days");
+        console.log(
+          "localStorage keepLoggedIn:",
+          localStorage.getItem("keepLoggedIn")
+        );
+      } else {
+        console.log("⏰ Standard session - token expires in 1 hour");
       }
 
       navigate("/profile");
@@ -153,14 +176,13 @@ const LoginPage = () => {
                 className="login-checkbox"
               />
               <label htmlFor="keepLoggedIn" className="checkbox-label">
-                Keep me logged in
+                Keep me logged in (30 days)
               </label>
             </div>
             <button type="submit" className="login-btn">
               Login
             </button>
           </form>
-
           <p>
             Forgot your password?{" "}
             <span
@@ -176,7 +198,10 @@ const LoginPage = () => {
             </span>
           </p>
           <p>
-            Don't have an account? <Link to="/register">Register here</Link>
+            Don't have an account?{" "}
+            <Link to="/register" className="login-link">
+              Sign up here
+            </Link>
           </p>
         </>
       )}

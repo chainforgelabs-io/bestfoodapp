@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "../api/axios"; // Correct import of axios
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
+import tokenUtils from "../utils/auth";
 import "../styles/ProfilePage.css";
 
 function ProfilePage() {
@@ -9,43 +10,63 @@ function ProfilePage() {
   const [reviewCount, setReviewCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
-  const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (token) {
-        try {
-          const decodedToken = jwtDecode(token);
-          console.log("Decoded token:", decodedToken);
+      // Check if user is authenticated
+      if (!tokenUtils.isAuthenticated()) {
+        console.log("User not authenticated, redirecting to login");
+        navigate("/login");
+        return;
+      }
 
-          const userId = decodedToken.id;
-          console.log("User ID from token:", userId);
+      const token = tokenUtils.getToken();
+      try {
+        const decodedToken = jwtDecode(token);
+        console.log("Decoded token:", decodedToken);
 
-          // Fetch user details from localhost:5000
-          const userResponse = await axios.get(`/api/users/${userId}`);
-          console.log("User details response:", userResponse);
+        const userId = decodedToken.id;
+        console.log("User ID from token:", userId);
 
-          // Access the 'user' object inside 'data' and set it
-          const userData = userResponse.data.user;
-          setUser(userData);
-
-          // Set review count, followers count, and following count
-          setReviewCount(userData.reviews.length || 0);
-          setFollowerCount(userData.followers.length || 0);
-          setFollowingCount(userData.following.length || 0);
-        } catch (error) {
-          console.error("Error fetching user data", error);
+        // Log token information for debugging
+        const tokenInfo = tokenUtils.getTokenInfo();
+        if (tokenInfo) {
+          console.log("Current session info:", {
+            expiresAt: tokenInfo.expiresAt,
+            hoursUntilExpiry: tokenInfo.hoursUntilExpiry,
+            keepLoggedIn: tokenInfo.keepLoggedIn,
+          });
         }
+
+        // Fetch user details from localhost:5000
+        const userResponse = await axios.get(`/api/users/${userId}`);
+        console.log("User details response:", userResponse);
+
+        // Access the 'user' object inside 'data' and set it
+        const userData = userResponse.data.user;
+        setUser(userData);
+
+        // Set review count, followers count, and following count
+        setReviewCount(userData.reviews.length || 0);
+        setFollowerCount(userData.followers.length || 0);
+        setFollowingCount(userData.following.length || 0);
+      } catch (error) {
+        console.error("Error fetching user data", error);
+        // If there's an error (like token expiry), redirect to login
+        tokenUtils.clearToken();
+        navigate("/login");
       }
     };
 
     fetchUserData();
-  }, [token]);
+  }, [navigate]);
 
-  // Logout function to clear the token and redirect to the login page
+  // Enhanced logout function to clear all authentication data
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    console.log("Logging out user");
+    tokenUtils.clearToken();
+    console.log("Authentication data cleared");
     navigate("/login"); // Redirect to login page
   };
 
