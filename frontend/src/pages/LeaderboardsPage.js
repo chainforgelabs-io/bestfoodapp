@@ -194,74 +194,69 @@ function LeaderboardsPage() {
 
                 // Process each restaurant
                 for (const restaurant of restaurantsResponse.data) {
-                  // Since address is a reference ID, we need the populated address data
-                  // The restaurants API should return populated address data
-                  let cityName, province, country;
+                  // Declare restaurantScore outside the try block to avoid scope issues
+                  let restaurantScore = 0;
 
-                  if (restaurant.address) {
-                    if (typeof restaurant.address === "string") {
-                      // Address is just an ID - skip this restaurant as we can't determine city
-                      console.warn(
-                        `Restaurant ${restaurant.name} has unpopulated address ID: ${restaurant.address}`
-                      );
-                      continue;
-                    } else {
-                      // Address is populated object
-                      cityName = restaurant.address.city;
-                      province = restaurant.address.province;
-                      country = restaurant.address.country;
-                    }
-                  }
-
-                  if (cityName && restaurant._id) {
-                    // Use available restaurant scores or generate reasonable defaults based on restaurant type
-                    let restaurantScore = 0;
+                  // Calculate real score from food items (like Best Restaurants does)
+                  try {
+                    const foodItemsResponse = await axios.get(
+                      `${API_BASE_URL}/api/food-items/restaurant/${restaurant._id}`
+                    );
 
                     if (
-                      restaurant.adminScore ||
-                      restaurant.communityScore ||
-                      restaurant.overallAverageScore
+                      foodItemsResponse.data &&
+                      foodItemsResponse.data.length > 0
                     ) {
-                      restaurantScore =
-                        restaurant.overallAverageScore ||
-                        restaurant.adminScore ||
-                        restaurant.communityScore ||
-                        0;
-                    } else {
-                      // Generate score based on restaurant type as fallback
-                      const scoreMap = {
-                        "Fine Dining": 85,
-                        "Casual Dining": 75,
-                        "Fast Food": 65,
-                        "Pizza": 70,
-                        "default": 70,
-                      };
-                      restaurantScore =
-                        scoreMap[restaurant.type] || scoreMap["default"];
-                    }
+                      const foodItems = foodItemsResponse.data;
+                      let totalScore = 0;
+                      let validScores = 0;
 
-                    if (restaurantScore > 0) {
-                      if (!cityStats[cityName]) {
-                        cityStats[cityName] = {
-                          city: cityName,
-                          province: province || "Unknown",
-                          country: country || "Unknown",
-                          restaurants: [],
-                          totalScore: 0,
-                          restaurantCount: 0,
-                        };
-                      }
-
-                      cityStats[cityName].restaurants.push({
-                        id: restaurant._id,
-                        name: restaurant.name,
-                        score: restaurantScore,
-                        type: restaurant.type,
+                      foodItems.forEach((item) => {
+                        const itemScore = item.overallAverageScore || 0;
+                        if (itemScore > 0) {
+                          totalScore += itemScore;
+                          validScores++;
+                        }
                       });
-                      cityStats[cityName].totalScore += restaurantScore;
-                      cityStats[cityName].restaurantCount++;
-                      processedRestaurants++;
+
+                      restaurantScore =
+                        validScores > 0
+                          ? Math.round(totalScore / validScores)
+                          : 0;
+                    } else {
+                      restaurantScore = 0; // No food items = no score
                     }
+                  } catch (error) {
+                    console.warn(
+                      `Failed to fetch food items for restaurant ${restaurant._id}:`,
+                      error
+                    );
+                    restaurantScore = 0;
+                  }
+
+                  // Only add to city stats if restaurant has a valid score
+                  if (restaurantScore > 0) {
+                    if (!cityStats[restaurant.address.city]) {
+                      cityStats[restaurant.address.city] = {
+                        city: restaurant.address.city,
+                        province: restaurant.address.province || "Unknown",
+                        country: restaurant.address.country || "Unknown",
+                        restaurants: [],
+                        totalScore: 0,
+                        restaurantCount: 0,
+                      };
+                    }
+
+                    cityStats[restaurant.address.city].restaurants.push({
+                      id: restaurant._id,
+                      name: restaurant.name,
+                      score: restaurantScore,
+                      type: restaurant.type,
+                    });
+                    cityStats[restaurant.address.city].totalScore +=
+                      restaurantScore;
+                    cityStats[restaurant.address.city].restaurantCount++;
+                    processedRestaurants++;
                   }
                 }
 
@@ -308,6 +303,80 @@ function LeaderboardsPage() {
             // Get top restaurants from all locations
             url = `${API_BASE_URL}/api/restaurants/search`;
             response = await axios.get(url);
+
+            // Calculate real scores for each restaurant based on their food items
+            if (response && response.data && response.data.length > 0) {
+              const restaurantsWithScores = await Promise.all(
+                response.data.map(async (restaurant) => {
+                  try {
+                    // Get all food items for this restaurant
+                    const foodItemsResponse = await axios.get(
+                      `${API_BASE_URL}/api/food-items/restaurant/${restaurant._id}`
+                    );
+
+                    if (
+                      foodItemsResponse.data &&
+                      foodItemsResponse.data.length > 0
+                    ) {
+                      const foodItems = foodItemsResponse.data;
+                      let totalScore = 0;
+                      let validScores = 0;
+
+                      // Calculate average of all food item scores
+                      foodItems.forEach((item) => {
+                        // Use the backend's calculated overallAverageScore first
+                        const itemScore = item.overallAverageScore || 0;
+
+                        if (itemScore > 0) {
+                          totalScore += itemScore;
+                          validScores++;
+                        }
+                      });
+
+                      if (validScores > 0) {
+                        const avgScore = totalScore / validScores;
+                        return {
+                          ...restaurant,
+                          adminScore: Math.round(avgScore),
+                          communityScore: 0,
+                          overallScore: Math.round(avgScore),
+                          hasValidScore: true,
+                        };
+                      }
+                    }
+
+                    // No valid scores found
+                    return {
+                      ...restaurant,
+                      adminScore: null,
+                      communityScore: null,
+                      overallScore: null,
+                      hasValidScore: false,
+                    };
+                  } catch (error) {
+                    console.warn(
+                      `Failed to fetch food items for restaurant ${restaurant._id}:`,
+                      error
+                    );
+                    return {
+                      ...restaurant,
+                      adminScore: null,
+                      communityScore: null,
+                      overallScore: null,
+                      hasValidScore: false,
+                    };
+                  }
+                })
+              );
+
+              // Sort by overall score (highest first), but handle null scores
+              response.data = restaurantsWithScores.sort((a, b) => {
+                if (!a.hasValidScore && !b.hasValidScore) return 0;
+                if (!a.hasValidScore) return 1;
+                if (!b.hasValidScore) return -1;
+                return (b.overallScore || 0) - (a.overallScore || 0);
+              });
+            }
           } else if (cat.type === "overall") {
             // Get all food items for overall best
             url = `${API_BASE_URL}/api/food-items`;
@@ -318,9 +387,12 @@ function LeaderboardsPage() {
               response.data = response.data
                 .map((item) => ({
                   ...item,
-                  // Calculate combined score for sorting
+                  // Use overallAverageScore if available, otherwise calculate properly
                   calculatedScore:
-                    (item.adminScore || 0) + (item.communityScore || 0),
+                    item.overallAverageScore ||
+                    (item.adminScore && item.communityScore
+                      ? (item.adminScore + item.communityScore) / 2
+                      : item.adminScore || item.communityScore || 0),
                 }))
                 .sort((a, b) => b.calculatedScore - a.calculatedScore);
             }
@@ -337,6 +409,80 @@ function LeaderboardsPage() {
                     c.toLowerCase().includes(cat.category.toLowerCase())
                   )
               );
+            }
+
+            // Calculate real scores for each restaurant based on their food items
+            if (response && response.data && response.data.length > 0) {
+              const restaurantsWithScores = await Promise.all(
+                response.data.map(async (restaurant) => {
+                  try {
+                    // Get all food items for this restaurant
+                    const foodItemsResponse = await axios.get(
+                      `${API_BASE_URL}/api/food-items/restaurant/${restaurant._id}`
+                    );
+
+                    if (
+                      foodItemsResponse.data &&
+                      foodItemsResponse.data.length > 0
+                    ) {
+                      const foodItems = foodItemsResponse.data;
+                      let totalScore = 0;
+                      let validScores = 0;
+
+                      // Calculate average of all food item scores
+                      foodItems.forEach((item) => {
+                        // Use the backend's calculated overallAverageScore first
+                        const itemScore = item.overallAverageScore || 0;
+
+                        if (itemScore > 0) {
+                          totalScore += itemScore;
+                          validScores++;
+                        }
+                      });
+
+                      if (validScores > 0) {
+                        const avgScore = totalScore / validScores;
+                        return {
+                          ...restaurant,
+                          adminScore: Math.round(avgScore),
+                          communityScore: 0,
+                          overallScore: Math.round(avgScore),
+                          hasValidScore: true,
+                        };
+                      }
+                    }
+
+                    // No valid scores found
+                    return {
+                      ...restaurant,
+                      adminScore: null,
+                      communityScore: null,
+                      overallScore: null,
+                      hasValidScore: false,
+                    };
+                  } catch (error) {
+                    console.warn(
+                      `Failed to fetch food items for restaurant ${restaurant._id}:`,
+                      error
+                    );
+                    return {
+                      ...restaurant,
+                      adminScore: null,
+                      communityScore: null,
+                      overallScore: null,
+                      hasValidScore: false,
+                    };
+                  }
+                })
+              );
+
+              // Sort by overall score (highest first), but handle null scores
+              response.data = restaurantsWithScores.sort((a, b) => {
+                if (!a.hasValidScore && !b.hasValidScore) return 0;
+                if (!a.hasValidScore) return 1;
+                if (!b.hasValidScore) return -1;
+                return (b.overallScore || 0) - (a.overallScore || 0);
+              });
             }
           }
 
@@ -423,6 +569,82 @@ function LeaderboardsPage() {
           );
         }
 
+        // Calculate real scores for restaurants if this is a restaurant category
+        if (activeCategory === "restaurants" || activeCategory === "cuisines") {
+          if (data && data.length > 0) {
+            const restaurantsWithScores = await Promise.all(
+              data.map(async (restaurant) => {
+                try {
+                  // Get all food items for this restaurant
+                  const foodItemsResponse = await axios.get(
+                    `${API_BASE_URL}/api/food-items/restaurant/${restaurant._id}`
+                  );
+
+                  if (
+                    foodItemsResponse.data &&
+                    foodItemsResponse.data.length > 0
+                  ) {
+                    const foodItems = foodItemsResponse.data;
+                    let totalScore = 0;
+                    let validScores = 0;
+
+                    // Calculate average of all food item scores
+                    foodItems.forEach((item) => {
+                      // Use the backend's calculated overallAverageScore first
+                      const itemScore = item.overallAverageScore || 0;
+
+                      if (itemScore > 0) {
+                        totalScore += itemScore;
+                        validScores++;
+                      }
+                    });
+
+                    if (validScores > 0) {
+                      const avgScore = totalScore / validScores;
+                      return {
+                        ...restaurant,
+                        adminScore: Math.round(avgScore),
+                        communityScore: 0,
+                        overallScore: Math.round(avgScore),
+                        hasValidScore: true,
+                      };
+                    }
+                  }
+
+                  // No valid scores found
+                  return {
+                    ...restaurant,
+                    adminScore: null,
+                    communityScore: null,
+                    overallScore: null,
+                    hasValidScore: false,
+                  };
+                } catch (error) {
+                  console.warn(
+                    `Failed to fetch food items for restaurant ${restaurant._id}:`,
+                    error
+                  );
+                  return {
+                    ...restaurant,
+                    adminScore: null,
+                    communityScore: null,
+                    overallScore: null,
+                    hasValidScore: false,
+                  };
+                }
+              })
+            );
+
+            // Sort by overall score (highest first), but handle null scores
+            data = restaurantsWithScores.sort((a, b) => {
+              if (!a.hasValidScore && !b.hasValidScore) return 0;
+              if (!a.hasValidScore) return 1;
+              if (!b.hasValidScore) return -1;
+              return (b.overallScore || 0) - (a.overallScore || 0);
+            });
+          }
+        }
+
         setLeaderboardData(data.slice(0, 10)); // Top 10
       }
     } catch (error) {
@@ -491,13 +713,18 @@ function LeaderboardsPage() {
 
     // For food items from ranking API (has foodItem property)
     if (item.foodItem) {
-      return Math.round(
+      const score =
         item.averageScore ||
-          item.foodItem.averageScore ||
-          item.foodItem.adminScore ||
-          item.foodItem.communityScore ||
-          0
-      );
+        item.foodItem.averageScore ||
+        item.foodItem.adminScore ||
+        item.foodItem.communityScore ||
+        0;
+      return score > 0 ? Math.round(score) : "N/A";
+    }
+
+    // For restaurants with calculated overall score
+    if (item.overallScore !== undefined) {
+      return item.overallScore !== null ? Math.round(item.overallScore) : "N/A";
     }
 
     // For direct food items or restaurants
@@ -505,7 +732,9 @@ function LeaderboardsPage() {
     if (item.adminScore && item.communityScore) {
       return Math.round((item.adminScore + item.communityScore) / 2);
     }
-    return Math.round(item.adminScore || item.communityScore || 0);
+
+    const score = item.adminScore || item.communityScore || 0;
+    return score > 0 ? Math.round(score) : "N/A";
   };
 
   // Get ranking medal/trophy
@@ -810,9 +1039,13 @@ function LeaderboardsPage() {
                             <div className="global-item-details">
                               <span className="global-item-score">
                                 {category.type === "cities"
-                                  ? `${getScore(item)}/100 (${
-                                      item.restaurantCount
-                                    } restaurants)`
+                                  ? getScore(item) === "N/A"
+                                    ? `N/A (${item.restaurantCount} restaurants)`
+                                    : `${getScore(item)}/100 (${
+                                        item.restaurantCount
+                                      } restaurants)`
+                                  : getScore(item) === "N/A"
+                                  ? "N/A"
                                   : `${getScore(item)}/100`}
                               </span>
 

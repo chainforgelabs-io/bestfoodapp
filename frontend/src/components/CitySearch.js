@@ -3,18 +3,6 @@ import { useJsApiLoader, Autocomplete } from "@react-google-maps/api";
 
 const libraries = ["places"];
 
-// Add province mapping
-const provinceMapping = {
-  "Saskatchewan": "SK",
-  "Alberta": "AB",
-  "British Columbia": "BC",
-  "Ontario": "ON",
-  "Quebec": "QC",
-  "New York": "NY",
-  "California": "CA",
-  // Add more as needed
-};
-
 const CitySearch = ({ onSelectCity, onEnterPress }) => {
   const [autocomplete, setAutocomplete] = useState(null);
   const [city, setCity] = useState("");
@@ -49,8 +37,7 @@ const CitySearch = ({ onSelectCity, onEnterPress }) => {
             comp.types.includes("country")
           )?.long_name || "";
 
-        // Map province to abbreviation if it exists in our mapping
-        const province = provinceMapping[provinceLong] || provinceLong;
+        const province = provinceLong; // Use the full province name from Google Maps
 
         if (cityName && province && country) {
           const formattedCity = `${cityName}, ${provinceLong}, ${country}`;

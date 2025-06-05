@@ -53,52 +53,64 @@ router.get("/search", async (req, res) => {
   const { city, province, country } = req.query;
 
   try {
-    // Handle both 'province' and 'state' fields, and abbreviations
-    const provinceAbbreviations = {
-      "Saskatchewan": ["SK", "Saskatchewan"],
-      "Alberta": ["AB", "Alberta"],
-      "British Columbia": ["BC", "British Columbia"],
-      "Ontario": ["ON", "Ontario"],
-      "Quebec": ["QC", "Quebec"],
-      "New York": ["NY", "New York"],
-      "California": ["CA", "California"],
-      // Add more as needed
-    };
-
-    const countryAbbreviations = {
-      "Canada": ["Canada", "CA"],
-      "United States": ["USA", "US", "United States"],
-      // Add more as needed
-    };
-
-    // Get possible province/state values
-    const provinceValues = provinceAbbreviations[province] || [province];
-    const countryValues = countryAbbreviations[country] || [country];
-
-    // Search with flexible field names and values
+    // Trust Google Maps API data - no hardcoded mappings needed
+    // Handle both 'province' and 'state' fields for database compatibility
     const addresses = await Address.find({
       $and: [
-        { city: new RegExp(city, "i") },
+        { city: new RegExp(`^${city}$`, "i") }, // Exact city match (case-insensitive)
         {
           $or: [
-            {
-              province: { $in: provinceValues.map((p) => new RegExp(p, "i")) },
-            },
-            { state: { $in: provinceValues.map((p) => new RegExp(p, "i")) } },
+            { province: new RegExp(`^${province}$`, "i") }, // Check province field
+            { state: new RegExp(`^${province}$`, "i") }, // Check state field
           ],
         },
-        { country: { $in: countryValues.map((c) => new RegExp(c, "i")) } },
+        { country: new RegExp(`^${country}$`, "i") }, // Exact country match
       ],
     });
 
-    // If no addresses found
+    // If no addresses found, try a more flexible search
     if (!addresses || addresses.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No addresses found for the provided location" });
+      console.log(
+        `No exact match found for ${city}, ${province}, ${country}. Trying flexible search...`
+      );
+
+      // Fallback: More flexible search with partial matching
+      const flexibleAddresses = await Address.find({
+        $and: [
+          { city: new RegExp(city, "i") }, // Partial city match
+          {
+            $or: [
+              { province: new RegExp(province, "i") }, // Partial province match
+              { state: new RegExp(province, "i") }, // Partial state match
+            ],
+          },
+          { country: new RegExp(country, "i") }, // Partial country match
+        ],
+      });
+
+      if (!flexibleAddresses || flexibleAddresses.length === 0) {
+        return res.status(404).json({
+          message: "No addresses found for the provided location",
+          searchParams: { city, province, country },
+        });
+      }
+
+      // Use flexible results
+      const addressIds = flexibleAddresses.map((address) => address._id);
+      const restaurants = await Restaurant.find({
+        address: { $in: addressIds },
+      }).populate("address");
+
+      if (!restaurants || restaurants.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "No restaurants found for the provided location" });
+      }
+
+      return res.status(200).json(restaurants);
     }
 
-    // Extract address IDs and find corresponding restaurants
+    // Extract address IDs and find corresponding restaurants (exact match)
     const addressIds = addresses.map((address) => address._id);
     const restaurants = await Restaurant.find({
       address: { $in: addressIds },
