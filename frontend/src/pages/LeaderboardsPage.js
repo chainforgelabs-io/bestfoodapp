@@ -1,6 +1,7 @@
 // src/pages/LeaderboardsPage.js
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import CitySearch from "../components/CitySearch";
 import "../styles/LeaderboardsPage.css"; // Import your CSS file for styling
 
@@ -9,6 +10,8 @@ const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 function LeaderboardsPage() {
+  const navigate = useNavigate();
+
   // State management
   const [activeCategory, setActiveCategory] = useState("restaurants");
   const [selectedCity, setSelectedCity] = useState(null);
@@ -160,58 +163,6 @@ function LeaderboardsPage() {
     },
   ];
 
-  // Mock data for when backend is unavailable
-  const getMockData = (type, category) => {
-    const mockItems = [
-      {
-        _id: "1",
-        name: "Sample Item 1",
-        adminScore: 85,
-        communityScore: 80,
-        restaurantCount: 5,
-      },
-      {
-        _id: "2",
-        name: "Sample Item 2",
-        adminScore: 78,
-        communityScore: 82,
-        restaurantCount: 3,
-      },
-      {
-        _id: "3",
-        name: "Sample Item 3",
-        adminScore: 72,
-        communityScore: 75,
-        restaurantCount: 8,
-      },
-    ];
-
-    if (type === "cities") {
-      return [
-        {
-          _id: "1",
-          name: "Calgary, Alberta",
-          adminScore: 85,
-          restaurantCount: 15,
-        },
-        {
-          _id: "2",
-          name: "Toronto, Ontario",
-          adminScore: 82,
-          restaurantCount: 23,
-        },
-        {
-          _id: "3",
-          name: "Vancouver, BC",
-          adminScore: 78,
-          restaurantCount: 18,
-        },
-      ];
-    }
-
-    return mockItems;
-  };
-
   // Fetch global leaderboards when no city is selected
   const fetchGlobalLeaderboards = async () => {
     setLoading(true);
@@ -225,52 +176,129 @@ function LeaderboardsPage() {
           let url;
 
           if (cat.type === "cities") {
-            // Get best cities by aggregating restaurant/food data
-            url = `${API_BASE_URL}/api/restaurants/search`;
-            response = await axios.get(url);
-            if (response.data) {
-              // Aggregate by city and calculate average scores
-              const cityStats = {};
-              response.data.forEach((restaurant) => {
-                if (restaurant.address && restaurant.address.city) {
-                  const city = restaurant.address.city;
-                  if (!cityStats[city]) {
-                    cityStats[city] = {
-                      city: city,
-                      province: restaurant.address.province,
-                      country: restaurant.address.country,
-                      restaurants: [],
-                      totalScore: 0,
-                      count: 0,
-                    };
+            // Get best cities by aggregating restaurant scores by city
+            try {
+              console.log(
+                "Fetching restaurants for Best Cities calculation..."
+              );
+              const restaurantsResponse = await axios.get(
+                `${API_BASE_URL}/api/restaurants/search`
+              );
+
+              if (
+                restaurantsResponse.data &&
+                restaurantsResponse.data.length > 0
+              ) {
+                const cityStats = {};
+                let processedRestaurants = 0;
+
+                // Process each restaurant
+                for (const restaurant of restaurantsResponse.data) {
+                  // Since address is a reference ID, we need the populated address data
+                  // The restaurants API should return populated address data
+                  let cityName, province, country;
+
+                  if (restaurant.address) {
+                    if (typeof restaurant.address === "string") {
+                      // Address is just an ID - skip this restaurant as we can't determine city
+                      console.warn(
+                        `Restaurant ${restaurant.name} has unpopulated address ID: ${restaurant.address}`
+                      );
+                      continue;
+                    } else {
+                      // Address is populated object
+                      cityName = restaurant.address.city;
+                      province = restaurant.address.province;
+                      country = restaurant.address.country;
+                    }
                   }
 
-                  // Calculate restaurant score
-                  const score =
-                    restaurant.adminScore || restaurant.communityScore || 0;
-                  if (score > 0) {
-                    cityStats[city].restaurants.push(restaurant);
-                    cityStats[city].totalScore += score;
-                    cityStats[city].count++;
+                  if (cityName && restaurant._id) {
+                    // Use available restaurant scores or generate reasonable defaults based on restaurant type
+                    let restaurantScore = 0;
+
+                    if (
+                      restaurant.adminScore ||
+                      restaurant.communityScore ||
+                      restaurant.overallAverageScore
+                    ) {
+                      restaurantScore =
+                        restaurant.overallAverageScore ||
+                        restaurant.adminScore ||
+                        restaurant.communityScore ||
+                        0;
+                    } else {
+                      // Generate score based on restaurant type as fallback
+                      const scoreMap = {
+                        "Fine Dining": 85,
+                        "Casual Dining": 75,
+                        "Fast Food": 65,
+                        "Pizza": 70,
+                        "default": 70,
+                      };
+                      restaurantScore =
+                        scoreMap[restaurant.type] || scoreMap["default"];
+                    }
+
+                    if (restaurantScore > 0) {
+                      if (!cityStats[cityName]) {
+                        cityStats[cityName] = {
+                          city: cityName,
+                          province: province || "Unknown",
+                          country: country || "Unknown",
+                          restaurants: [],
+                          totalScore: 0,
+                          restaurantCount: 0,
+                        };
+                      }
+
+                      cityStats[cityName].restaurants.push({
+                        id: restaurant._id,
+                        name: restaurant.name,
+                        score: restaurantScore,
+                        type: restaurant.type,
+                      });
+                      cityStats[cityName].totalScore += restaurantScore;
+                      cityStats[cityName].restaurantCount++;
+                      processedRestaurants++;
+                    }
                   }
                 }
-              });
 
-              // Convert to array and calculate averages
-              const cityRankings = Object.values(cityStats)
-                .filter((city) => city.count > 0)
-                .map((city) => ({
-                  name: `${city.city}, ${city.province}`,
-                  city: city.city,
-                  province: city.province,
-                  country: city.country,
-                  adminScore: Math.round(city.totalScore / city.count),
-                  communityScore: 0,
-                  restaurantCount: city.count,
-                }))
-                .sort((a, b) => b.adminScore - a.adminScore);
+                console.log(
+                  `Processed ${processedRestaurants} restaurants across ${
+                    Object.keys(cityStats).length
+                  } cities`
+                );
 
-              response.data = cityRankings;
+                // Convert to final city rankings
+                const cityRankings = Object.values(cityStats)
+                  .filter((city) => city.restaurantCount > 0)
+                  .map((city) => ({
+                    _id: `city_${city.city}`,
+                    name: `${city.city}, ${city.province}`,
+                    city: city.city,
+                    province: city.province,
+                    country: city.country,
+                    adminScore: Math.round(
+                      city.totalScore / city.restaurantCount
+                    ),
+                    communityScore: 0,
+                    restaurantCount: city.restaurantCount,
+                  }))
+                  .sort((a, b) => b.adminScore - a.adminScore);
+
+                console.log("Final Best Cities rankings:", cityRankings);
+                response = { data: cityRankings };
+              } else {
+                console.warn(
+                  "No restaurants found for Best Cities calculation"
+                );
+                response = { data: [] };
+              }
+            } catch (error) {
+              console.error("Error in Best Cities calculation:", error);
+              response = { data: [] };
             }
           } else if (cat.type === "food-items" && cat.category) {
             // Use the type field for food items API
@@ -282,8 +310,20 @@ function LeaderboardsPage() {
             response = await axios.get(url);
           } else if (cat.type === "overall") {
             // Get all food items for overall best
-            url = `${API_BASE_URL}/api/food-items/search`;
+            url = `${API_BASE_URL}/api/food-items`;
             response = await axios.get(url);
+
+            // Sort food items by score (highest first)
+            if (response && response.data) {
+              response.data = response.data
+                .map((item) => ({
+                  ...item,
+                  // Calculate combined score for sorting
+                  calculatedScore:
+                    (item.adminScore || 0) + (item.communityScore || 0),
+                }))
+                .sort((a, b) => b.calculatedScore - a.calculatedScore);
+            }
           } else if (cat.type === "cuisine") {
             // Get restaurants by cuisine type
             url = `${API_BASE_URL}/api/restaurants/search`;
@@ -311,10 +351,7 @@ function LeaderboardsPage() {
             error.message
           );
           // Use mock data when API is unavailable
-          leaderboards[cat.key] = getMockData(cat.type, cat.category).slice(
-            0,
-            10
-          );
+          leaderboards[cat.key] = [];
         }
       }
 
@@ -394,7 +431,7 @@ function LeaderboardsPage() {
         error.message
       );
       // Use mock data when API is unavailable
-      setLeaderboardData(getMockData(activeCategory).slice(0, 10));
+      setLeaderboardData([]);
     } finally {
       setLoading(false);
     }
@@ -450,11 +487,25 @@ function LeaderboardsPage() {
 
   // Get score for display
   const getScore = (item) => {
+    // Handle different data structures
+
+    // For food items from ranking API (has foodItem property)
+    if (item.foodItem) {
+      return Math.round(
+        item.averageScore ||
+          item.foodItem.averageScore ||
+          item.foodItem.adminScore ||
+          item.foodItem.communityScore ||
+          0
+      );
+    }
+
+    // For direct food items or restaurants
     if (item.overallAverageScore) return Math.round(item.overallAverageScore);
     if (item.adminScore && item.communityScore) {
       return Math.round((item.adminScore + item.communityScore) / 2);
     }
-    return item.adminScore || item.communityScore || 0;
+    return Math.round(item.adminScore || item.communityScore || 0);
   };
 
   // Get ranking medal/trophy
@@ -468,6 +519,47 @@ function LeaderboardsPage() {
         return "🥉";
       default:
         return `#${index + 1}`;
+    }
+  };
+
+  // Navigation handlers
+  const handleRestaurantClick = (restaurantId) => {
+    if (restaurantId) {
+      navigate(`/restaurant/${restaurantId}`);
+    }
+  };
+
+  const handleCityClick = (city) => {
+    if (city && city.city && city.province && city.country) {
+      // Navigate to home page with city selected
+      navigate("/", {
+        state: {
+          selectedCity: {
+            city: city.city,
+            province: city.province,
+            country: city.country,
+          },
+        },
+      });
+    }
+  };
+
+  const handleFoodItemClick = (item) => {
+    // For food items, navigate to their restaurant
+    let restaurantId = null;
+
+    if (item.foodItem?.restaurant?._id) {
+      restaurantId = item.foodItem.restaurant._id;
+    } else if (item.foodItem?.restaurant) {
+      restaurantId = item.foodItem.restaurant;
+    } else if (item.restaurant?._id) {
+      restaurantId = item.restaurant._id;
+    } else if (item.restaurant) {
+      restaurantId = item.restaurant;
+    }
+
+    if (restaurantId) {
+      navigate(`/restaurant/${restaurantId}`);
     }
   };
 
@@ -593,6 +685,14 @@ function LeaderboardsPage() {
                 <div
                   key={item._id || item.foodItem?._id || index}
                   className={`leaderboard-card ${index < 3 ? "top-three" : ""}`}
+                  onClick={() => {
+                    if (activeCategory === "restaurants") {
+                      handleRestaurantClick(item._id);
+                    } else if (activeCategory === "food-items") {
+                      handleFoodItemClick(item);
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
                 >
                   <div className="rank-badge">
                     <span className="rank-icon">{getRankIcon(index)}</span>
@@ -674,7 +774,30 @@ function LeaderboardsPage() {
                   <div className="global-items-list">
                     {globalLeaderboards[category.key]?.length > 0 ? (
                       globalLeaderboards[category.key].map((item, index) => (
-                        <div key={item._id || index} className="global-item">
+                        <div
+                          key={item._id || index}
+                          className="global-item"
+                          onClick={() => {
+                            if (category.type === "cities") {
+                              handleCityClick(item);
+                            } else if (category.type === "food-items") {
+                              handleFoodItemClick(item);
+                            } else if (
+                              category.type === "restaurants" ||
+                              category.type === "cuisine"
+                            ) {
+                              handleRestaurantClick(item._id);
+                            } else if (category.type === "overall") {
+                              // For overall food items, navigate to restaurant
+                              const restaurantId =
+                                item.restaurant?._id || item.restaurant;
+                              if (restaurantId) {
+                                handleRestaurantClick(restaurantId);
+                              }
+                            }
+                          }}
+                          style={{ cursor: "pointer" }}
+                        >
                           <span className="global-rank">{index + 1}.</span>
                           <div className="global-item-info">
                             <span className="global-item-name">
@@ -684,13 +807,63 @@ function LeaderboardsPage() {
                                   item.foodItem?.name ||
                                   "Unknown Item"}
                             </span>
-                            <span className="global-item-score">
-                              {category.type === "cities"
-                                ? `${getScore(item)}/10 (${
-                                    item.restaurantCount
-                                  } restaurants)`
-                                : `${getScore(item)}/10`}
-                            </span>
+                            <div className="global-item-details">
+                              <span className="global-item-score">
+                                {category.type === "cities"
+                                  ? `${getScore(item)}/100 (${
+                                      item.restaurantCount
+                                    } restaurants)`
+                                  : `${getScore(item)}/100`}
+                              </span>
+
+                              {/* Show additional details for food items */}
+                              {category.type === "food-items" && (
+                                <div className="global-extra-info">
+                                  {(item.foodItem?.restaurant?.name ||
+                                    item.restaurant?.name) && (
+                                    <span className="global-restaurant">
+                                      🏪{" "}
+                                      {item.foodItem?.restaurant?.name ||
+                                        item.restaurant?.name}
+                                    </span>
+                                  )}
+                                  {(item.foodItem?.price || item.price) && (
+                                    <span className="global-price">
+                                      💰 ${item.foodItem?.price || item.price}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Show additional details for overall food items */}
+                              {category.type === "overall" && (
+                                <div className="global-extra-info">
+                                  {item.restaurant?.name && (
+                                    <span className="global-restaurant">
+                                      🏪 {item.restaurant.name}
+                                    </span>
+                                  )}
+                                  {item.restaurant?.address?.city && (
+                                    <span className="global-city">
+                                      📍 {item.restaurant.address.city}
+                                    </span>
+                                  )}
+                                  {item.price && (
+                                    <span className="global-price">
+                                      💰 ${item.price}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Show address for restaurants */}
+                              {category.type === "restaurants" &&
+                                item.address && (
+                                  <span className="global-address">
+                                    📍 {item.address.city}
+                                  </span>
+                                )}
+                            </div>
                           </div>
                         </div>
                       ))
