@@ -20,6 +20,7 @@ function LeaderboardsPage() {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [globalLeaderboards, setGlobalLeaderboards] = useState({});
   const [loading, setLoading] = useState(false);
+  const [categoryLoading, setCategoryLoading] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
 
   // Available categories with fixed icons
@@ -163,348 +164,19 @@ function LeaderboardsPage() {
     },
   ];
 
-  // Fetch global leaderboards when no city is selected
+  // OPTIMIZED: Fetch global leaderboards using new backend API (replaces the massive function)
   const fetchGlobalLeaderboards = async () => {
     setLoading(true);
     try {
-      const leaderboards = {};
-
-      // Fetch top categories
-      for (const cat of globalCategories) {
-        try {
-          let response;
-          let url;
-
-          if (cat.type === "cities") {
-            // Get best cities by aggregating restaurant scores by city
-            try {
-              console.log(
-                "Fetching restaurants for Best Cities calculation..."
-              );
-              const restaurantsResponse = await axios.get(
-                `${API_BASE_URL}/api/restaurants/search`
-              );
-
-              if (
-                restaurantsResponse.data &&
-                restaurantsResponse.data.length > 0
-              ) {
-                const cityStats = {};
-                let processedRestaurants = 0;
-
-                // Process each restaurant
-                for (const restaurant of restaurantsResponse.data) {
-                  // Declare restaurantScore outside the try block to avoid scope issues
-                  let restaurantScore = 0;
-
-                  // Calculate real score from food items (like Best Restaurants does)
-                  try {
-                    const foodItemsResponse = await axios.get(
-                      `${API_BASE_URL}/api/food-items/restaurant/${restaurant._id}`
-                    );
-
-                    if (
-                      foodItemsResponse.data &&
-                      foodItemsResponse.data.length > 0
-                    ) {
-                      const foodItems = foodItemsResponse.data;
-                      let totalScore = 0;
-                      let validScores = 0;
-
-                      foodItems.forEach((item) => {
-                        const itemScore = item.overallAverageScore || 0;
-                        if (itemScore > 0) {
-                          totalScore += itemScore;
-                          validScores++;
-                        }
-                      });
-
-                      restaurantScore =
-                        validScores > 0
-                          ? Math.round(totalScore / validScores)
-                          : 0;
-                    } else {
-                      restaurantScore = 0; // No food items = no score
-                    }
-                  } catch (error) {
-                    console.warn(
-                      `Failed to fetch food items for restaurant ${restaurant._id}:`,
-                      error
-                    );
-                    restaurantScore = 0;
-                  }
-
-                  // Only add to city stats if restaurant has a valid score
-                  if (restaurantScore > 0) {
-                    if (!cityStats[restaurant.address.city]) {
-                      cityStats[restaurant.address.city] = {
-                        city: restaurant.address.city,
-                        province: restaurant.address.province || "Unknown",
-                        country: restaurant.address.country || "Unknown",
-                        restaurants: [],
-                        totalScore: 0,
-                        restaurantCount: 0,
-                      };
-                    }
-
-                    cityStats[restaurant.address.city].restaurants.push({
-                      id: restaurant._id,
-                      name: restaurant.name,
-                      score: restaurantScore,
-                      type: restaurant.type,
-                    });
-                    cityStats[restaurant.address.city].totalScore +=
-                      restaurantScore;
-                    cityStats[restaurant.address.city].restaurantCount++;
-                    processedRestaurants++;
-                  }
-                }
-
-                console.log(
-                  `Processed ${processedRestaurants} restaurants across ${
-                    Object.keys(cityStats).length
-                  } cities`
-                );
-
-                // Convert to final city rankings
-                const cityRankings = Object.values(cityStats)
-                  .filter((city) => city.restaurantCount > 0)
-                  .map((city) => ({
-                    _id: `city_${city.city}`,
-                    name: `${city.city}, ${city.province}`,
-                    city: city.city,
-                    province: city.province,
-                    country: city.country,
-                    adminScore: Math.round(
-                      city.totalScore / city.restaurantCount
-                    ),
-                    communityScore: 0,
-                    restaurantCount: city.restaurantCount,
-                  }))
-                  .sort((a, b) => b.adminScore - a.adminScore);
-
-                console.log("Final Best Cities rankings:", cityRankings);
-                response = { data: cityRankings };
-              } else {
-                console.warn(
-                  "No restaurants found for Best Cities calculation"
-                );
-                response = { data: [] };
-              }
-            } catch (error) {
-              console.error("Error in Best Cities calculation:", error);
-              response = { data: [] };
-            }
-          } else if (cat.type === "food-items" && cat.category) {
-            // Use the type field for food items API
-            url = `${API_BASE_URL}/api/food-items/rank/category/${cat.category}`;
-            response = await axios.get(url);
-          } else if (cat.type === "restaurants") {
-            // Get top restaurants from all locations
-            url = `${API_BASE_URL}/api/restaurants/search`;
-            response = await axios.get(url);
-
-            // Calculate real scores for each restaurant based on their food items
-            if (response && response.data && response.data.length > 0) {
-              const restaurantsWithScores = await Promise.all(
-                response.data.map(async (restaurant) => {
-                  try {
-                    // Get all food items for this restaurant
-                    const foodItemsResponse = await axios.get(
-                      `${API_BASE_URL}/api/food-items/restaurant/${restaurant._id}`
-                    );
-
-                    if (
-                      foodItemsResponse.data &&
-                      foodItemsResponse.data.length > 0
-                    ) {
-                      const foodItems = foodItemsResponse.data;
-                      let totalScore = 0;
-                      let validScores = 0;
-
-                      // Calculate average of all food item scores
-                      foodItems.forEach((item) => {
-                        // Use the backend's calculated overallAverageScore first
-                        const itemScore = item.overallAverageScore || 0;
-
-                        if (itemScore > 0) {
-                          totalScore += itemScore;
-                          validScores++;
-                        }
-                      });
-
-                      if (validScores > 0) {
-                        const avgScore = totalScore / validScores;
-                        return {
-                          ...restaurant,
-                          adminScore: Math.round(avgScore),
-                          communityScore: 0,
-                          overallScore: Math.round(avgScore),
-                          hasValidScore: true,
-                        };
-                      }
-                    }
-
-                    // No valid scores found
-                    return {
-                      ...restaurant,
-                      adminScore: null,
-                      communityScore: null,
-                      overallScore: null,
-                      hasValidScore: false,
-                    };
-                  } catch (error) {
-                    console.warn(
-                      `Failed to fetch food items for restaurant ${restaurant._id}:`,
-                      error
-                    );
-                    return {
-                      ...restaurant,
-                      adminScore: null,
-                      communityScore: null,
-                      overallScore: null,
-                      hasValidScore: false,
-                    };
-                  }
-                })
-              );
-
-              // Sort by overall score (highest first), but handle null scores
-              response.data = restaurantsWithScores.sort((a, b) => {
-                if (!a.hasValidScore && !b.hasValidScore) return 0;
-                if (!a.hasValidScore) return 1;
-                if (!b.hasValidScore) return -1;
-                return (b.overallScore || 0) - (a.overallScore || 0);
-              });
-            }
-          } else if (cat.type === "overall") {
-            // Get all food items for overall best
-            url = `${API_BASE_URL}/api/food-items`;
-            response = await axios.get(url);
-
-            // Sort food items by score (highest first)
-            if (response && response.data) {
-              response.data = response.data
-                .map((item) => ({
-                  ...item,
-                  // Use overallAverageScore if available, otherwise calculate properly
-                  calculatedScore:
-                    item.overallAverageScore ||
-                    (item.adminScore && item.communityScore
-                      ? (item.adminScore + item.communityScore) / 2
-                      : item.adminScore || item.communityScore || 0),
-                }))
-                .sort((a, b) => b.calculatedScore - a.calculatedScore);
-            }
-          } else if (cat.type === "cuisine") {
-            // Get restaurants by cuisine type
-            url = `${API_BASE_URL}/api/restaurants/search`;
-            response = await axios.get(url);
-            // Filter by cuisine on the frontend if needed
-            if (response.data && cat.category) {
-              response.data = response.data.filter(
-                (item) =>
-                  item.cuisine &&
-                  item.cuisine.some((c) =>
-                    c.toLowerCase().includes(cat.category.toLowerCase())
-                  )
-              );
-            }
-
-            // Calculate real scores for each restaurant based on their food items
-            if (response && response.data && response.data.length > 0) {
-              const restaurantsWithScores = await Promise.all(
-                response.data.map(async (restaurant) => {
-                  try {
-                    // Get all food items for this restaurant
-                    const foodItemsResponse = await axios.get(
-                      `${API_BASE_URL}/api/food-items/restaurant/${restaurant._id}`
-                    );
-
-                    if (
-                      foodItemsResponse.data &&
-                      foodItemsResponse.data.length > 0
-                    ) {
-                      const foodItems = foodItemsResponse.data;
-                      let totalScore = 0;
-                      let validScores = 0;
-
-                      // Calculate average of all food item scores
-                      foodItems.forEach((item) => {
-                        // Use the backend's calculated overallAverageScore first
-                        const itemScore = item.overallAverageScore || 0;
-
-                        if (itemScore > 0) {
-                          totalScore += itemScore;
-                          validScores++;
-                        }
-                      });
-
-                      if (validScores > 0) {
-                        const avgScore = totalScore / validScores;
-                        return {
-                          ...restaurant,
-                          adminScore: Math.round(avgScore),
-                          communityScore: 0,
-                          overallScore: Math.round(avgScore),
-                          hasValidScore: true,
-                        };
-                      }
-                    }
-
-                    // No valid scores found
-                    return {
-                      ...restaurant,
-                      adminScore: null,
-                      communityScore: null,
-                      overallScore: null,
-                      hasValidScore: false,
-                    };
-                  } catch (error) {
-                    console.warn(
-                      `Failed to fetch food items for restaurant ${restaurant._id}:`,
-                      error
-                    );
-                    return {
-                      ...restaurant,
-                      adminScore: null,
-                      communityScore: null,
-                      overallScore: null,
-                      hasValidScore: false,
-                    };
-                  }
-                })
-              );
-
-              // Sort by overall score (highest first), but handle null scores
-              response.data = restaurantsWithScores.sort((a, b) => {
-                if (!a.hasValidScore && !b.hasValidScore) return 0;
-                if (!a.hasValidScore) return 1;
-                if (!b.hasValidScore) return -1;
-                return (b.overallScore || 0) - (a.overallScore || 0);
-              });
-            }
-          }
-
-          if (response && response.data) {
-            leaderboards[cat.key] = response.data.slice(0, 10); // Top 10 for each
-          } else {
-            leaderboards[cat.key] = [];
-          }
-        } catch (error) {
-          console.warn(
-            `API unavailable for ${cat.title}, using mock data:`,
-            error.message
-          );
-          // Use mock data when API is unavailable
-          leaderboards[cat.key] = [];
-        }
-      }
-
-      setGlobalLeaderboards(leaderboards);
+      console.log("Fetching optimized global leaderboards...");
+      const response = await axios.get(
+        `${API_BASE_URL}/api/leaderboards/global`
+      );
+      setGlobalLeaderboards(response.data);
+      console.log("Global leaderboards loaded successfully:", response.data);
     } catch (error) {
       console.error("Error fetching global leaderboards:", error);
-      // Set empty arrays for all categories on major error
+      // Set empty arrays for all categories on error
       const emptyLeaderboards = {};
       globalCategories.forEach((cat) => {
         emptyLeaderboards[cat.key] = [];
@@ -659,19 +331,17 @@ function LeaderboardsPage() {
     }
   };
 
-  // Effect to fetch data when selections change
+  // OPTIMIZED: Effect to fetch data when selections change - removed duplicate call
   useEffect(() => {
     if (selectedCity) {
       fetchLeaderboardData();
     } else {
-      fetchGlobalLeaderboards();
+      // Only fetch global leaderboards if we don't have them yet
+      if (Object.keys(globalLeaderboards).length === 0) {
+        fetchGlobalLeaderboards();
+      }
     }
   }, [activeCategory, selectedCity, selectedFoodCategory, selectedCuisine]);
-
-  // Load global leaderboards on initial mount
-  useEffect(() => {
-    fetchGlobalLeaderboards();
-  }, []);
 
   // Handle city selection
   const handleCitySelect = (city) => {
@@ -1001,7 +671,12 @@ function LeaderboardsPage() {
                 <div key={category.key} className="global-category-card">
                   <h4 className="global-category-title">{category.title}</h4>
                   <div className="global-items-list">
-                    {globalLeaderboards[category.key]?.length > 0 ? (
+                    {categoryLoading[category.key] ? (
+                      <div className="category-loading">
+                        <div className="mini-spinner"></div>
+                        <p>Loading...</p>
+                      </div>
+                    ) : globalLeaderboards[category.key]?.length > 0 ? (
                       globalLeaderboards[category.key].map((item, index) => (
                         <div
                           key={item._id || index}

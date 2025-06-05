@@ -43,6 +43,10 @@ app.use("/api", protectedRoute);
 const adminRoutes = require("./routes/admin");
 app.use("/api/admin", adminRoutes); // New line to include admin routes
 
+// Add the optimized leaderboard routes here
+const leaderboardRoutes = require("./routes/leaderboard");
+app.use("/api/leaderboards", leaderboardRoutes); // New optimized leaderboard endpoints
+
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;
 mongoose
