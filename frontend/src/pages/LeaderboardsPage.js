@@ -735,6 +735,24 @@ function LeaderboardsPage() {
                                         item.restaurant?.name}
                                     </span>
                                   )}
+                                  {(item.foodItem?.restaurant?.address ||
+                                    item.restaurant?.address) && (
+                                    <span className="global-address">
+                                      📍{" "}
+                                      {item.foodItem?.restaurant?.address
+                                        ?.street ||
+                                      item.restaurant?.address?.street
+                                        ? `${
+                                            item.foodItem?.restaurant?.address
+                                              ?.street ||
+                                            item.restaurant?.address?.street
+                                          }, `
+                                        : ""}
+                                      {item.foodItem?.restaurant?.address
+                                        ?.city ||
+                                        item.restaurant?.address?.city}
+                                    </span>
+                                  )}
                                   {(item.foodItem?.price || item.price) && (
                                     <span className="global-price">
                                       💰 ${item.foodItem?.price || item.price}
@@ -751,9 +769,13 @@ function LeaderboardsPage() {
                                       🏪 {item.restaurant.name}
                                     </span>
                                   )}
-                                  {item.restaurant?.address?.city && (
-                                    <span className="global-city">
-                                      📍 {item.restaurant.address.city}
+                                  {item.restaurant?.address && (
+                                    <span className="global-address">
+                                      📍{" "}
+                                      {item.restaurant.address.street
+                                        ? `${item.restaurant.address.street}, `
+                                        : ""}
+                                      {item.restaurant.address.city}
                                     </span>
                                   )}
                                   {item.price && (
@@ -764,12 +786,19 @@ function LeaderboardsPage() {
                                 </div>
                               )}
 
-                              {/* Show address for restaurants */}
-                              {category.type === "restaurants" &&
+                              {/* Show address for restaurants and cuisine categories */}
+                              {(category.type === "restaurants" ||
+                                category.type === "cuisine") &&
                                 item.address && (
-                                  <span className="global-address">
-                                    📍 {item.address.city}
-                                  </span>
+                                  <div className="global-extra-info">
+                                    <span className="global-address">
+                                      📍{" "}
+                                      {item.address.street
+                                        ? `${item.address.street}, `
+                                        : ""}
+                                      {item.address.city}
+                                    </span>
+                                  </div>
                                 )}
                             </div>
                           </div>
