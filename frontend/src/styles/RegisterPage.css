@@ -49,7 +49,7 @@
   width: 100%;
 }
 
-.toggle-password-btn {
+.password-toggle {
   position: absolute;
   right: 20px;
   top: 50%;
@@ -63,8 +63,16 @@
   z-index: 10;
 }
 
-.toggle-password-btn:hover {
+.password-toggle:hover {
   color: #9562d4;
+}
+
+.password-toggle i {
+  pointer-events: none;
+}
+
+.password-input {
+  padding-right: 50px; /* Make room for the eye icon */
 }
 
 .register-form {

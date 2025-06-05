@@ -211,14 +211,15 @@ function RegisterPage() {
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
-              className="register-input"
+              className="register-input password-input"
             />
             <button
               type="button"
-              className="toggle-password-btn"
+              className="password-toggle"
               onClick={togglePasswordVisibility}
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? "Hide" : "Show"}
+              <i className={showPassword ? "fa fa-eye-slash" : "fa fa-eye"}></i>
             </button>
           </div>
           <div className="password-container">
@@ -229,14 +230,23 @@ function RegisterPage() {
               onChange={(e) =>
                 setFormData({ ...formData, confirmPassword: e.target.value })
               }
-              className="register-input"
+              className="register-input password-input"
             />
             <button
               type="button"
-              className="toggle-password-btn"
+              className="password-toggle"
               onClick={toggleConfirmPasswordVisibility}
+              aria-label={
+                showConfirmPassword
+                  ? "Hide confirm password"
+                  : "Show confirm password"
+              }
             >
-              {showConfirmPassword ? "Hide" : "Show"}
+              <i
+                className={
+                  showConfirmPassword ? "fa fa-eye-slash" : "fa fa-eye"
+                }
+              ></i>
             </button>
           </div>
           {errors.username && (
