@@ -1,9 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useJsApiLoader, Autocomplete } from "@react-google-maps/api";
 
 const libraries = ["places"];
 
-const CitySearch = ({ onSelectCity, onEnterPress }) => {
+const CitySearch = ({ onSelectCity, onEnterPress, resetKey }) => {
   const [autocomplete, setAutocomplete] = useState(null);
   const [city, setCity] = useState("");
   const inputRef = useRef(null);
@@ -13,6 +13,16 @@ const CitySearch = ({ onSelectCity, onEnterPress }) => {
     googleMapsApiKey: "AIzaSyCj6cdcj9Jit0moxS2Obmng_kHkRyeQYeE",
     libraries: libraries,
   });
+
+  // Clear the search input when resetKey changes
+  useEffect(() => {
+    if (resetKey) {
+      setCity("");
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+    }
+  }, [resetKey]);
 
   // Load the autocomplete instance
   const handleLoad = (autocompleteInstance) => {

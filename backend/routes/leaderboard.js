@@ -678,15 +678,40 @@ router.get("/categories", async (req, res) => {
       // If city is specified, filter by location
       const addresses = await Address.find({
         ...(city && { city: new RegExp(city, "i") }),
-        ...(province && { province: new RegExp(province, "i") }),
-        ...(country && { country: new RegExp(country, "i") }),
+        // Temporarily remove province/country filtering to match main filtering
+        // ...(province && { province: new RegExp(province, "i") }),
+        // ...(country && { country: new RegExp(country, "i") }),
       });
       const addressIds = addresses.map((addr) => addr._id);
+      console.log(
+        `Categories: Found ${addresses.length} addresses for ${city}`
+      );
+
       const restaurants = await Restaurant.find({
         address: { $in: addressIds },
       });
       const restaurantIds = restaurants.map((r) => r._id);
+      console.log(
+        `Categories: Found ${restaurants.length} restaurants:`,
+        restaurants.map((r) => ({ id: r._id, name: r.name }))
+      );
+
       query = { restaurant: { $in: restaurantIds } };
+
+      // Debug: Check all food items for these restaurants
+      const allFoodItems = await FoodItem.find(query);
+      console.log(`Categories: Found ${allFoodItems.length} total food items`);
+      console.log(
+        "Categories: Food items by restaurant:",
+        restaurantIds.map((rid) => ({
+          restaurant: restaurants.find((r) => r._id.equals(rid))?.name,
+          foodCount: allFoodItems.filter((f) => f.restaurant.equals(rid))
+            .length,
+          foodTypes: allFoodItems
+            .filter((f) => f.restaurant.equals(rid))
+            .map((f) => f.type),
+        }))
+      );
     }
 
     // Get unique food types, categories, subtypes
@@ -699,6 +724,12 @@ router.get("/categories", async (req, res) => {
         Restaurant.distinct("type"),
       ]);
 
+    console.log("Categories: Raw distinct results:", {
+      foodTypes,
+      categories,
+      subTypes,
+    });
+
     // Filter out null/undefined values and sort
     const result = {
       foodTypes: foodTypes.filter(Boolean).sort(),
@@ -708,6 +739,7 @@ router.get("/categories", async (req, res) => {
       restaurantTypes: restaurantTypes.filter(Boolean).sort(),
     };
 
+    console.log("Categories: Final result:", result);
     res.json(result);
   } catch (error) {
     console.error("Error fetching categories:", error);

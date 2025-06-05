@@ -22,6 +22,7 @@ function LeaderboardsPage() {
   const [loading, setLoading] = useState(false);
   const [categoryLoading, setCategoryLoading] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [resetKey, setResetKey] = useState(0); // Key to trigger city search reset
 
   // Dynamic categories from database
   const [availableCategories, setAvailableCategories] = useState({
@@ -342,6 +343,26 @@ function LeaderboardsPage() {
     fetchAvailableCategories();
   }, [selectedCity]); // Fetch categories when city changes
 
+  // Initial cleanup on component mount
+  useEffect(() => {
+    // Ensure clean state on page load
+    setCuisine("All");
+    setSelectedFoodCategory("All");
+    setActiveCategory("restaurants");
+  }, []); // Run only on mount
+
+  // Reset selectors to "All" when category changes
+  useEffect(() => {
+    setCuisine("All");
+    setSelectedFoodCategory("All");
+  }, [activeCategory]);
+
+  // Reset selectors to "All" when city changes
+  useEffect(() => {
+    setCuisine("All");
+    setSelectedFoodCategory("All");
+  }, [selectedCity]);
+
   // Handle city selection
   const handleCitySelect = (city) => {
     setSelectedCity(city);
@@ -352,6 +373,10 @@ function LeaderboardsPage() {
     setSelectedCity(null);
     setSearchTerm("");
     setLeaderboardData([]);
+    // Reset selectors to "All" when city is reset
+    setCuisine("All");
+    setSelectedFoodCategory("All");
+    setResetKey((prevKey) => prevKey + 1);
   };
 
   // Filter data based on search term
@@ -478,7 +503,7 @@ function LeaderboardsPage() {
       <div className="search-section">
         <div className="city-search-container">
           <label className="search-label">Choose Your City</label>
-          <CitySearch onSelectCity={handleCitySelect} />
+          <CitySearch onSelectCity={handleCitySelect} resetKey={resetKey} />
           {selectedCity && (
             <button onClick={handleResetCity} className="reset-city-button">
               <i className="fa fa-times"></i>
