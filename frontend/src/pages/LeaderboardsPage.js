@@ -491,81 +491,82 @@ function LeaderboardsPage() {
         )}
       </div>
 
-      {/* Category Selection - show all the time, but keep selections when city changes */}
-      <div className="category-section">
-        <h3 className="section-title">Choose Category</h3>
-        <div className="category-tabs">
-          {mainCategories.map((category) => (
-            <button
-              key={category.id}
-              className={`category-tab ${
-                activeCategory === category.id ? "active" : ""
-              }`}
-              onClick={() => setActiveCategory(category.id)}
-            >
-              <span className="category-icon">
-                <i className={category.icon}></i>
-              </span>
-              <span className="category-label">{category.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Sub-category Selection - show all the time, but keep selections when city changes */}
-      <div className="filter-section">
-        {activeCategory === "food-items" && (
-          <div className="filter-group">
-            <label className="filter-label">Food Category</label>
-            <select
-              value={selectedFoodCategory}
-              onChange={(e) => setSelectedFoodCategory(e.target.value)}
-              className="filter-select"
-            >
-              {foodCategories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
+      {/* Category Selection and Sub-category Selection - only show when city is selected */}
+      {selectedCity && (
+        <>
+          <div className="category-section">
+            <h3 className="section-title">Choose Category</h3>
+            <div className="category-tabs">
+              {mainCategories.map((category) => (
+                <button
+                  key={category.id}
+                  className={`category-tab ${
+                    activeCategory === category.id ? "active" : ""
+                  }`}
+                  onClick={() => setActiveCategory(category.id)}
+                >
+                  <span className="category-icon">
+                    <i className={category.icon}></i>
+                  </span>
+                  <span className="category-label">{category.label}</span>
+                </button>
               ))}
-            </select>
-          </div>
-        )}
-
-        {(activeCategory === "restaurants" ||
-          activeCategory === "cuisines") && (
-          <div className="filter-group">
-            <label className="filter-label">Cuisine Type</label>
-            <select
-              value={selectedCuisine}
-              onChange={(e) => setCuisine(e.target.value)}
-              className="filter-select"
-            >
-              {cuisineTypes.map((cuisine) => (
-                <option key={cuisine} value={cuisine}>
-                  {cuisine}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Search within results */}
-        {selectedCity && (
-          <div className="filter-group">
-            <label className="filter-label">Search Results</label>
-            <div className="search-input-container">
-              <input
-                type="text"
-                placeholder="Filter results..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="filter-search-input"
-              />
-              <i className="fa fa-search search-icon"></i>
             </div>
           </div>
-        )}
-      </div>
+
+          <div className="filter-section">
+            {activeCategory === "food-items" && (
+              <div className="filter-group">
+                <label className="filter-label">Food Category</label>
+                <select
+                  value={selectedFoodCategory}
+                  onChange={(e) => setSelectedFoodCategory(e.target.value)}
+                  className="filter-select"
+                >
+                  {foodCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {(activeCategory === "restaurants" ||
+              activeCategory === "cuisines") && (
+              <div className="filter-group">
+                <label className="filter-label">Cuisine Type</label>
+                <select
+                  value={selectedCuisine}
+                  onChange={(e) => setCuisine(e.target.value)}
+                  className="filter-select"
+                >
+                  {cuisineTypes.map((cuisine) => (
+                    <option key={cuisine} value={cuisine}>
+                      {cuisine}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Search within results */}
+            <div className="filter-group">
+              <label className="filter-label">Search Results</label>
+              <div className="search-input-container">
+                <input
+                  type="text"
+                  placeholder="Filter results..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="filter-search-input"
+                />
+                <i className="fa fa-search search-icon"></i>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Results Section */}
       <div className="results-section">
