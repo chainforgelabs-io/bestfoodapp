@@ -679,7 +679,7 @@ function LeaderboardsPage() {
                     ) : globalLeaderboards[category.key]?.length > 0 ? (
                       globalLeaderboards[category.key].map((item, index) => (
                         <div
-                          key={item._id || index}
+                          key={`${category.key}-${item._id || index}`}
                           className="global-item"
                           onClick={() => {
                             if (category.type === "cities") {
