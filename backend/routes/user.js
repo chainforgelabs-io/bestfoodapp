@@ -249,7 +249,6 @@ router.delete("/profile", protect, async (req, res) => {
   }
 });
 
-// Route to fetch user profile by ID
 // Get user details, reviews, followers, and following
 router.get("/:id", protect, async (req, res) => {
   try {
@@ -263,12 +262,15 @@ router.get("/:id", protect, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Find all reviews by the user
-    const reviews = await Review.find({ user: req.params.id });
+    // Find all reviews by the user - fix field name from 'user' to 'userId'
+    const reviews = await Review.find({ userId: req.params.id })
+      .populate("foodItem", "name category type price")
+      .populate("restaurantId", "name type cuisine")
+      .sort({ reviewDate: -1 });
 
     res.status(200).json({
       user, // Populated user with followers and following
-      reviews, // User's reviews
+      reviews, // User's reviews with populated data
     });
   } catch (err) {
     console.error(err.message);

@@ -7,6 +7,7 @@ import "../styles/ProfilePage.css";
 
 function ProfilePage() {
   const [user, setUser] = useState({});
+  const [reviews, setReviews] = useState([]);
   const [reviewCount, setReviewCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
@@ -39,16 +40,19 @@ function ProfilePage() {
           });
         }
 
-        // Fetch user details from localhost:5000
+        // Fetch user details and reviews from localhost:5000
         const userResponse = await axios.get(`/api/users/${userId}`);
         console.log("User details response:", userResponse);
 
         // Access the 'user' object inside 'data' and set it
         const userData = userResponse.data.user;
+        const userReviews = userResponse.data.reviews || [];
+
         setUser(userData);
+        setReviews(userReviews);
 
         // Set review count, followers count, and following count
-        setReviewCount(userData.reviews.length || 0);
+        setReviewCount(userReviews.length);
         setFollowerCount(userData.followers.length || 0);
         setFollowingCount(userData.following.length || 0);
       } catch (error) {
@@ -70,14 +74,39 @@ function ProfilePage() {
     navigate("/login"); // Redirect to login page
   };
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Get score color based on value
+  const getScoreColor = (score) => {
+    if (score >= 80) return "#28a745"; // Green
+    if (score >= 60) return "#ffc107"; // Yellow
+    if (score >= 40) return "#fd7e14"; // Orange
+    return "#dc3545"; // Red
+  };
+
+  // Navigate to restaurant page
+  const handleReviewClick = (restaurantId) => {
+    if (restaurantId) {
+      navigate(`/restaurant/${restaurantId}`);
+    }
+  };
+
   return (
     <div className="profile-container">
       <div className="user-info">
-        <img
+        {/* <img
           src={user.profilePicture}
           alt="Profile"
           className="profile-picture"
-        />
+        /> */}
         <h2>{user.username}</h2>
         <p>{user.bio}</p>
         <p>Total Points: {user.points}</p>
@@ -94,6 +123,77 @@ function ProfilePage() {
           <strong>Following:</strong> {followingCount}
         </p>
       </div>
+
+      {/* User Reviews Section */}
+      {reviews.length > 0 && (
+        <div className="user-reviews-section">
+          <h3>My Reviews ({reviewCount})</h3>
+          <div className="reviews-grid">
+            {reviews.map((review) => (
+              <div
+                key={review._id}
+                className="review-card clickable"
+                onClick={() => handleReviewClick(review.restaurantId?._id)}
+                title={`Go to ${
+                  review.restaurantId?.name || "restaurant"
+                } page`}
+              >
+                <div className="review-header">
+                  <h4>{review.foodItem?.name || "Food Item"}</h4>
+                  <div
+                    className="review-score"
+                    style={{ color: getScoreColor(review.score) }}
+                  >
+                    {review.score}/100
+                  </div>
+                </div>
+
+                <div className="restaurant-info">
+                  <p>
+                    <strong>{review.restaurantId?.name || "Restaurant"}</strong>
+                  </p>
+                  {review.restaurantId?.cuisine && (
+                    <p className="cuisine">
+                      {review.restaurantId.cuisine.join(", ")}
+                    </p>
+                  )}
+                </div>
+
+                {review.comment && (
+                  <p className="review-comment">"{review.comment}"</p>
+                )}
+
+                <div className="review-details">
+                  <span className="category">{review.foodItem?.category}</span>
+                  {review.foodItem?.price && (
+                    <span className="price">${review.foodItem.price}</span>
+                  )}
+                </div>
+
+                <div className="review-date">
+                  {formatDate(review.reviewDate)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Debug info - remove in production
+      {process.env.NODE_ENV === "development" && (
+        <div
+          className="debug-info"
+          style={{
+            marginTop: "20px",
+            padding: "10px",
+            background: "#f0f0f0",
+            borderRadius: "5px",
+          }}
+        >
+          <h4>Session Debug Info:</h4>
+          <pre>{JSON.stringify(tokenUtils.getTokenInfo(), null, 2)}</pre>
+        </div>
+      )} */}
 
       <button onClick={handleLogout} className="logout-button">
         Logout
