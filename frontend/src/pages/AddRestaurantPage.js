@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
+import StandardizedDropdown from "../components/StandardizedDropdown";
+import {
+  RESTAURANT_TYPES,
+  CUISINE_TYPES,
+  AMBIANCE_OPTIONS,
+} from "../utils/standardizedOptions";
 
 function AddRestaurantPage() {
   const { state } = useLocation();
@@ -14,8 +20,8 @@ function AddRestaurantPage() {
   const [restaurantData, setRestaurantData] = useState({
     name: "",
     type: "",
-    cuisine: "",
-    ambiance: "",
+    cuisine: [],
+    ambiance: [],
     street: "",
     postalCode: "",
   });
@@ -25,6 +31,10 @@ function AddRestaurantPage() {
 
   const handleChange = (e) => {
     setRestaurantData({ ...restaurantData, [e.target.name]: e.target.value });
+  };
+
+  const handleDropdownChange = (field, value) => {
+    setRestaurantData({ ...restaurantData, [field]: value });
   };
 
   const handleSubmit = async (e) => {
@@ -56,9 +66,11 @@ function AddRestaurantPage() {
         name: restaurantData.name,
         address: addressId,
         type: restaurantData.type,
-        cuisine: restaurantData.cuisine.split(",").map((item) => item.trim()),
-        ambiance: restaurantData.ambiance
-          ? restaurantData.ambiance.split(",").map((item) => item.trim())
+        cuisine: Array.isArray(restaurantData.cuisine)
+          ? restaurantData.cuisine
+          : [restaurantData.cuisine],
+        ambiance: Array.isArray(restaurantData.ambiance)
+          ? restaurantData.ambiance
           : [],
       };
 
@@ -113,29 +125,35 @@ function AddRestaurantPage() {
           onChange={handleChange}
           required
         />
-        <input
-          type="text"
-          name="type"
-          placeholder="Type (e.g., Casual Dining)"
+
+        <StandardizedDropdown
+          label="Restaurant Type"
+          placeholder="Select restaurant type"
+          options={RESTAURANT_TYPES}
           value={restaurantData.type}
-          onChange={handleChange}
-          required
+          onChange={(value) => handleDropdownChange("type", value)}
+          required={true}
         />
-        <input
-          type="text"
-          name="cuisine"
-          placeholder="Cuisine (e.g., American, Italian)"
+
+        <StandardizedDropdown
+          label="Cuisine Types"
+          placeholder="Select cuisine types"
+          options={CUISINE_TYPES}
           value={restaurantData.cuisine}
-          onChange={handleChange}
-          required
+          onChange={(value) => handleDropdownChange("cuisine", value)}
+          allowMultiple={true}
+          required={true}
         />
-        <input
-          type="text"
-          name="ambiance"
-          placeholder="Ambiance (e.g., Cozy, Family-Friendly)"
+
+        <StandardizedDropdown
+          label="Ambiance (Optional)"
+          placeholder="Select ambiance characteristics"
+          options={AMBIANCE_OPTIONS}
           value={restaurantData.ambiance}
-          onChange={handleChange}
+          onChange={(value) => handleDropdownChange("ambiance", value)}
+          allowMultiple={true}
         />
+
         <div className="button-container">
           <button type="button" onClick={handleBack}>
             Back

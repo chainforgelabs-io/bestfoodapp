@@ -1,13 +1,19 @@
 import React, { useState } from "react";
 import axios from "axios";
+import StandardizedDropdown from "./StandardizedDropdown";
+import {
+  RESTAURANT_TYPES,
+  CUISINE_TYPES,
+  AMBIANCE_OPTIONS,
+} from "../utils/standardizedOptions";
 import "../styles/RestaurantModal.css";
 
 function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
   const [restaurantData, setRestaurantData] = useState({
     name: "",
     type: "",
-    cuisine: "",
-    ambiance: "",
+    cuisine: [],
+    ambiance: [],
     street: "",
     postalCode: "",
   });
@@ -19,6 +25,14 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
     // Clear error when user starts typing
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: "" });
+    }
+  };
+
+  const handleDropdownChange = (field, value) => {
+    setRestaurantData({ ...restaurantData, [field]: value });
+    // Clear error when user makes a selection
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: "" });
     }
   };
 
@@ -57,14 +71,16 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
       );
       const addressId = addressResponse.data._id;
 
-      // Create restaurant
+      // Create restaurant with standardized data
       const restaurantPayload = {
         name: restaurantData.name,
         address: addressId,
         type: restaurantData.type,
-        cuisine: restaurantData.cuisine.split(",").map((item) => item.trim()),
-        ambiance: restaurantData.ambiance
-          ? restaurantData.ambiance.split(",").map((item) => item.trim())
+        cuisine: Array.isArray(restaurantData.cuisine)
+          ? restaurantData.cuisine
+          : [restaurantData.cuisine],
+        ambiance: Array.isArray(restaurantData.ambiance)
+          ? restaurantData.ambiance
           : [],
       };
 
@@ -78,8 +94,8 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
       setRestaurantData({
         name: "",
         type: "",
-        cuisine: "",
-        ambiance: "",
+        cuisine: [],
+        ambiance: [],
         street: "",
         postalCode: "",
       });
@@ -105,8 +121,8 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
     setRestaurantData({
       name: "",
       type: "",
-      cuisine: "",
-      ambiance: "",
+      cuisine: [],
+      ambiance: [],
       street: "",
       postalCode: "",
     });
@@ -177,47 +193,37 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
             )}
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Restaurant Type *</label>
-            <input
-              type="text"
-              name="type"
-              placeholder="e.g., Casual Dining, Fast Food, Fine Dining"
-              value={restaurantData.type}
-              onChange={handleChange}
-              required
-              className="form-input"
-            />
-            {errors.type && <span className="form-error">{errors.type}</span>}
-          </div>
+          <StandardizedDropdown
+            label="Restaurant Type"
+            placeholder="Select restaurant type"
+            options={RESTAURANT_TYPES}
+            value={restaurantData.type}
+            onChange={(value) => handleDropdownChange("type", value)}
+            required={true}
+          />
+          {errors.type && <span className="form-error">{errors.type}</span>}
 
-          <div className="form-group">
-            <label className="form-label">Cuisine Types *</label>
-            <input
-              type="text"
-              name="cuisine"
-              placeholder="e.g., American, Italian, Mexican (comma-separated)"
-              value={restaurantData.cuisine}
-              onChange={handleChange}
-              required
-              className="form-input"
-            />
-            {errors.cuisine && (
-              <span className="form-error">{errors.cuisine}</span>
-            )}
-          </div>
+          <StandardizedDropdown
+            label="Cuisine Types"
+            placeholder="Select cuisine types"
+            options={CUISINE_TYPES}
+            value={restaurantData.cuisine}
+            onChange={(value) => handleDropdownChange("cuisine", value)}
+            allowMultiple={true}
+            required={true}
+          />
+          {errors.cuisine && (
+            <span className="form-error">{errors.cuisine}</span>
+          )}
 
-          <div className="form-group">
-            <label className="form-label">Ambiance (Optional)</label>
-            <input
-              type="text"
-              name="ambiance"
-              placeholder="e.g., Cozy, Family-Friendly, Romantic (comma-separated)"
-              value={restaurantData.ambiance}
-              onChange={handleChange}
-              className="form-input"
-            />
-          </div>
+          <StandardizedDropdown
+            label="Ambiance (Optional)"
+            placeholder="Select ambiance characteristics"
+            options={AMBIANCE_OPTIONS}
+            value={restaurantData.ambiance}
+            onChange={(value) => handleDropdownChange("ambiance", value)}
+            allowMultiple={true}
+          />
 
           {errors.submit && <div className="form-error">{errors.submit}</div>}
 

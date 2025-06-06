@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Notification from "./Notification";
+import StandardizedDropdown from "./StandardizedDropdown";
+import {
+  FOOD_CATEGORIES,
+  FOOD_TYPES,
+  FOOD_SUBTYPES,
+  DIETARY_TAGS,
+  SIZE_OPTIONS,
+} from "../utils/standardizedOptions";
 import "../styles/EditFoodItemModal.css";
 
 function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
@@ -11,7 +19,7 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
     subType: "",
     size: "",
     price: "",
-    tags: "",
+    tags: [],
   });
 
   const [notification, setNotification] = useState({
@@ -32,12 +40,43 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
         subType: foodItem.subType || "",
         size: foodItem.sizeOptions || foodItem.size || "",
         price: foodItem.price || "",
-        tags: Array.isArray(foodItem.tags)
-          ? foodItem.tags.join(", ")
-          : foodItem.tags || "",
+        tags: Array.isArray(foodItem.tags) ? foodItem.tags : [],
       });
     }
   }, [isOpen, foodItem]);
+
+  // Handle dropdown changes for standardized fields
+  const handleDropdownChange = (field, value) => {
+    setEditedFoodItem({ ...editedFoodItem, [field]: value });
+
+    // Auto-clear dependent fields when category changes
+    if (field === "category") {
+      setEditedFoodItem((prev) => ({
+        ...prev,
+        category: value,
+        type: "",
+        subType: "",
+      }));
+    } else if (field === "type") {
+      setEditedFoodItem((prev) => ({
+        ...prev,
+        type: value,
+        subType: "",
+      }));
+    }
+  };
+
+  // Get available types based on selected category
+  const getAvailableTypes = () => {
+    return editedFoodItem.category
+      ? FOOD_TYPES[editedFoodItem.category] || []
+      : [];
+  };
+
+  // Get available subtypes based on selected type
+  const getAvailableSubtypes = () => {
+    return editedFoodItem.type ? FOOD_SUBTYPES[editedFoodItem.type] || [] : [];
+  };
 
   const handleSave = async () => {
     if (
@@ -86,9 +125,7 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
         type: editedFoodItem.type,
         subType: editedFoodItem.subType || "",
         price: parseFloat(editedFoodItem.price) || 0,
-        tags: editedFoodItem.tags
-          ? editedFoodItem.tags.split(",").map((tag) => tag.trim())
-          : [],
+        tags: Array.isArray(editedFoodItem.tags) ? editedFoodItem.tags : [],
         sizeOptions:
           editedFoodItem.size && editedFoodItem.size.trim() !== ""
             ? editedFoodItem.size
@@ -183,65 +220,47 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Category *</label>
-            <input
-              type="text"
-              placeholder="e.g., Mains, Appetizers, Sides, Desserts"
-              value={editedFoodItem.category}
-              onChange={(e) =>
-                setEditedFoodItem({
-                  ...editedFoodItem,
-                  category: e.target.value,
-                })
-              }
-              required
-              className="form-input"
-            />
-          </div>
+          <StandardizedDropdown
+            label="Category"
+            placeholder="Select food category"
+            options={FOOD_CATEGORIES}
+            value={editedFoodItem.category}
+            onChange={(value) => handleDropdownChange("category", value)}
+            required={true}
+          />
 
-          <div className="form-group">
-            <label className="form-label">Type *</label>
-            <input
-              type="text"
-              placeholder="e.g., Tacos, Burger, Pizza, Pasta, Sandwich"
-              value={editedFoodItem.type}
-              onChange={(e) =>
-                setEditedFoodItem({ ...editedFoodItem, type: e.target.value })
-              }
-              required
-              className="form-input"
-            />
-          </div>
+          <StandardizedDropdown
+            label="Type"
+            placeholder={
+              editedFoodItem.category
+                ? "Select food type"
+                : "Select category first"
+            }
+            options={getAvailableTypes()}
+            value={editedFoodItem.type}
+            onChange={(value) => handleDropdownChange("type", value)}
+            disabled={!editedFoodItem.category}
+            required={true}
+          />
 
-          <div className="form-group">
-            <label className="form-label">Sub-type (Optional)</label>
-            <input
-              type="text"
-              placeholder="e.g., Cheese Burger, Veggie Pizza, Beef Tacos"
-              value={editedFoodItem.subType}
-              onChange={(e) =>
-                setEditedFoodItem({
-                  ...editedFoodItem,
-                  subType: e.target.value,
-                })
-              }
-              className="form-input"
-            />
-          </div>
+          <StandardizedDropdown
+            label="Sub-type (Optional)"
+            placeholder={
+              editedFoodItem.type ? "Select sub-type" : "Select type first"
+            }
+            options={getAvailableSubtypes()}
+            value={editedFoodItem.subType}
+            onChange={(value) => handleDropdownChange("subType", value)}
+            disabled={!editedFoodItem.type}
+          />
 
-          <div className="form-group">
-            <label className="form-label">Size (Optional)</label>
-            <input
-              type="text"
-              placeholder="e.g., small, medium, large, extra large"
-              value={editedFoodItem.size}
-              onChange={(e) =>
-                setEditedFoodItem({ ...editedFoodItem, size: e.target.value })
-              }
-              className="form-input"
-            />
-          </div>
+          <StandardizedDropdown
+            label="Size (Optional)"
+            placeholder="Select size"
+            options={SIZE_OPTIONS}
+            value={editedFoodItem.size}
+            onChange={(value) => handleDropdownChange("size", value)}
+          />
 
           <div className="form-group">
             <label className="form-label">Price (Optional)</label>
@@ -257,18 +276,14 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Tags (Optional)</label>
-            <input
-              type="text"
-              placeholder="e.g., spicy, vegan, gluten-free (comma-separated)"
-              value={editedFoodItem.tags}
-              onChange={(e) =>
-                setEditedFoodItem({ ...editedFoodItem, tags: e.target.value })
-              }
-              className="form-input"
-            />
-          </div>
+          <StandardizedDropdown
+            label="Tags (Optional)"
+            placeholder="Select dietary tags"
+            options={DIETARY_TAGS}
+            value={editedFoodItem.tags}
+            onChange={(value) => handleDropdownChange("tags", value)}
+            allowMultiple={true}
+          />
         </div>
 
         <div className="modal-footer">

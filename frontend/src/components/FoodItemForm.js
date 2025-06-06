@@ -3,6 +3,14 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Notification from "./Notification";
 import EditFoodItemModal from "./EditFoodItemModal";
+import StandardizedDropdown from "./StandardizedDropdown";
+import {
+  FOOD_CATEGORIES,
+  FOOD_TYPES,
+  FOOD_SUBTYPES,
+  DIETARY_TAGS,
+  SIZE_OPTIONS,
+} from "../utils/standardizedOptions";
 import "../styles/FoodItemForm.css";
 
 function FoodItemForm({
@@ -17,7 +25,7 @@ function FoodItemForm({
     subType: "",
     size: "",
     price: "",
-    tags: "",
+    tags: [],
   });
 
   const [foodItems, setFoodItems] = useState([]); // Store added food items
@@ -141,7 +149,7 @@ function FoodItemForm({
       subType: "",
       size: "",
       price: "",
-      tags: "",
+      tags: [],
     });
     setSearchTerm(""); // Clear the search
     setShowFoodSuggestions(false);
@@ -156,9 +164,30 @@ function FoodItemForm({
       subType: item.subType || "",
       size: item.sizeOptions || "",
       price: item.price,
-      tags: Array.isArray(item.tags) ? item.tags.join(", ") : item.tags || "",
+      tags: Array.isArray(item.tags) ? item.tags : [],
     });
     setShowFoodSuggestions(false);
+  };
+
+  // Handle dropdown changes for standardized fields
+  const handleDropdownChange = (field, value) => {
+    setFoodItem({ ...foodItem, [field]: value });
+
+    // Auto-clear dependent fields when category changes
+    if (field === "category") {
+      setFoodItem((prev) => ({
+        ...prev,
+        category: value,
+        type: "",
+        subType: "",
+      }));
+    } else if (field === "type") {
+      setFoodItem((prev) => ({
+        ...prev,
+        type: value,
+        subType: "",
+      }));
+    }
   };
 
   // Create a new food item in the database
@@ -199,9 +228,7 @@ function FoodItemForm({
         type: foodItem.type,
         subType: foodItem.subType || "",
         price: parseFloat(foodItem.price) || 0,
-        tags: foodItem.tags
-          ? foodItem.tags.split(",").map((tag) => tag.trim())
-          : [],
+        tags: Array.isArray(foodItem.tags) ? foodItem.tags : [],
         sizeOptions:
           foodItem.size && foodItem.size.trim() !== ""
             ? foodItem.size
@@ -231,7 +258,7 @@ function FoodItemForm({
         subType: "",
         size: "",
         price: "",
-        tags: "",
+        tags: [],
       });
     } catch (error) {
       console.error("Error creating food item:", error);
@@ -257,6 +284,16 @@ function FoodItemForm({
     updatedFoodItems[editingFoodItem.index] = updatedFoodItem;
     setFoodItems(updatedFoodItems);
     onFoodItemsUpdated(updatedFoodItems);
+  };
+
+  // Get available types based on selected category
+  const getAvailableTypes = () => {
+    return foodItem.category ? FOOD_TYPES[foodItem.category] || [] : [];
+  };
+
+  // Get available subtypes based on selected type
+  const getAvailableSubtypes = () => {
+    return foodItem.type ? FOOD_SUBTYPES[foodItem.type] || [] : [];
   };
 
   return (
@@ -377,59 +414,45 @@ function FoodItemForm({
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Category *</label>
-              <input
-                type="text"
-                placeholder="e.g., Mains, Appetizers, Sides, Desserts"
-                value={foodItem.category}
-                onChange={(e) =>
-                  setFoodItem({ ...foodItem, category: e.target.value })
-                }
-                required
-                className="form-input"
-              />
-            </div>
+            <StandardizedDropdown
+              label="Category"
+              placeholder="Select food category"
+              options={FOOD_CATEGORIES}
+              value={foodItem.category}
+              onChange={(value) => handleDropdownChange("category", value)}
+              required={true}
+            />
 
-            <div className="form-group">
-              <label className="form-label">Type *</label>
-              <input
-                type="text"
-                placeholder="e.g., Tacos, Burger, Pizza, Pasta, Sandwich"
-                value={foodItem.type}
-                onChange={(e) =>
-                  setFoodItem({ ...foodItem, type: e.target.value })
-                }
-                required
-                className="form-input"
-              />
-            </div>
+            <StandardizedDropdown
+              label="Type"
+              placeholder={
+                foodItem.category ? "Select food type" : "Select category first"
+              }
+              options={getAvailableTypes()}
+              value={foodItem.type}
+              onChange={(value) => handleDropdownChange("type", value)}
+              disabled={!foodItem.category}
+              required={true}
+            />
 
-            <div className="form-group">
-              <label className="form-label">Sub-type (Optional)</label>
-              <input
-                type="text"
-                placeholder="e.g., Cheese Burger, Veggie Pizza, Beef Tacos"
-                value={foodItem.subType}
-                onChange={(e) =>
-                  setFoodItem({ ...foodItem, subType: e.target.value })
-                }
-                className="form-input"
-              />
-            </div>
+            <StandardizedDropdown
+              label="Sub-type (Optional)"
+              placeholder={
+                foodItem.type ? "Select sub-type" : "Select type first"
+              }
+              options={getAvailableSubtypes()}
+              value={foodItem.subType}
+              onChange={(value) => handleDropdownChange("subType", value)}
+              disabled={!foodItem.type}
+            />
 
-            <div className="form-group">
-              <label className="form-label">Size (Optional)</label>
-              <input
-                type="text"
-                placeholder="e.g., small, medium, large, extra large"
-                value={foodItem.size}
-                onChange={(e) =>
-                  setFoodItem({ ...foodItem, size: e.target.value })
-                }
-                className="form-input"
-              />
-            </div>
+            <StandardizedDropdown
+              label="Size (Optional)"
+              placeholder="Select size"
+              options={SIZE_OPTIONS}
+              value={foodItem.size}
+              onChange={(value) => handleDropdownChange("size", value)}
+            />
 
             <div className="form-group">
               <label className="form-label">Price (Optional)</label>
@@ -445,18 +468,14 @@ function FoodItemForm({
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Tags (Optional)</label>
-              <input
-                type="text"
-                placeholder="e.g., spicy, vegan, gluten-free (comma-separated)"
-                value={foodItem.tags}
-                onChange={(e) =>
-                  setFoodItem({ ...foodItem, tags: e.target.value })
-                }
-                className="form-input"
-              />
-            </div>
+            <StandardizedDropdown
+              label="Tags (Optional)"
+              placeholder="Select dietary tags"
+              options={DIETARY_TAGS}
+              value={foodItem.tags}
+              onChange={(value) => handleDropdownChange("tags", value)}
+              allowMultiple={true}
+            />
 
             <button onClick={handleAddFoodItem} className="add-food-item-btn">
               Create & Add New Food Item
