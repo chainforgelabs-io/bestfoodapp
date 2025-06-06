@@ -36,3 +36,14 @@
     transform: rotate(360deg);
   }
 }
+
+/* Main content wrapper to prevent content hiding behind fixed navbar */
+.main-content {
+  padding-top: 70px;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding-top: 60px;
+  }
+}
