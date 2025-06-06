@@ -93,21 +93,64 @@ function RestaurantPage() {
 
         {foodItems.length > 0 ? (
           <div className="results-section">
-            {foodItems.map((item, index) => (
-              <div key={item._id} className="result-item">
-                <h3>
-                  {index + 1}. {item.name || "Unnamed Food Item"}
-                </h3>
-                <p>Category: {item.category || "Unknown Category"}</p>
-                <p>Type: {item.type || "Unknown Type"}</p>
-                <p>Price: {item.price ? `$${item.price}` : "Unknown Price"}</p>
-                <div className="scores">
-                  <p>Admin Score: {item.adminScore || 0}</p>
-                  <p>Community Score: {item.communityScore || 0}</p>
-                  <p>Overall Score: {item.overallAverageScore || 0}</p>
+            {foodItems
+              .sort(
+                (a, b) =>
+                  (b.overallAverageScore || 0) - (a.overallAverageScore || 0)
+              )
+              .map((item, index) => (
+                <div key={item._id} className="result-item">
+                  <div className="result-header">
+                    <div className="rank-number">#{index + 1}</div>
+                    <h3 className="food-name">
+                      {item.name || "Unnamed Food Item"}
+                    </h3>
+                    <div className="overall-score">
+                      {Math.round(item.overallAverageScore || 0)}
+                    </div>
+                  </div>
+
+                  <div className="result-content">
+                    <div className="food-info">
+                      <span className="food-label">🍽️ Category:</span>
+                      <span className="food-details">
+                        {item.category || "Unknown Category"}
+                      </span>
+                    </div>
+
+                    <div className="food-info">
+                      <span className="food-label">🏷️ Type:</span>
+                      <span className="food-details">
+                        {item.type || "Unknown Type"}
+                      </span>
+                    </div>
+
+                    {item.price && (
+                      <div className="food-info">
+                        <span className="food-label">💰 Price:</span>
+                        <span className="food-details price">
+                          ${item.price}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="scores-section">
+                      <div className="score-item">
+                        <span className="score-label">Admin</span>
+                        <span className="score-value">
+                          {Math.round(item.adminScore || 0)}
+                        </span>
+                      </div>
+                      <div className="score-item">
+                        <span className="score-label">Community</span>
+                        <span className="score-value">
+                          {Math.round(item.communityScore || 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         ) : (
           <div className="no-items">
