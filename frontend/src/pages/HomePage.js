@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import CitySearch from "../components/CitySearch"; // Adjust the path if necessary
+import { useCityFromUrl } from "../hooks/useCityFromUrl";
+import { generateSeoMeta } from "../utils/cityUtils";
 import "../styles/HomePage.css";
 import Logo from "../assets/logo.png"; // Import your logo here
 
@@ -21,17 +24,38 @@ function HomePage() {
   const [suggestions, setSuggestions] = useState([]);
   const navigate = useNavigate(); // For navigation
 
-  // Search for restaurants by city, province, and country
-  const handleCitySearch = async (e) => {
-    e.preventDefault();
+  // Use custom hook for URL-based city detection
+  const { cityFromUrl, hasUrlCity, updateUrlWithCity } =
+    useCityFromUrl("/city");
 
+  // Initialize city from URL if present
+  useEffect(() => {
+    if (hasUrlCity && cityFromUrl && !citySelected) {
+      setCitySelected(cityFromUrl);
+      setHasSearched(true);
+      // Trigger initial search
+      performCitySearch(cityFromUrl);
+    }
+  }, [hasUrlCity, cityFromUrl]);
+
+  // Update URL when city is selected manually
+  const handleCitySelect = (selectedCity) => {
+    setCitySelected(selectedCity);
+    updateUrlWithCity(
+      selectedCity.city,
+      selectedCity.province,
+      selectedCity.country
+    );
+  };
+
+  // Extracted city search logic
+  const performCitySearch = async (cityData) => {
     if (
-      !citySelected ||
-      !citySelected.city ||
-      !citySelected.province ||
-      !citySelected.country
+      !cityData ||
+      !cityData.city ||
+      !cityData.province ||
+      !cityData.country
     ) {
-      // Just return without the alert - the form validation will handle this
       return;
     }
 
@@ -40,22 +64,45 @@ function HomePage() {
         `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
         {
           params: {
-            city: citySelected.city,
-            province: citySelected.province,
-            country: citySelected.country,
+            city: cityData.city,
+            province: cityData.province,
+            country: cityData.country,
           },
         }
       );
       console.log(response.data);
       setResults(response.data);
-      setHasSearched(true); // Mark search as performed
-      setActiveFilter("Restaurants"); // Default to restaurants after city search
+      setHasSearched(true);
+      setActiveFilter("Restaurants");
     } catch (error) {
       console.error("Error searching restaurants by city:", error);
       setResults([]);
-      setHasSearched(true); // Still mark search as performed even if no results
-      setActiveFilter("Restaurants"); // Default to restaurants after city search
+      setHasSearched(true);
+      setActiveFilter("Restaurants");
     }
+  };
+
+  // Generate SEO meta tags
+  const seoMeta =
+    citySelected && citySelected.city
+      ? generateSeoMeta(
+          citySelected.city,
+          citySelected.province,
+          citySelected.country,
+          "home"
+        )
+      : {
+          title: "Find the Best Food in Your City | Food Rankings & Reviews",
+          description:
+            "Discover top-rated restaurants and food in cities across Canada and the US. Read reviews, see rankings, and find amazing dining experiences.",
+          keywords:
+            "best food, restaurant reviews, food rankings, dining guide",
+        };
+
+  // Search for restaurants by city, province, and country
+  const handleCitySearch = async (e) => {
+    e.preventDefault();
+    await performCitySearch(citySelected);
   };
 
   // Search for food items in the selected city
@@ -354,6 +401,11 @@ function HomePage() {
 
   return (
     <div className="home-container">
+      <Helmet>
+        <title>{seoMeta.title}</title>
+        <meta name="description" content={seoMeta.description} />
+        <meta name="keywords" content={seoMeta.keywords} />
+      </Helmet>
       {!hasSearched ? (
         <>
           {/* Initial layout (before search) */}
@@ -364,7 +416,7 @@ function HomePage() {
           <form onSubmit={handleCitySearch} className="search-form">
             {/* Pass down the onSelectCity method */}
             <CitySearch
-              onSelectCity={setCitySelected}
+              onSelectCity={handleCitySelect}
               onEnterPress={handleEnterPress}
             />
             <button type="submit" className="search-button">

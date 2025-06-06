@@ -22,6 +22,30 @@ function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<HomePage />} />
+
+          {/* City-specific routes for SEO */}
+          <Route path="/city/:cityName" element={<HomePage />} />
+          <Route path="/city/:cityName/:province" element={<HomePage />} />
+          <Route
+            path="/city/:cityName/:province/:country"
+            element={<HomePage />}
+          />
+
+          {/* Leaderboard city routes */}
+          <Route
+            path="/leaderboards/:cityName"
+            element={<LeaderboardsPage />}
+          />
+          <Route
+            path="/leaderboards/:cityName/:province"
+            element={<LeaderboardsPage />}
+          />
+          <Route
+            path="/leaderboards/:cityName/:province/:country"
+            element={<LeaderboardsPage />}
+          />
+
+          {/* Existing routes */}
           <Route
             path="/restaurant/:restaurantID"
             element={<RestaurantPage />}

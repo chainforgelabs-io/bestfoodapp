@@ -2,7 +2,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import CitySearch from "../components/CitySearch";
+import { useCityFromUrl } from "../hooks/useCityFromUrl";
+import { generateSeoMeta } from "../utils/cityUtils";
 import "../styles/LeaderboardsPage.css"; // Import your CSS file for styling
 
 // Configure the API base URL
@@ -23,6 +26,36 @@ function LeaderboardsPage() {
   const [categoryLoading, setCategoryLoading] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [resetKey, setResetKey] = useState(0); // Key to trigger city search reset
+
+  // Use custom hook for URL-based city detection
+  const { cityFromUrl, hasUrlCity, updateUrlWithCity } =
+    useCityFromUrl("/leaderboards");
+
+  // Initialize city from URL if present
+  useEffect(() => {
+    if (hasUrlCity && cityFromUrl && !selectedCity) {
+      setSelectedCity(cityFromUrl);
+      // Trigger initial leaderboard fetch for the city
+      fetchLeaderboardData(cityFromUrl);
+    }
+  }, [hasUrlCity, cityFromUrl]);
+
+  // Generate SEO meta tags
+  const seoMeta =
+    selectedCity && selectedCity.city
+      ? generateSeoMeta(
+          selectedCity.city,
+          selectedCity.province,
+          selectedCity.country,
+          "leaderboards"
+        )
+      : {
+          title: "Food Leaderboards | Top Restaurants & Food Rankings",
+          description:
+            "See the highest-rated restaurants and food items across cities. Compare rankings and discover the best dining experiences.",
+          keywords:
+            "food leaderboards, restaurant rankings, best food, top restaurants",
+        };
 
   // Dynamic categories from database
   const [availableCategories, setAvailableCategories] = useState({
@@ -228,17 +261,17 @@ function LeaderboardsPage() {
   };
 
   // Fetch data based on current selections
-  const fetchLeaderboardData = async () => {
-    if (!selectedCity) return;
+  const fetchLeaderboardData = async (city) => {
+    if (!city) return;
 
     setLoading(true);
     try {
       // Use the new advanced filtering endpoint
       const endpoint = `${API_BASE_URL}/api/leaderboards/filtered`;
       const params = {
-        city: selectedCity.city,
-        province: selectedCity.province,
-        country: selectedCity.country,
+        city: city.city,
+        province: city.province,
+        country: city.country,
         category: activeCategory,
       };
 
@@ -272,22 +305,22 @@ function LeaderboardsPage() {
           case "restaurants":
             fallbackEndpoint = `${API_BASE_URL}/api/restaurants/search`;
             fallbackParams = {
-              city: selectedCity.city,
-              province: selectedCity.province,
-              country: selectedCity.country,
+              city: city.city,
+              province: city.province,
+              country: city.country,
             };
             break;
 
           case "food-items":
-            fallbackEndpoint = `${API_BASE_URL}/api/food-items/rank/category/${selectedFoodCategory}/city/${selectedCity.city}`;
+            fallbackEndpoint = `${API_BASE_URL}/api/food-items/rank/category/${selectedFoodCategory}/city/${city.city}`;
             break;
 
           case "cuisines":
             fallbackEndpoint = `${API_BASE_URL}/api/restaurants/search`;
             fallbackParams = {
-              city: selectedCity.city,
-              province: selectedCity.province,
-              country: selectedCity.country,
+              city: city.city,
+              province: city.province,
+              country: city.country,
             };
             break;
         }
@@ -329,7 +362,7 @@ function LeaderboardsPage() {
   // OPTIMIZED: Effect to fetch data when selections change - removed duplicate call
   useEffect(() => {
     if (selectedCity) {
-      fetchLeaderboardData();
+      fetchLeaderboardData(selectedCity);
     } else {
       // Only fetch global leaderboards if we don't have them yet
       if (Object.keys(globalLeaderboards).length === 0) {
@@ -366,6 +399,7 @@ function LeaderboardsPage() {
   // Handle city selection
   const handleCitySelect = (city) => {
     setSelectedCity(city);
+    updateUrlWithCity(city.city, city.province, city.country);
   };
 
   // Reset city like home page
@@ -377,6 +411,8 @@ function LeaderboardsPage() {
     setCuisine("All");
     setSelectedFoodCategory("All");
     setResetKey((prevKey) => prevKey + 1);
+    // Navigate back to leaderboards without city params
+    navigate("/leaderboards", { replace: true });
   };
 
   // Filter data based on search term
@@ -494,6 +530,11 @@ function LeaderboardsPage() {
 
   return (
     <div className="leaderboards-page">
+      <Helmet>
+        <title>{seoMeta.title}</title>
+        <meta name="description" content={seoMeta.description} />
+        <meta name="keywords" content={seoMeta.keywords} />
+      </Helmet>
       <div className="leaderboards-header">
         <h1 className="page-title">🏆 Food Leaderboards</h1>
         <p className="page-subtitle">Discover the best food in your city</p>
