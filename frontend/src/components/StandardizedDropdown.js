@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import InfoTooltip from "./InfoTooltip";
+import { INFO_DATA } from "../utils/standardizedOptions";
 import "../styles/StandardizedDropdown.css";
 
 function StandardizedDropdown({
@@ -17,6 +19,7 @@ function StandardizedDropdown({
   const [filteredOptions, setFilteredOptions] = useState(options);
   const [activeSuggestion, setActiveSuggestion] = useState(0);
   const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
 
   // Filter options based on search term
   useEffect(() => {
@@ -36,6 +39,7 @@ function StandardizedDropdown({
     const handleOutsideClick = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsOpen(false);
+        setSearchTerm(""); // Clear search term when closing
       }
     };
 
@@ -62,6 +66,8 @@ function StandardizedDropdown({
       }
     } else if (e.key === "Escape") {
       setIsOpen(false);
+      setSearchTerm("");
+      inputRef.current?.blur();
     }
   };
 
@@ -78,13 +84,34 @@ function StandardizedDropdown({
     } else {
       onChange(option);
       setIsOpen(false);
+      setSearchTerm("");
+      inputRef.current?.blur();
     }
-    setSearchTerm("");
   };
 
   const handleRemoveTag = (tagToRemove) => {
     if (allowMultiple && value) {
       onChange(value.filter((v) => v !== tagToRemove));
+    }
+  };
+
+  const handleInputClick = (e) => {
+    e.stopPropagation();
+    if (!disabled) {
+      setIsOpen(true);
+    }
+  };
+
+  const handleInputFocus = (e) => {
+    if (!disabled && !isOpen) {
+      setIsOpen(true);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setSearchTerm(e.target.value);
+    if (!isOpen) {
+      setIsOpen(true);
     }
   };
 
@@ -95,11 +122,15 @@ function StandardizedDropdown({
     return value || "";
   };
 
+  // Check if the label has info available (for category-level info)
+  const hasLabelInfo = label && INFO_DATA[label];
+
   return (
     <div className="standardized-dropdown" ref={dropdownRef}>
       {label && (
         <label className="dropdown-label">
           {label} {required && <span className="required">*</span>}
+          {hasLabelInfo && <InfoTooltip option={label} position="right" />}
         </label>
       )}
 
@@ -108,7 +139,7 @@ function StandardizedDropdown({
           className={`dropdown-input-container ${isOpen ? "open" : ""} ${
             disabled ? "disabled" : ""
           }`}
-          onClick={() => !disabled && setIsOpen(!isOpen)}
+          onClick={handleInputClick}
         >
           {allowMultiple && value && value.length > 0 ? (
             <div className="tag-container">
@@ -128,26 +159,28 @@ function StandardizedDropdown({
                 </span>
               ))}
               <input
+                ref={inputRef}
                 type="text"
                 className="tag-input"
                 placeholder={value.length === 0 ? placeholder : "Add more..."}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
+                onFocus={handleInputFocus}
                 disabled={disabled}
               />
             </div>
           ) : (
             <input
+              ref={inputRef}
               type="text"
               className="dropdown-input"
               placeholder={placeholder}
               value={isOpen ? searchTerm : displayValue()}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              onFocus={() => !disabled && setIsOpen(true)}
+              onFocus={handleInputFocus}
               disabled={disabled}
-              readOnly={!isOpen}
             />
           )}
 
@@ -172,7 +205,10 @@ function StandardizedDropdown({
                   {allowMultiple && value && value.includes(option) && (
                     <span className="option-checkmark">✓</span>
                   )}
-                  {option}
+                  <span className="option-text">{option}</span>
+                  {INFO_DATA[option] && (
+                    <InfoTooltip option={option} position="left" />
+                  )}
                 </div>
               ))
             ) : (

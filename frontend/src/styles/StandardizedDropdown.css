@@ -6,7 +6,8 @@
 }
 
 .dropdown-label {
-  display: block;
+  display: flex;
+  align-items: center;
   font-weight: 600;
   color: #333;
   margin-bottom: 8px;
@@ -195,8 +196,9 @@
   border-bottom: 1px solid #f0f0f0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   font-size: 0.95rem;
+  gap: 8px;
 }
 
 .dropdown-option:last-child {
@@ -233,6 +235,40 @@
   color: white;
   font-weight: bold;
   font-size: 0.9rem;
+  margin-right: 6px;
+}
+
+.option-text {
+  flex: 1;
+  text-align: left;
+}
+
+/* Info tooltip positioning within dropdown options */
+.dropdown-option .info-tooltip-container {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.dropdown-option .info-trigger {
+  margin-left: 4px;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.dropdown-option:hover .info-trigger,
+.dropdown-option.active .info-trigger {
+  opacity: 1;
+}
+
+.dropdown-option.selected .info-trigger {
+  color: white;
+  opacity: 0.9;
+}
+
+.dropdown-option.selected .info-trigger:hover {
+  color: white;
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Mobile responsiveness */
@@ -258,5 +294,15 @@
   .dropdown-option {
     padding: 10px 14px;
     font-size: 0.9rem;
+  }
+
+  .dropdown-option .info-trigger {
+    width: 18px;
+    height: 18px;
+  }
+
+  .dropdown-option .info-trigger svg {
+    width: 12px;
+    height: 12px;
   }
 }
