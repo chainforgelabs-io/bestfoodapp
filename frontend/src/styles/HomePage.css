@@ -280,7 +280,7 @@
   margin-bottom: 8px;
 }
 
-/* Action buttons */
+/* Action buttons - Updated to match app theme with consistent widths */
 .reset-button,
 .make-review-btn {
   padding: 14px 28px;
@@ -291,30 +291,87 @@
   cursor: pointer;
   transition: all 0.3s ease;
   margin: 8px;
+  position: relative;
+  overflow: hidden;
+  min-width: 180px; /* Consistent width for both buttons */
+  text-align: center;
 }
 
 .reset-button {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
   color: white;
   animation: fadeInUp 0.8s ease-out 1s both;
+  box-shadow: 0 4px 15px rgba(176, 139, 212, 0.3);
+}
+
+.reset-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #9562d4, #8449c7);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+.reset-button:hover::before {
+  left: 0;
 }
 
 .reset-button:hover {
-  background: linear-gradient(135deg, #ee5a6f, #e74c3c);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(238, 90, 111, 0.4);
+  box-shadow: 0 6px 20px rgba(176, 139, 212, 0.4);
 }
 
 .make-review-btn {
-  background: linear-gradient(135deg, #4caf50, #45a049);
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
   color: white;
   animation: fadeInUp 0.8s ease-out 1.2s both;
+  box-shadow: 0 4px 15px rgba(176, 139, 212, 0.3);
+}
+
+.make-review-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #9562d4, #8449c7);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+.make-review-btn:hover::before {
+  left: 0;
 }
 
 .make-review-btn:hover {
-  background: linear-gradient(135deg, #9562d4, #8449c7);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(176, 139, 212, 0.4);
+}
+
+/* Mobile responsiveness for buttons */
+@media (max-width: 768px) {
+  .reset-button,
+  .make-review-btn {
+    min-width: 160px; /* Slightly smaller on mobile but still consistent */
+    margin: 6px;
+    padding: 12px 24px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .reset-button,
+  .make-review-btn {
+    min-width: 140px; /* Even smaller on very small screens */
+    margin: 4px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
 }
 
 /* Review form */
