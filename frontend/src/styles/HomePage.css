@@ -9,6 +9,9 @@
   padding: 20px;
   text-align: center;
   position: relative;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Add space from navbar only when a city has been searched */
@@ -20,6 +23,8 @@
 .logo-container {
   margin-bottom: 30px;
   animation: fadeInDown 0.8s ease-out;
+  width: 100%;
+  max-width: 200px;
 }
 
 @keyframes fadeInDown {
@@ -37,6 +42,7 @@
   width: 150px;
   height: auto;
   transition: transform 0.3s ease;
+  max-width: 100%;
 }
 
 .app-logo:hover {
@@ -53,6 +59,10 @@
   background-clip: text;
   margin-bottom: 30px;
   animation: fadeInUp 0.8s ease-out 0.2s both;
+  width: 100%;
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 @keyframes fadeInUp {
@@ -184,13 +194,16 @@
   background: linear-gradient(135deg, #f0f4ff, #f9f9fc);
 }
 
-/* Filter section */
+/* Filter section - Prevent overflow */
 .filter-section {
   display: flex;
   justify-content: center;
   margin-bottom: 40px;
   gap: 16px;
   animation: fadeInUp 0.8s ease-out 0.6s both;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .filter-button {
@@ -205,6 +218,8 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .filter-button::before {
@@ -232,12 +247,14 @@
   box-shadow: 0 6px 20px rgba(176, 139, 212, 0.3);
 }
 
-/* Results section */
+/* Results section - Prevent overflow */
 .results-section {
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
   animation: fadeInUp 0.8s ease-out 0.8s both;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Beautiful result items with modern card design */
@@ -459,11 +476,45 @@
   color: #2c3e50;
 }
 
-/* Mobile responsiveness */
+/* Mobile responsiveness - Enhanced to prevent horizontal scrolling */
 @media (max-width: 768px) {
+  .home-container {
+    padding: 10px 5vw;
+    overflow-x: hidden;
+  }
+
+  .home-title {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    padding: 0 10px;
+    line-height: 1.2;
+  }
+
+  .filter-section {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 0 15px;
+    width: 100%;
+  }
+
+  .filter-button {
+    width: 80%;
+    max-width: 300px;
+    padding: 12px 20px;
+  }
+
+  .results-section {
+    padding: 0 5vw;
+    width: 100%;
+  }
+
   .result-item {
     padding: 20px;
-    margin-bottom: 16px;
+    margin: 0 auto 16px auto;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .result-header {
@@ -499,16 +550,58 @@
     justify-content: space-between;
     padding: 10px 14px;
   }
+
+  .reset-button,
+  .make-review-btn {
+    min-width: 160px;
+    max-width: 80vw;
+    margin: 6px auto;
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    display: block;
+  }
 }
 
+/* Extra small mobile devices */
 @media (max-width: 480px) {
+  .home-container {
+    padding: 10px 3vw;
+  }
+
+  .home-title {
+    font-size: 1.7rem;
+    margin-bottom: 15px;
+    padding: 0 5px;
+  }
+
+  .filter-section {
+    width: 100%;
+    padding: 0 10px;
+  }
+
+  .filter-button {
+    width: 90%;
+    max-width: 280px;
+    font-size: 0.9rem;
+    padding: 10px 16px;
+  }
+
+  .results-section {
+    padding: 0 3vw;
+    width: 100%;
+  }
+
   .result-item {
     padding: 16px;
+    margin-bottom: 12px;
   }
 
   .restaurant-name,
   .food-name {
     font-size: 1.2rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
   }
 
   .cuisine-info,
@@ -523,6 +616,95 @@
   .restaurant-label {
     min-width: auto;
   }
+
+  .reset-button,
+  .make-review-btn {
+    min-width: 140px;
+    max-width: 85vw;
+    margin: 4px auto;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+
+  .address-text,
+  .cuisine-types,
+  .restaurant-name-link {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+  }
+}
+
+/* No results container - Prevent overflow */
+.no-results-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(176, 139, 212, 0.15);
+  margin: 20px auto;
+  animation: fadeInUp 0.6s ease-out;
+  text-align: center;
+  max-width: calc(100vw - 40px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.no-results-message {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 16px 0;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.no-results-suggestion {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0 0 30px 0;
+  font-weight: 500;
+}
+
+.make-review-btn-inline {
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(176, 139, 212, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.make-review-btn-inline::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #9562d4, #8449c7);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+.make-review-btn-inline:hover::before {
+  left: 0;
+}
+
+.make-review-btn-inline:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(176, 139, 212, 0.5);
 }
 
 /* Action buttons - Updated to match app theme with consistent widths */
@@ -538,8 +720,11 @@
   margin: 8px;
   position: relative;
   overflow: hidden;
-  min-width: 180px; /* Consistent width for both buttons */
+  min-width: 180px;
+  max-width: calc(100vw - 40px); /* Prevent buttons from overflowing */
   text-align: center;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
 .reset-button {
@@ -598,27 +783,6 @@
   box-shadow: 0 6px 20px rgba(176, 139, 212, 0.4);
 }
 
-/* Mobile responsiveness for buttons */
-@media (max-width: 768px) {
-  .reset-button,
-  .make-review-btn {
-    min-width: 160px; /* Slightly smaller on mobile but still consistent */
-    margin: 6px;
-    padding: 12px 24px;
-    font-size: 0.95rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .reset-button,
-  .make-review-btn {
-    min-width: 140px; /* Even smaller on very small screens */
-    margin: 4px;
-    padding: 10px 20px;
-    font-size: 0.9rem;
-  }
-}
-
 /* Review form */
 .review-form-container {
   margin-top: 30px;
@@ -629,6 +793,7 @@
   max-width: 500px;
   width: 100%;
   animation: slideInUp 0.6s ease-out;
+  box-sizing: border-box;
 }
 
 .review-form textarea,
@@ -641,6 +806,7 @@
   margin-bottom: 16px;
   transition: border-color 0.3s ease;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 .review-form textarea:focus,
@@ -660,6 +826,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .review-form button:hover {
@@ -668,57 +835,34 @@
   box-shadow: 0 6px 20px rgba(176, 139, 212, 0.4);
 }
 
-/* Mobile responsiveness - UPDATED SECTION */
+/* Search form mobile styles - keeping existing search-form intact */
 @media (max-width: 768px) {
-  .home-title {
-    font-size: 2rem;
-  }
-
   .search-form {
-    flex-direction: column; /* This correctly stacks the items vertically */
-    align-items: center; /* This centers the items (input and button) horizontally within the form */
-    gap: 12px;
-    padding: 16px;
-    width: 100%; /* Allow the form to span the full width of its container */
-  }
-
-  .search-input {
-    width: 80vw !important; /* Force override the desktop 30vw and flex: 1 */
-    flex: none !important; /* Override the flex: 1 from desktop */
-    max-width: 500px; /* Optional: Prevents it from getting too wide on tablets */
-    border-radius: 12px;
-    box-sizing: border-box; /* Ensures padding is included in the width calculation */
-  }
-
-  .search-button {
-    width: 80vw; /* Make the button width match the input for a clean, stacked look */
-    max-width: 500px; /* Optional: Match the max-width of the input */
-    box-sizing: border-box; /* Ensures padding is included in the width calculation */
-  }
-
-  .filter-section {
     flex-direction: column;
     align-items: center;
     gap: 12px;
-  }
-
-  .results-section {
-    padding: 0 10px;
-  }
-
-  .result-item {
     padding: 16px;
+    width: 100%;
+  }
+
+  .search-input {
+    width: 80vw !important;
+    flex: none !important;
+    max-width: 500px;
+    border-radius: 12px;
+    box-sizing: border-box;
+  }
+
+  .search-button {
+    width: 80vw;
+    max-width: 500px;
+    box-sizing: border-box;
   }
 }
 
-/* Extra small mobile devices */
 @media (max-width: 480px) {
-  .home-container {
-    padding: 10px 2vw;
-  }
-
   .search-form {
-    width: 100%; /* Slightly wider on very small screens */
+    width: 100%;
     max-width: 80vw;
     padding: 12px;
     gap: 10px;
@@ -735,31 +879,33 @@
     font-size: 0.9rem;
   }
 
-  .filter-section {
-    width: 92vw;
-  }
-
-  .results-section {
-    padding: 0 1.5vw;
-    width: 97vw;
-  }
-
-  .home-title {
-    font-size: 1.7rem;
-    margin-bottom: 20px;
-  }
-
   .suggestions-list {
     left: 12px;
     right: 12px;
     width: calc(100% - 24px);
+  }
+
+  .no-results-container {
+    padding: 40px 20px;
+    margin: 15px auto;
+    max-width: calc(100vw - 30px);
+  }
+
+  .no-results-message {
+    font-size: 1.2rem;
+    word-wrap: break-word;
+  }
+
+  .no-results-suggestion {
+    font-size: 1rem;
+    word-wrap: break-word;
   }
 }
 
 /* Landscape mobile orientation */
 @media (max-width: 768px) and (orientation: landscape) {
   .search-form {
-    width: 85vw; /* Slightly narrower in landscape */
+    width: 85vw;
     max-width: 85vw;
   }
 
@@ -768,73 +914,9 @@
   }
 }
 
-/* No results styling */
-.no-results-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 40px;
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(176, 139, 212, 0.15);
-  margin: 20px 0;
-  animation: fadeInUp 0.6s ease-out;
-  text-align: center;
-  max-width: 600px;
-  margin: 20px auto;
-}
-
-.no-results-message {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 16px 0;
-  background: linear-gradient(135deg, #b08bd4, #9562d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.no-results-suggestion {
-  font-size: 1.1rem;
-  color: #666;
-  margin: 0 0 30px 0;
-  font-weight: 500;
-}
-
-.make-review-btn-inline {
-  background: linear-gradient(135deg, #b08bd4, #9562d4);
-  color: white;
-  border: none;
-  padding: 16px 32px;
-  border-radius: 25px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(176, 139, 212, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.make-review-btn-inline::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #9562d4, #8449c7);
-  transition: left 0.3s ease;
-  z-index: -1;
-}
-
-.make-review-btn-inline:hover::before {
-  left: 0;
-}
-
-.make-review-btn-inline:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(176, 139, 212, 0.5);
+/* iPhone SE specific adjustments */
+@media (max-width: 375px) and (max-height: 667px) {
+  .logo-container {
+    margin-bottom: 15px; /* Reduced from 30px to bring logo closer to heading */
+  }
 }

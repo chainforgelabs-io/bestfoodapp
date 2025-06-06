@@ -38,6 +38,21 @@ function HomePage() {
     }
   }, [hasUrlCity, cityFromUrl]);
 
+  // Reset city state when navigating back to home (no URL city parameters)
+  useEffect(() => {
+    if (!hasUrlCity && citySelected) {
+      // User navigated back to home route, reset all city-related state
+      setSearchTerm("");
+      setResults([]);
+      setCitySelected("");
+      setHasSearched(false);
+      setFoodItems([]);
+      setFoodSearchTerm("");
+      setRestaurantSearchTerm("");
+      setActiveFilter("Restaurants");
+    }
+  }, [hasUrlCity, citySelected]);
+
   // Update URL when city is selected manually
   const handleCitySelect = (selectedCity) => {
     setCitySelected(selectedCity);
@@ -341,6 +356,9 @@ function HomePage() {
     setCitySelected("");
     setHasSearched(false);
     setFoodItems([]); // Clear food items when resetting
+    setFoodSearchTerm(""); // Clear food search term
+    setRestaurantSearchTerm(""); // Clear restaurant search term
+    setActiveFilter("Restaurants"); // Reset to default filter
     navigate("/"); // Reset URL to home
   };
 
