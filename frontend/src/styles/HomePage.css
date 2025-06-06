@@ -440,21 +440,32 @@
   box-shadow: 0 6px 20px rgba(176, 139, 212, 0.4);
 }
 
-/* Mobile responsiveness - ONLY changing search input width */
+/* Mobile responsiveness - UPDATED SECTION */
 @media (max-width: 768px) {
   .home-title {
     font-size: 2rem;
   }
 
   .search-form {
-    flex-direction: column;
+    flex-direction: column; /* This correctly stacks the items vertically */
+    align-items: center; /* This centers the items (input and button) horizontally within the form */
     gap: 12px;
     padding: 16px;
+    width: 100%; /* Allow the form to span the full width of its container */
   }
 
   .search-input {
-    width: 95%; /* Changed from 100% to 95% - ONLY this line changed */
+    width: 80vw !important; /* Force override the desktop 30vw and flex: 1 */
+    flex: none !important; /* Override the flex: 1 from desktop */
+    max-width: 500px; /* Optional: Prevents it from getting too wide on tablets */
     border-radius: 12px;
+    box-sizing: border-box; /* Ensures padding is included in the width calculation */
+  }
+
+  .search-button {
+    width: 80vw; /* Make the button width match the input for a clean, stacked look */
+    max-width: 500px; /* Optional: Match the max-width of the input */
+    box-sizing: border-box; /* Ensures padding is included in the width calculation */
   }
 
   .filter-section {
@@ -483,14 +494,12 @@
     max-width: 80vw;
     padding: 12px;
     gap: 10px;
-    align-items: center;
   }
 
   .search-input {
     padding: 12px 16px;
     font-size: 0.95rem;
-    width: 250%;
-    margin-left: -22.7vw;
+    width: 100%;
   }
 
   .search-button {
