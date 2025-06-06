@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import CitySearch from "../components/CitySearch";
 import { useCityFromUrl } from "../hooks/useCityFromUrl";
-import { generateSeoMeta } from "../utils/cityUtils";
+import { generateSeoMeta, generateCityUrl } from "../utils/cityUtils";
 import "../styles/LeaderboardsPage.css"; // Import your CSS file for styling
 
 // Configure the API base URL
@@ -496,16 +496,14 @@ function LeaderboardsPage() {
 
   const handleCityClick = (city) => {
     if (city && city.city && city.province && city.country) {
-      // Navigate to home page with city selected
-      navigate("/", {
-        state: {
-          selectedCity: {
-            city: city.city,
-            province: city.province,
-            country: city.country,
-          },
-        },
-      });
+      // Navigate to leaderboards page with city URL
+      const cityUrl = generateCityUrl(
+        city.city,
+        city.province,
+        city.country,
+        "/leaderboards"
+      );
+      navigate(cityUrl);
     }
   };
 
