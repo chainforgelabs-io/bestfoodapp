@@ -470,6 +470,81 @@ function ReviewSubmissionPage() {
               <span>Review</span>
             </div>
           </div>
+
+          {/* Mobile step indicator */}
+          <div className="mobile-step-indicator">
+            <div className="mobile-step-track">
+              <div
+                className={`mobile-step-number ${
+                  step >= 1 ? (step > 1 ? "completed" : "active") : ""
+                }`}
+              >
+                1
+              </div>
+              <div
+                className={`mobile-step-divider ${step > 1 ? "completed" : ""}`}
+              ></div>
+              <div
+                className={`mobile-step-number ${
+                  step >= 2 ? (step > 2 ? "completed" : "active") : ""
+                }`}
+              >
+                2
+              </div>
+              <div
+                className={`mobile-step-divider ${step > 2 ? "completed" : ""}`}
+              ></div>
+              <div
+                className={`mobile-step-number ${
+                  step >= 3 ? (step > 3 ? "completed" : "active") : ""
+                }`}
+              >
+                3
+              </div>
+              <div
+                className={`mobile-step-divider ${step > 3 ? "completed" : ""}`}
+              ></div>
+              <div
+                className={`mobile-step-number ${
+                  step >= 4 ? (step > 4 ? "completed" : "active") : ""
+                }`}
+              >
+                4
+              </div>
+              <div
+                className={`mobile-step-divider ${step > 4 ? "completed" : ""}`}
+              ></div>
+              <div
+                className={`mobile-step-number ${
+                  step >= 5 ? (step > 5 ? "completed" : "active") : ""
+                }`}
+              >
+                5
+              </div>
+              <div
+                className={`mobile-step-divider ${step > 5 ? "completed" : ""}`}
+              ></div>
+              <div
+                className={`mobile-step-number ${step >= 6 ? "active" : ""}`}
+              >
+                6
+              </div>
+            </div>
+            <div className="mobile-step-text">
+              Step {step} of 6:{" "}
+              {step === 1
+                ? "Location"
+                : step === 2
+                ? "Restaurant"
+                : step === 3
+                ? "Food Items"
+                : step === 4
+                ? "Ratings"
+                : step === 5
+                ? "Photos"
+                : "Review"}
+            </div>
+          </div>
         </div>
 
         <div className="form-content">

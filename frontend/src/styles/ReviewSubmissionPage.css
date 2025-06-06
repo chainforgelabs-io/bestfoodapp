@@ -121,6 +121,81 @@
   color: white;
 }
 
+/* Mobile step indicator - compact horizontal design */
+.mobile-step-indicator {
+  display: none; /* Hidden by default, shown only on mobile */
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 0 10px; /* Add padding to prevent edge overflow */
+  box-sizing: border-box;
+}
+
+.mobile-step-track {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 6px 12px; /* Reduced padding */
+  gap: 6px; /* Reduced gap */
+  width: 100%;
+  max-width: 280px; /* Constrain maximum width */
+  box-sizing: border-box;
+  overflow: hidden; /* Prevent any overflow */
+}
+
+.mobile-step-number {
+  width: 22px; /* Reduced from 28px */
+  height: 22px; /* Reduced from 28px */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem; /* Reduced font size */
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.mobile-step-number.active {
+  background: white;
+  color: #b08bd4;
+  transform: scale(1.1);
+}
+
+.mobile-step-number.completed {
+  background: #4caf50;
+  color: white;
+}
+
+.mobile-step-divider {
+  width: 12px; /* Reduced from 16px */
+  height: 2px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 1px;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.mobile-step-divider.completed {
+  background: #4caf50;
+}
+
+.mobile-step-text {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 0.85rem; /* Slightly reduced */
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  width: 100%;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
 /* Form content */
 .form-content {
   padding: 40px;
@@ -512,23 +587,15 @@
     font-size: 1rem;
   }
 
+  /* Hide desktop step indicator on mobile */
   .step-indicator {
+    display: none;
+  }
+
+  /* Show mobile step indicator */
+  .mobile-step-indicator {
+    display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    margin: 20px 0;
-  }
-
-  .step {
-    margin: 0;
-    min-width: 150px;
-    font-size: 0.95rem;
-  }
-
-  .step-number {
-    width: 30px;
-    height: 30px;
-    margin-right: 8px;
   }
 }
 
