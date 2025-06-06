@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Notification from "./Notification";
 import EditFoodItemModal from "./EditFoodItemModal";
+import SuccessOverlay from "./SuccessOverlay";
 import StandardizedDropdown from "./StandardizedDropdown";
 import {
   FOOD_CATEGORIES,
@@ -36,6 +37,8 @@ function FoodItemForm({
   const [isCreateSectionExpanded, setIsCreateSectionExpanded] = useState(false); // Track if create section is expanded
   const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Track edit modal visibility
   const [editingFoodItem, setEditingFoodItem] = useState(null); // Store the food item being edited
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false); // Track success overlay visibility
+  const [createdFoodItemName, setCreatedFoodItemName] = useState(""); // Store created food item name
   const [notification, setNotification] = useState({
     isVisible: false,
     message: "",
@@ -249,6 +252,10 @@ function FoodItemForm({
       const updatedFoodItems = [...foodItems, savedFoodItem]; // Add the saved food item with _id
       setFoodItems(updatedFoodItems);
       onFoodItemsUpdated(updatedFoodItems);
+
+      // Show success overlay
+      setCreatedFoodItemName(savedFoodItem.name);
+      setShowSuccessOverlay(true);
 
       // Reset form
       setFoodItem({
@@ -498,6 +505,16 @@ function FoodItemForm({
         onClose={() => setIsEditModalOpen(false)}
         foodItem={editingFoodItem}
         onFoodItemUpdated={handleFoodItemUpdated}
+      />
+
+      {/* Success Overlay */}
+      <SuccessOverlay
+        isVisible={showSuccessOverlay}
+        onClose={() => setShowSuccessOverlay(false)}
+        title="Food Item Created Successfully!"
+        message={`"${createdFoodItemName}" has been added to your review`}
+        subtitle="You can now rate this item and continue with your review"
+        icon="🍽️"
       />
     </div>
   );

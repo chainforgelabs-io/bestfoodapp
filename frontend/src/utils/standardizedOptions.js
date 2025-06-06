@@ -445,7 +445,7 @@ export const DIETARY_TAGS = [
   "Organic",
 ];
 
-export const SIZE_OPTIONS = ["Small", "Medium", "Large", "Extra Large"];
+export const SIZE_OPTIONS = ["small", "medium", "large", "extra large"];
 
 // Information data for tooltips
 export const INFO_DATA = {

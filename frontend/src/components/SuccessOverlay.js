@@ -4,6 +4,10 @@ import "../styles/SuccessOverlay.css";
 function SuccessOverlay({
   isVisible,
   onClose,
+  title = "Success!",
+  message = "",
+  subtitle = "",
+  icon = "✓",
   restaurantName,
   duration = 3000,
 }) {
@@ -19,19 +23,30 @@ function SuccessOverlay({
 
   if (!isVisible) return null;
 
+  const displayTitle = restaurantName
+    ? "Restaurant Added Successfully!"
+    : title;
+  const displayMessage = restaurantName
+    ? `"${restaurantName}" has been added to your location`
+    : message;
+  const displaySubtitle = restaurantName
+    ? "You can now search for it and continue with your review"
+    : subtitle;
+  const displayIcon = restaurantName ? "✓" : icon;
+
   return (
     <div className="success-overlay">
       <div className="success-content">
         <div className="success-animation">
           <div className="checkmark-circle">
-            <div className="checkmark">✓</div>
+            <div className="checkmark">{displayIcon}</div>
           </div>
           <div className="success-text">
-            <h2>Restaurant Added Successfully!</h2>
-            <p>"{restaurantName}" has been added to your location</p>
-            <p className="success-subtitle">
-              You can now search for it and continue with your review
-            </p>
+            <h2>{displayTitle}</h2>
+            {displayMessage && <p>{displayMessage}</p>}
+            {displaySubtitle && (
+              <p className="success-subtitle">{displaySubtitle}</p>
+            )}
           </div>
         </div>
         <div className="celebration-particles">
