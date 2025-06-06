@@ -262,12 +262,14 @@
   list-style: none;
   margin: 0;
   padding: 8px 0;
-  max-height: 200px;
+  max-height: 300px;
   overflow-y: auto;
   z-index: 1001;
   animation: slideDown 0.3s ease-out;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+  border: 1px solid #eee;
+  border-top: none;
 }
 
 @keyframes slideDown {
@@ -281,15 +283,41 @@
   }
 }
 
+/* Custom scrollbar for dropdown */
+.suggestions-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-thumb {
+  background: #b08bd4;
+  border-radius: 3px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #9562d4;
+}
+
 .suggestion-item {
   padding: 12px 20px;
   cursor: pointer;
   transition: background-color 0.2s ease;
   font-weight: 500;
+  border-radius: 8px;
+  margin: 2px 8px;
 }
 
-.suggestion-item:hover {
+.suggestion-item:hover,
+.suggestion-item.active {
   background: linear-gradient(135deg, #f0f4ff, #f9f9fc);
+}
+
+.suggestion-item.active {
+  border: 1px solid #b08bd4;
 }
 
 /* Rating input */

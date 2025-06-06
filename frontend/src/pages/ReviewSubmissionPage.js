@@ -168,6 +168,7 @@ function ReviewSubmissionPage() {
     const searchTerm = e.target.value;
     setFormData({ ...formData, restaurant: searchTerm });
     setShowSuggestions(true);
+
     if (
       formData.location.city &&
       formData.location.province &&
@@ -185,13 +186,67 @@ function ReviewSubmissionPage() {
           }
         );
 
-        const filteredRestaurants = response.data.filter((restaurant) =>
-          restaurant.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        let filteredRestaurants;
+        if (searchTerm.trim() === "") {
+          // Show first 10 restaurants when input is empty
+          filteredRestaurants = response.data.slice(0, 10);
+        } else {
+          // Filter restaurants based on search term
+          filteredRestaurants = response.data.filter((restaurant) =>
+            restaurant.name.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        }
 
         setRestaurantSuggestions(filteredRestaurants);
       } catch (error) {
         console.error("Error searching restaurants:", error);
+      }
+    }
+  };
+
+  // Handle input focus to show all restaurants
+  const handleRestaurantFocus = async () => {
+    setShowSuggestions(true);
+
+    // Load all restaurants when input is focused
+    if (
+      formData.location.city &&
+      formData.location.province &&
+      formData.location.country
+    ) {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
+          {
+            params: {
+              city: formData.location.city,
+              province: formData.location.province,
+              country: formData.location.country,
+            },
+          }
+        );
+
+        let restaurantsToShow;
+        if (formData.restaurant.trim() === "") {
+          // Show first 10 restaurants when input is empty
+          restaurantsToShow = response.data.slice(0, 10);
+        } else {
+          // Filter restaurants based on current input value but show all matching
+          const filteredRestaurants = response.data.filter((restaurant) =>
+            restaurant.name
+              .toLowerCase()
+              .includes(formData.restaurant.toLowerCase())
+          );
+          // If there are many results, limit to first 20, otherwise show all
+          restaurantsToShow =
+            filteredRestaurants.length > 20
+              ? filteredRestaurants.slice(0, 20)
+              : filteredRestaurants;
+        }
+
+        setRestaurantSuggestions(restaurantsToShow);
+      } catch (error) {
+        console.error("Error loading restaurants:", error);
       }
     }
   };
@@ -515,6 +570,7 @@ function ReviewSubmissionPage() {
                     value={formData.restaurant}
                     onChange={handleRestaurantSearch}
                     onKeyDown={handleKeyDown}
+                    onFocus={handleRestaurantFocus}
                   />
                   {showSuggestions && restaurantSuggestions.length > 0 && (
                     <ul className="suggestions-dropdown">
