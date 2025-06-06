@@ -84,17 +84,45 @@ function FoodItemForm({
     const searchValue = event.target.value;
     setSearchTerm(searchValue); // Update search term, NOT foodItem.name
 
-    if (searchValue.length > 0) {
-      const filteredItems = existingFoodItems.filter((item) =>
+    let filteredItems;
+    if (searchValue.trim() === "") {
+      // Show first 10 food items when input is empty
+      filteredItems = existingFoodItems.slice(0, 10);
+    } else {
+      // Filter food items based on search term
+      filteredItems = existingFoodItems.filter((item) =>
         item.name.toLowerCase().includes(searchValue.toLowerCase())
       );
-      setFoodSuggestions(filteredItems);
-      setShowFoodSuggestions(true);
-      setActiveSuggestion(0);
-    } else {
-      setShowFoodSuggestions(false);
-      setFoodSuggestions([]);
+      // If there are many results, limit to first 20, otherwise show all
+      filteredItems =
+        filteredItems.length > 20 ? filteredItems.slice(0, 20) : filteredItems;
     }
+
+    setFoodSuggestions(filteredItems);
+    setShowFoodSuggestions(true);
+    setActiveSuggestion(0);
+  };
+
+  // Handle input focus to show all food items
+  const handleFoodItemFocus = () => {
+    setShowFoodSuggestions(true);
+
+    let itemsToShow;
+    if (searchTerm.trim() === "") {
+      // Show first 10 food items when input is empty
+      itemsToShow = existingFoodItems.slice(0, 10);
+    } else {
+      // Filter food items based on current search term
+      const filteredItems = existingFoodItems.filter((item) =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      // If there are many results, limit to first 20, otherwise show all
+      itemsToShow =
+        filteredItems.length > 20 ? filteredItems.slice(0, 20) : filteredItems;
+    }
+
+    setFoodSuggestions(itemsToShow);
+    setActiveSuggestion(0);
   };
 
   // Add an existing food item directly to the review (already has _id)
@@ -247,6 +275,7 @@ function FoodItemForm({
             value={searchTerm}
             onChange={handleFoodItemSearch}
             onKeyDown={handleKeyDown}
+            onFocus={handleFoodItemFocus}
             required
           />
           {showFoodSuggestions && foodSuggestions.length > 0 && (
