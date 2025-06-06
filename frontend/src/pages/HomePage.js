@@ -515,36 +515,56 @@ function HomePage() {
                       className="result-item"
                       onClick={() => navigate(`/restaurant/${result._id}`)}
                     >
-                      <h3>
-                        {index + 1}. {result.name}
-                      </h3>
-                      <div>
-                        <p>
-                          {result.cuisine
-                            ? result.cuisine.join(", ")
-                            : "No cuisine info available"}
-                        </p>
-                        <p>
-                          {result.address
-                            ? `${result.address.street}, ${result.address.city}, ${result.address.province}, ${result.address.country}`
-                            : "No address info available"}
-                        </p>
-                        <p>
-                          Admin Score:{" "}
-                          {Math.round(
-                            restaurantScores[result._id]?.adminAverageScore || 0
-                          )}
-                          , Community Score:{" "}
-                          {Math.round(
-                            restaurantScores[result._id]
-                              ?.communityAverageScore || 0
-                          )}
-                          , Overall Score:{" "}
+                      <div className="result-header">
+                        <div className="rank-number">#{index + 1}</div>
+                        <h3 className="restaurant-name">{result.name}</h3>
+                        <div className="overall-score">
                           {Math.round(
                             restaurantScores[result._id]?.overallAverageScore ||
                               0
                           )}
-                        </p>
+                        </div>
+                      </div>
+
+                      <div className="result-content">
+                        <div className="cuisine-info">
+                          <span className="cuisine-label">Cuisine:</span>
+                          <span className="cuisine-types">
+                            {result.cuisine && result.cuisine.length > 0
+                              ? result.cuisine.join(", ")
+                              : "Not specified"}
+                          </span>
+                        </div>
+
+                        <div className="address-info">
+                          <span className="address-label">📍</span>
+                          <span className="address-text">
+                            {result.address
+                              ? `${result.address.street}, ${result.address.city}, ${result.address.province}`
+                              : "Address not available"}
+                          </span>
+                        </div>
+
+                        <div className="scores-section">
+                          <div className="score-item">
+                            <span className="score-label">Admin</span>
+                            <span className="score-value">
+                              {Math.round(
+                                restaurantScores[result._id]
+                                  ?.adminAverageScore || 0
+                              )}
+                            </span>
+                          </div>
+                          <div className="score-item">
+                            <span className="score-label">Community</span>
+                            <span className="score-value">
+                              {Math.round(
+                                restaurantScores[result._id]
+                                  ?.communityAverageScore || 0
+                              )}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -576,36 +596,65 @@ function HomePage() {
                     key={item?.foodItem?._id || index}
                     className="result-item"
                   >
-                    <h3>
-                      {index + 1}. {item?.foodItem?.name || "Unnamed Food Item"}
-                    </h3>
-                    <p
-                      onClick={() =>
-                        navigate(
-                          `/restaurant/${item?.foodItem?.restaurant?._id}`
-                        )
-                      }
-                    >
-                      {item?.foodItem?.restaurant?.name || "Unknown Restaurant"}{" "}
-                      (
-                      {item?.foodItem?.restaurant?.address?.street ||
-                        "No street info"}
-                      ,
-                      {item?.foodItem?.restaurant?.address?.city ||
-                        "No city info"}
-                      ,
-                      {item?.foodItem?.restaurant?.address?.province ||
-                        "No province info"}
-                      ,
-                      {item?.foodItem?.restaurant?.address?.country ||
-                        "No country info"}
-                      )
-                    </p>
-                    <p>
-                      Admin Score: {Math.round(item.adminScore || 0)}, Community
-                      Score: {Math.round(item.communityScore || 0)}, Overall
-                      Score: {Math.round(item.overallAverageScore || 0)}
-                    </p>
+                    <div className="result-header">
+                      <div className="rank-number">#{index + 1}</div>
+                      <h3 className="food-name">
+                        {item?.foodItem?.name || "Unnamed Food Item"}
+                      </h3>
+                      <div className="overall-score">
+                        {Math.round(item.overallAverageScore || 0)}
+                      </div>
+                    </div>
+
+                    <div className="result-content">
+                      <div
+                        className="restaurant-info clickable"
+                        onClick={() =>
+                          navigate(
+                            `/restaurant/${item?.foodItem?.restaurant?._id}`
+                          )
+                        }
+                      >
+                        <span className="restaurant-label">🏪 Restaurant:</span>
+                        <span className="restaurant-name-link">
+                          {item?.foodItem?.restaurant?.name ||
+                            "Unknown Restaurant"}
+                        </span>
+                      </div>
+
+                      <div className="address-info">
+                        <span className="address-label">📍</span>
+                        <span className="address-text">
+                          {item?.foodItem?.restaurant?.address
+                            ? `${
+                                item.foodItem.restaurant.address.street ||
+                                "No street"
+                              }, ${
+                                item.foodItem.restaurant.address.city ||
+                                "No city"
+                              }, ${
+                                item.foodItem.restaurant.address.province ||
+                                "No province"
+                              }`
+                            : "Address not available"}
+                        </span>
+                      </div>
+
+                      <div className="scores-section">
+                        <div className="score-item">
+                          <span className="score-label">Admin</span>
+                          <span className="score-value">
+                            {Math.round(item.adminScore || 0)}
+                          </span>
+                        </div>
+                        <div className="score-item">
+                          <span className="score-label">Community</span>
+                          <span className="score-value">
+                            {Math.round(item.communityScore || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))
               ) : (
