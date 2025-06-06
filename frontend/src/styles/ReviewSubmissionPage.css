@@ -525,7 +525,7 @@
   }
 
   .form-content {
-    padding: 30px 20px;
+    padding: 30px 15px;
   }
 
   .form-heading {
@@ -533,7 +533,7 @@
   }
 
   .form-header {
-    padding: 25px 20px;
+    padding: 25px 15px;
   }
 
   .step-indicator {
@@ -574,9 +574,21 @@
 }
 
 @media (max-width: 480px) {
+  .submission-container {
+    padding: 80px 10px 20px 10px;
+  }
+
   .form-section {
-    margin: 0 10px;
+    margin: 0 5px;
     border-radius: 16px;
+  }
+
+  .form-content {
+    padding: 25px 10px;
+  }
+
+  .form-header {
+    padding: 25px 15px;
   }
 
   .form-heading {
