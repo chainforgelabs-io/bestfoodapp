@@ -658,3 +658,33 @@
     font-size: 0.9rem;
   }
 }
+
+/* City Search Input - Special styling for consistency */
+.form-group .search-input {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #e8f0ff; /* Light purple-tinted border */
+  border-radius: 12px;
+  font-size: 1rem;
+  color: #333;
+  background: white;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-group .search-input:focus {
+  outline: none;
+  border-color: #b08bd4;
+  box-shadow: 0 0 0 3px rgba(176, 139, 212, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-group .search-input:hover {
+  border-color: #d0d7de;
+}
+
+.form-group .search-input::placeholder {
+  color: #999;
+  font-weight: 400;
+}

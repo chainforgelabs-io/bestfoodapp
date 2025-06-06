@@ -61,7 +61,37 @@
   }
 }
 
-/* Search form styling */
+/* Search input styling - Updated with beautiful border */
+.search-input {
+  flex: 1;
+  padding: 16px 20px;
+  border: 2px solid #e8f0ff; /* Light purple-tinted border */
+  border-radius: 12px;
+  font-size: 1.1rem;
+  color: #333;
+  background: white;
+  outline: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  border-color: #b08bd4; /* Purple border on focus */
+  box-shadow: 0 0 0 3px rgba(176, 139, 212, 0.1); /* Subtle purple glow */
+  transform: translateY(-1px); /* Slight lift effect */
+}
+
+.search-input:hover {
+  border-color: #d0d7de; /* Slightly darker border on hover */
+}
+
+.search-input::placeholder {
+  color: #999;
+  font-weight: 400;
+}
+
+/* Enhanced search form to accommodate the new border styling */
 .search-form {
   display: flex;
   align-items: center;
@@ -76,27 +106,12 @@
   animation: fadeInUp 0.8s ease-out 0.4s both;
   transition: all 0.3s ease;
   position: relative;
+  gap: 8px; /* Add gap between input and button */
 }
 
 .search-form:hover {
   box-shadow: 0 12px 40px rgba(176, 139, 212, 0.25);
   transform: translateY(-2px);
-}
-
-.search-input {
-  flex: 1;
-  padding: 16px 20px;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  color: #333;
-  background: transparent;
-  outline: none;
-  font-weight: 500;
-}
-
-.search-input::placeholder {
-  color: #999;
 }
 
 .search-button {
@@ -437,6 +452,7 @@
 
   .search-input {
     width: 100%;
+    border-radius: 12px; /* Maintain rounded corners on mobile */
   }
 
   .filter-section {

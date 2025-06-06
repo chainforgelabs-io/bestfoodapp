@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "../api/axios";
 import tokenUtils from "../utils/auth";
+import Notification from "../components/Notification";
 import "../styles/LoginPage.css"; // Style your page accordingly
 
 const LoginPage = () => {
@@ -13,6 +14,15 @@ const LoginPage = () => {
   const [forgotEmail, setForgotEmail] = useState("");
   const [isForgotPassword, setIsForgotPassword] = useState(false); // New state for forgot password
   const [resetMessage, setResetMessage] = useState(""); // Message for reset email sent
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Notification state
+  const [notification, setNotification] = useState({
+    show: false,
+    type: "error",
+    message: "",
+  });
+
   const navigate = useNavigate();
 
   // Check if user is already logged in when component mounts
@@ -27,12 +37,51 @@ const LoginPage = () => {
     }
   }, [navigate]);
 
+  // Clear error when user starts typing
+  useEffect(() => {
+    if (error && (email || password)) {
+      setError("");
+    }
+  }, [email, password, error]);
+
+  const showNotification = (message, type = "error") => {
+    setNotification({
+      show: true,
+      type,
+      message,
+    });
+  };
+
+  const hideNotification = () => {
+    setNotification({
+      show: false,
+      type: "error",
+      message: "",
+    });
+  };
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    // Basic validation
+    if (!email || !password) {
+      showNotification("Please fill in all fields");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!email.includes("@")) {
+      showNotification("Please enter a valid email address");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const { data } = await axios.post(
         `${process.env.REACT_APP_API_BASE_URL}/api/auth/login`,
@@ -55,6 +104,9 @@ const LoginPage = () => {
         });
       }
 
+      // Show success notification
+      showNotification("Welcome back! Redirecting...", "success");
+
       // Additional logging for debugging
       if (keepLoggedIn) {
         console.log("✅ Extended session enabled - token expires in 30 days");
@@ -66,15 +118,75 @@ const LoginPage = () => {
         console.log("⏰ Standard session - token expires in 1 hour");
       }
 
-      navigate("/profile");
+      // Delay navigation to show success message
+      setTimeout(() => {
+        navigate("/profile");
+      }, 1500);
     } catch (err) {
       console.error("Login failed:", err.response ? err.response.data : err);
-      setError("Invalid email or password");
+
+      // More specific error messages
+      if (err.response) {
+        const { status, data } = err.response;
+
+        switch (status) {
+          case 400:
+            showNotification("Invalid email or password format");
+            break;
+          case 401:
+            showNotification("Incorrect email or password. Please try again.");
+            break;
+          case 403:
+            showNotification(
+              "Account is temporarily locked. Please try again later."
+            );
+            break;
+          case 404:
+            showNotification("No account found with this email address");
+            break;
+          case 429:
+            showNotification(
+              "Too many login attempts. Please wait and try again."
+            );
+            break;
+          case 500:
+            showNotification("Server error. Please try again later.");
+            break;
+          default:
+            showNotification(
+              data?.message || "Login failed. Please try again."
+            );
+        }
+      } else if (err.request) {
+        showNotification(
+          "Network error. Please check your connection and try again."
+        );
+      } else {
+        showNotification("Something went wrong. Please try again.");
+      }
+
+      setError("Login failed");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+
+    if (!forgotEmail) {
+      showNotification("Please enter your email address");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!forgotEmail.includes("@")) {
+      showNotification("Please enter a valid email address");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const { data } = await axios.post(
         `${process.env.REACT_APP_API_BASE_URL}/api/users/forgot-password`,
@@ -82,21 +194,50 @@ const LoginPage = () => {
       );
 
       setResetMessage("Password reset email sent. Please check your inbox.");
+      showNotification("Password reset email sent successfully!", "success");
     } catch (err) {
       console.error(
         "Failed to send password reset:",
         err.response ? err.response.data : err
       );
+
+      if (err.response?.status === 404) {
+        showNotification("No account found with this email address");
+      } else if (err.response?.status === 429) {
+        showNotification("Too many reset attempts. Please wait and try again.");
+      } else {
+        showNotification("Failed to send reset email. Please try again.");
+      }
+
       setResetMessage("Failed to send reset email. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="login-page">
+      {/* Notification Component */}
+      <Notification
+        message={notification.message}
+        type={notification.type}
+        isVisible={notification.show}
+        onClose={hideNotification}
+        duration={notification.type === "success" ? 2000 : 4000}
+      />
+
       {isForgotPassword ? (
         <>
           <h2>Forgot Password</h2>
-          {resetMessage && <p className="success-text">{resetMessage}</p>}
+          {resetMessage && !notification.show && (
+            <p
+              className={
+                resetMessage.includes("sent") ? "success-text" : "error-text"
+              }
+            >
+              {resetMessage}
+            </p>
+          )}
           <form
             onSubmit={handleForgotPassword}
             className="forgot-password-form"
@@ -109,10 +250,15 @@ const LoginPage = () => {
                 onChange={(e) => setForgotEmail(e.target.value)}
                 required
                 className="login-input"
+                disabled={isLoading}
               />
             </div>
-            <button type="submit" className="login-btn">
-              Send Reset Email
+            <button
+              type="submit"
+              className={`login-btn ${isLoading ? "loading" : ""}`}
+              disabled={isLoading}
+            >
+              {isLoading ? "Sending..." : "Send Reset Email"}
             </button>
           </form>
           <p>
@@ -122,7 +268,7 @@ const LoginPage = () => {
               className="login-link"
               style={{
                 cursor: "pointer",
-                color: "blue",
+                color: "#b08bd4",
                 textDecoration: "underline",
               }}
             >
@@ -133,7 +279,6 @@ const LoginPage = () => {
       ) : (
         <>
           <h2>Login</h2>
-          {error && <p className="error">{error}</p>}
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
               <input
@@ -142,7 +287,10 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="login-input"
+                className={`login-input ${
+                  error && !notification.show ? "error" : ""
+                }`}
+                disabled={isLoading}
               />
             </div>
             <div className="form-group">
@@ -153,13 +301,17 @@ const LoginPage = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="login-input password-input"
+                  className={`login-input password-input ${
+                    error && !notification.show ? "error" : ""
+                  }`}
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={togglePasswordVisibility}
                   className="password-toggle"
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  disabled={isLoading}
                 >
                   <i
                     className={showPassword ? "fa fa-eye-slash" : "fa fa-eye"}
@@ -174,13 +326,18 @@ const LoginPage = () => {
                 checked={keepLoggedIn}
                 onChange={(e) => setKeepLoggedIn(e.target.checked)}
                 className="login-checkbox"
+                disabled={isLoading}
               />
               <label htmlFor="keepLoggedIn" className="checkbox-label">
                 Keep me logged in (30 days)
               </label>
             </div>
-            <button type="submit" className="login-btn">
-              Login
+            <button
+              type="submit"
+              className={`login-btn ${isLoading ? "loading" : ""}`}
+              disabled={isLoading}
+            >
+              {isLoading ? "Signing in..." : "Login"}
             </button>
           </form>
           <p>
@@ -190,7 +347,7 @@ const LoginPage = () => {
               className="login-link"
               style={{
                 cursor: "pointer",
-                color: "blue",
+                color: "#b08bd4",
                 textDecoration: "underline",
               }}
             >

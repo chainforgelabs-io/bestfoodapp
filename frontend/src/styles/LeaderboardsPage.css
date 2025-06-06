@@ -163,6 +163,61 @@
   box-shadow: 0 4px 15px rgba(50, 205, 50, 0.3);
 }
 
+/* City Search Input - Updated with beautiful border to match app theme */
+.city-search-container .search-input {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #e8f0ff; /* Light purple-tinted border */
+  border-radius: 12px;
+  font-size: 1.1rem;
+  color: #333;
+  background: white;
+  outline: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  margin-bottom: 0;
+}
+
+.city-search-container .search-input:focus {
+  border-color: #b08bd4; /* Purple border on focus */
+  box-shadow: 0 0 0 3px rgba(176, 139, 212, 0.1); /* Subtle purple glow */
+  transform: translateY(-1px); /* Slight lift effect */
+}
+
+.city-search-container .search-input:hover {
+  border-color: #d0d7de; /* Slightly darker border on hover */
+}
+
+.city-search-container .search-input::placeholder {
+  color: #999;
+  font-weight: 400;
+}
+
+/* Filter search input - Update existing styling */
+.filter-search-input {
+  width: 100%;
+  padding: 12px 40px 12px 15px;
+  border: 2px solid #e8f0ff; /* Light purple-tinted border */
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  background: white;
+  color: #333;
+}
+
+.filter-search-input:focus {
+  outline: none;
+  border-color: #b08bd4;
+  box-shadow: 0 0 0 3px rgba(176, 139, 212, 0.1);
+  transform: translateY(-1px);
+}
+
+.filter-search-input:hover {
+  border-color: #d0d7de;
+}
+
 /* Category Section */
 .category-section {
   max-width: 800px;
@@ -271,22 +326,6 @@
 
 .search-input-container {
   position: relative;
-}
-
-.filter-search-input {
-  width: 100%;
-  padding: 12px 40px 12px 15px;
-  border: 2px solid #eee;
-  border-radius: 10px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
-}
-
-.filter-search-input:focus {
-  outline: none;
-  border-color: #b08bd4;
-  box-shadow: 0 0 0 3px rgba(176, 139, 212, 0.1);
 }
 
 .search-icon {
