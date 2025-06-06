@@ -341,6 +341,7 @@ function HomePage() {
     setCitySelected("");
     setHasSearched(false);
     setFoodItems([]); // Clear food items when resetting
+    navigate("/"); // Reset URL to home
   };
 
   // Handle review creation
@@ -400,7 +401,7 @@ function HomePage() {
   };
 
   return (
-    <div className="home-container">
+    <div className={`home-container ${hasSearched ? "has-searched" : ""}`}>
       <Helmet>
         <title>{seoMeta.title}</title>
         <meta name="description" content={seoMeta.description} />

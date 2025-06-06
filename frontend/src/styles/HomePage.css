@@ -11,6 +11,11 @@
   position: relative;
 }
 
+/* Add space from navbar only when a city has been searched */
+.home-container.has-searched {
+  padding-top: 100px;
+}
+
 /* Logo animations */
 .logo-container {
   margin-bottom: 30px;
