@@ -10,6 +10,15 @@
   animation: fadeInUp 0.8s ease-out;
 }
 
+/* Override for when FoodItemForm is used within ReviewSubmissionPage */
+.form-step .food-item-form {
+  min-height: auto;
+  justify-content: flex-start;
+  background: none;
+  padding: 0;
+  animation: none;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
