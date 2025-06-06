@@ -207,7 +207,9 @@ function StandardizedDropdown({
                   )}
                   <span className="option-text">{option}</span>
                   {INFO_DATA[option] && (
-                    <InfoTooltip option={option} position="left" />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <InfoTooltip option={option} position="left" />
+                    </div>
                   )}
                 </div>
               ))

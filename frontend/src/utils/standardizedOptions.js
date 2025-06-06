@@ -125,10 +125,10 @@ export const FOOD_TYPES = {
     "Steak",
     "Fried Rice",
     "Curry",
-    "Grilled Chicken",
+    "Chicken",
     "Fish & Chips",
     "Lobster",
-    "Pork Chops",
+    "Pork",
     "Lamb",
     "Salmon",
     "Ribs",
@@ -533,5 +533,206 @@ export const INFO_DATA = {
     examples: "Hot wings, spicy curry, jalapeño dishes",
     characteristics:
       "• Heat level present\n• Pepper-based heat\n• Bold flavors\n• May vary in intensity",
+  },
+
+  // Cuisine Types
+  "American (New)": {
+    description: "Modern American cuisine with creative twists",
+    examples: "Farm-to-table restaurants, fusion dishes, craft cocktails",
+    characteristics:
+      "• Creative interpretations\n• Local ingredients\n• Modern techniques\n• Contemporary presentation",
+  },
+  "American (Traditional)": {
+    description: "Classic American comfort food and dishes",
+    examples: "Burgers, mac and cheese, apple pie, meatloaf",
+    characteristics:
+      "• Comfort food focus\n• Familiar flavors\n• Hearty portions\n• Traditional recipes",
+  },
+  "BBQ": {
+    description: "Barbecued meats with regional sauce styles",
+    examples: "Brisket, ribs, pulled pork, BBQ chicken",
+    characteristics:
+      "• Smoked meats\n• Regional variations\n• Sauce specialties\n• Outdoor cooking tradition",
+  },
+  "Cajun & Creole": {
+    description: "Louisiana-style spicy and flavorful cuisine",
+    examples: "Gumbo, jambalaya, crawfish, beignets",
+    characteristics:
+      "• Bold spices\n• French influences\n• Seafood focus\n• New Orleans tradition",
+  },
+  "Caribbean": {
+    description: "Island cuisine with tropical flavors and spices",
+    examples: "Jerk chicken, plantains, rice and beans, tropical drinks",
+    characteristics:
+      "• Tropical ingredients\n• Bold spices\n• Island culture\n• Fresh seafood",
+  },
+  "Latin American": {
+    description: "Cuisine from Central and South America",
+    examples: "Empanadas, ceviche, arepas, chimichurri",
+    characteristics:
+      "• Regional diversity\n• Fresh ingredients\n• Bold flavors\n• Cultural fusion",
+  },
+  "Mexican": {
+    description: "Traditional and modern Mexican dishes",
+    examples: "Tacos, burritos, enchiladas, guacamole",
+    characteristics:
+      "• Corn and beans\n• Fresh herbs\n• Spicy elements\n• Regional specialties",
+  },
+  "South American": {
+    description: "Cuisine from countries like Argentina, Brazil, Peru",
+    examples: "Steakhouse, Brazilian BBQ, Peruvian ceviche",
+    characteristics:
+      "• Grilled meats\n• Fresh seafood\n• Unique spices\n• Regional traditions",
+  },
+  "British": {
+    description: "Traditional British fare and pub food",
+    examples: "Fish and chips, bangers and mash, shepherd's pie",
+    characteristics:
+      "• Hearty comfort food\n• Pub traditions\n• Simple preparations\n• Classic recipes",
+  },
+  "Eastern European": {
+    description: "Cuisine from Poland, Russia, Czech Republic and region",
+    examples: "Pierogi, borscht, schnitzel, goulash",
+    characteristics:
+      "• Hearty dishes\n• Potato-based\n• Warming spices\n• Traditional recipes",
+  },
+  "French": {
+    description: "Classic French cuisine and techniques",
+    examples: "Coq au vin, bouillabaisse, crème brûlée, wine pairings",
+    characteristics:
+      "• Classic techniques\n• Wine integration\n• Rich sauces\n• Culinary artistry",
+  },
+  "German": {
+    description: "Traditional German food and beer culture",
+    examples: "Bratwurst, sauerkraut, schnitzel, pretzels",
+    characteristics:
+      "• Meat and potatoes\n• Beer pairings\n• Hearty portions\n• Traditional preparation",
+  },
+  "Greek": {
+    description: "Mediterranean cuisine with olive oil and herbs",
+    examples: "Gyros, moussaka, feta cheese, baklava",
+    characteristics:
+      "• Olive oil base\n• Fresh herbs\n• Mediterranean diet\n• Ancient traditions",
+  },
+  "Italian": {
+    description: "Classic Italian pasta, pizza, and regional specialties",
+    examples: "Pasta, pizza, risotto, gelato",
+    characteristics:
+      "• Fresh ingredients\n• Regional variations\n• Pasta and pizza\n• Wine culture",
+  },
+  "Mediterranean": {
+    description: "Healthy cuisine from the Mediterranean region",
+    examples: "Hummus, tabbouleh, grilled fish, olive tapenade",
+    characteristics:
+      "• Healthy fats\n• Fresh vegetables\n• Seafood focus\n• Herb-rich flavors",
+  },
+  "Portuguese": {
+    description: "Seafood-focused cuisine with unique flavors",
+    examples: "Bacalhau, pastéis de nata, grilled sardines",
+    characteristics:
+      "• Seafood specialties\n• Unique seasonings\n• Coastal influences\n• Traditional techniques",
+  },
+  "Spanish": {
+    description: "Tapas culture and regional Spanish dishes",
+    examples: "Paella, tapas, gazpacho, sangria",
+    characteristics:
+      "• Tapas tradition\n• Regional diversity\n• Seafood and rice\n• Social dining",
+  },
+  "Asian": {
+    description: "Pan-Asian cuisine with diverse regional influences",
+    examples: "Stir-fries, noodle dishes, dumplings, Asian fusion",
+    characteristics:
+      "• Diverse regional styles\n• Rice and noodles\n• Fresh ingredients\n• Balanced flavors",
+  },
+  "Chinese": {
+    description: "Regional Chinese cuisine and cooking styles",
+    examples: "Dim sum, Peking duck, fried rice, hot pot",
+    characteristics:
+      "• Regional variations\n• Wok cooking\n• Balance of flavors\n• Tea culture",
+  },
+  "Filipino": {
+    description: "Filipino cuisine with Spanish and Asian influences",
+    examples: "Adobo, lumpia, lechon, halo-halo",
+    characteristics:
+      "• Spanish influences\n• Sweet and savory\n• Rice-based meals\n• Tropical ingredients",
+  },
+  "Indian": {
+    description: "Spiced cuisine with regional diversity",
+    examples: "Curry, naan, biryani, tandoori dishes",
+    characteristics:
+      "• Complex spices\n• Regional diversity\n• Vegetarian options\n• Bread and rice",
+  },
+  "Japanese": {
+    description: "Traditional Japanese cuisine emphasizing freshness",
+    examples: "Sushi, ramen, tempura, sake",
+    characteristics:
+      "• Fresh ingredients\n• Minimal preparation\n• Seasonal focus\n• Aesthetic presentation",
+  },
+  "Korean": {
+    description: "Korean cuisine with fermented and spicy elements",
+    examples: "Korean BBQ, kimchi, bibimbap, bulgogi",
+    characteristics:
+      "• Fermented foods\n• Spicy flavors\n• Grilled meats\n• Healthy preparations",
+  },
+  "Thai": {
+    description: "Thai cuisine balancing sweet, sour, salty, and spicy",
+    examples: "Pad thai, green curry, tom yum soup, mango sticky rice",
+    characteristics:
+      "• Balance of flavors\n• Fresh herbs\n• Coconut milk\n• Aromatic spices",
+  },
+  "Vietnamese": {
+    description: "Vietnamese cuisine with fresh herbs and light preparations",
+    examples: "Pho, banh mi, spring rolls, Vietnamese coffee",
+    characteristics:
+      "• Fresh herbs\n• Light preparations\n• Rice noodles\n• French influences",
+  },
+  "African": {
+    description: "Diverse African cuisine with unique spices and ingredients",
+    examples: "Ethiopian injera, Moroccan tagine, South African braai",
+    characteristics:
+      "• Unique spices\n• Diverse regional styles\n• Grain-based dishes\n• Bold flavors",
+  },
+  "Middle Eastern": {
+    description: "Middle Eastern cuisine with aromatic spices",
+    examples: "Kebabs, hummus, falafel, baklava",
+    characteristics:
+      "• Aromatic spices\n• Grilled meats\n• Fresh vegetables\n• Ancient traditions",
+  },
+  "Turkish": {
+    description: "Turkish cuisine blending European and Asian influences",
+    examples: "Kebabs, Turkish delight, baklava, Turkish coffee",
+    characteristics:
+      "• European-Asian fusion\n• Grilled specialties\n• Sweet pastries\n• Coffee culture",
+  },
+  "Fusion": {
+    description: "Creative combinations of different culinary traditions",
+    examples:
+      "Korean-Mexican tacos, Asian-Italian fusion, modern interpretations",
+    characteristics:
+      "• Creative combinations\n• Modern techniques\n• Cultural blending\n• Innovative dishes",
+  },
+  "Gastropub": {
+    description: "Elevated pub food with craft beverages",
+    examples: "Gourmet burgers, craft beer, upscale bar snacks",
+    characteristics:
+      "• Elevated pub food\n• Craft beverages\n• Casual upscale\n• Creative presentations",
+  },
+  "Seafood": {
+    description: "Fresh fish and shellfish specialties",
+    examples: "Oysters, lobster, fresh fish, seafood platters",
+    characteristics:
+      "• Fresh preparations\n• Seasonal availability\n• Coastal influences\n• Simple seasonings",
+  },
+  "Steakhouse": {
+    description: "Premium beef cuts and classic steakhouse sides",
+    examples: "Prime ribeye, filet mignon, lobster tail, wine pairings",
+    characteristics:
+      "• Premium beef cuts\n• Classic preparations\n• Upscale atmosphere\n• Wine selections",
+  },
+  "Vegan / Vegetarian": {
+    description: "Plant-based cuisine with creative preparations",
+    examples: "Plant-based burgers, vegetable curries, vegan desserts",
+    characteristics:
+      "• Plant-based focus\n• Creative preparations\n• Health-conscious\n• Sustainable choices",
   },
 };

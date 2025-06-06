@@ -103,48 +103,54 @@ function InfoTooltip({ option, position = "right" }) {
       </button>
 
       {isVisible && (
-        <div
-          ref={tooltipRef}
-          className={`info-tooltip ${tooltipPosition}`}
-          role="tooltip"
-        >
-          <div className="tooltip-header">
-            <h4 className="tooltip-title">{option}</h4>
-            <button
-              className="tooltip-close"
-              onClick={() => setIsVisible(false)}
-              aria-label="Close tooltip"
-            >
-              ×
-            </button>
-          </div>
-
-          <div className="tooltip-content">
-            <div className="tooltip-section">
-              <p className="tooltip-description">{info.description}</p>
+        <>
+          <div
+            className="info-tooltip-backdrop"
+            onClick={() => setIsVisible(false)}
+          />
+          <div
+            ref={tooltipRef}
+            className={`info-tooltip ${tooltipPosition}`}
+            role="tooltip"
+          >
+            <div className="tooltip-header">
+              <h4 className="tooltip-title">{option}</h4>
+              <button
+                className="tooltip-close"
+                onClick={() => setIsVisible(false)}
+                aria-label="Close tooltip"
+              >
+                ×
+              </button>
             </div>
 
-            {info.examples && (
+            <div className="tooltip-content">
               <div className="tooltip-section">
-                <strong className="tooltip-label">Examples:</strong>
-                <p className="tooltip-examples">{info.examples}</p>
+                <p className="tooltip-description">{info.description}</p>
               </div>
-            )}
 
-            {info.characteristics && (
-              <div className="tooltip-section">
-                <strong className="tooltip-label">Characteristics:</strong>
-                <div className="tooltip-characteristics">
-                  {info.characteristics.split("\n").map((char, index) => (
-                    <div key={index} className="characteristic-item">
-                      {char}
-                    </div>
-                  ))}
+              {info.examples && (
+                <div className="tooltip-section">
+                  <strong className="tooltip-label">Examples:</strong>
+                  <p className="tooltip-examples">{info.examples}</p>
                 </div>
-              </div>
-            )}
+              )}
+
+              {info.characteristics && (
+                <div className="tooltip-section">
+                  <strong className="tooltip-label">Characteristics:</strong>
+                  <div className="tooltip-characteristics">
+                    {info.characteristics.split("\n").map((char, index) => (
+                      <div key={index} className="characteristic-item">
+                        {char}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
