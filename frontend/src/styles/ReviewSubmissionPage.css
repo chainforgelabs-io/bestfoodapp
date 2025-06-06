@@ -2,7 +2,7 @@
 .submission-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #f9f9fc 0%, #f0f4ff 100%);
-  padding: 20px;
+  padding: 100px 20px 20px 20px;
   animation: fadeInUp 0.8s ease-out;
 }
 
@@ -19,7 +19,7 @@
 
 /* Form section container */
 .form-section {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   background: white;
   border-radius: 20px;
@@ -41,47 +41,25 @@
 
 /* Header section */
 .form-header {
-  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  background: #9562d4; /* Solid color instead of gradient for testing */
   color: white;
-  padding: 30px;
+  padding: 30px 40px;
   text-align: center;
   position: relative;
   overflow: hidden;
 }
 
-.form-header::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  animation: shimmer 3s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0%,
-  100% {
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.form-title {
+.form-heading {
   font-size: 2.2rem;
   font-weight: 700;
   margin-bottom: 10px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 1;
 }
 
 .form-subtitle {
   font-size: 1.1rem;
-  opacity: 0.9;
+  color: white;
   font-weight: 500;
   position: relative;
   z-index: 1;
@@ -94,15 +72,19 @@
   margin: 30px 0;
   position: relative;
   z-index: 1;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .step {
   display: flex;
   align-items: center;
-  margin: 0 20px;
+  margin: 0 15px;
   color: rgba(255, 255, 255, 0.6);
   font-weight: 600;
   transition: all 0.3s ease;
+  min-width: 120px;
+  justify-content: center;
 }
 
 .step.active {
@@ -125,6 +107,7 @@
   margin-right: 8px;
   font-weight: 700;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .step.active .step-number {
@@ -463,27 +446,29 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .submission-container {
-    padding: 10px;
+    padding: 80px 15px 20px 15px;
   }
 
   .form-content {
-    padding: 20px;
+    padding: 30px 20px;
   }
 
-  .form-title {
+  .form-heading {
     font-size: 1.8rem;
   }
 
   .form-header {
-    padding: 20px;
+    padding: 25px 20px;
   }
 
   .step-indicator {
-    margin: 20px 0;
+    margin: 25px 0;
+    gap: 8px;
   }
 
   .step {
-    margin: 0 10px;
+    margin: 0 8px;
+    min-width: 90px;
     font-size: 0.9rem;
   }
 
@@ -491,35 +476,36 @@
     width: 28px;
     height: 28px;
     font-size: 0.9rem;
+    margin-right: 6px;
   }
 
   .form-navigation {
     flex-direction: column;
-    gap: 12px;
+    gap: 15px;
   }
 
   .nav-button {
     width: 100%;
-    padding: 14px 20px;
+    padding: 16px;
   }
 
   .rating-input {
-    justify-content: center;
+    gap: 5px;
   }
 
   .star {
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
 }
 
 @media (max-width: 480px) {
   .form-section {
-    margin: 10px;
+    margin: 0 10px;
     border-radius: 16px;
   }
 
-  .form-title {
-    font-size: 1.5rem;
+  .form-heading {
+    font-size: 1.6rem;
   }
 
   .form-subtitle {
@@ -527,8 +513,22 @@
   }
 
   .step-indicator {
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .step {
+    margin: 0;
+    min-width: 150px;
+    font-size: 0.95rem;
+  }
+
+  .step-number {
+    width: 30px;
+    height: 30px;
+    margin-right: 8px;
   }
 }
 
@@ -663,7 +663,7 @@
 .form-group .search-input {
   width: 100%;
   padding: 16px 20px;
-  border: 2px solid #e8f0ff; /* Light purple-tinted border */
+  border: 2px solid #e8f0ff;
   border-radius: 12px;
   font-size: 1rem;
   color: #333;

@@ -419,7 +419,7 @@ function ReviewSubmissionPage() {
     <div className="submission-container">
       <div className="form-section">
         <div className="form-header">
-          <h1 className="form-title">Submit Your Review</h1>
+          <h1 className="form-heading">Submit Your Review</h1>
           <p className="form-subtitle">
             Share your dining experience with the community
           </p>
