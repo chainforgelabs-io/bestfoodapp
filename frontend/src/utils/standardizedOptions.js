@@ -14,8 +14,7 @@ export const RESTAURANT_TYPES = [
 
 export const CUISINE_TYPES = [
   // The Americas
-  "American (New)",
-  "American (Traditional)",
+  "American",
   "BBQ",
   "Cajun & Creole",
   "Caribbean",
@@ -96,6 +95,14 @@ export const FOOD_TYPES = {
     "Quesadillas",
     "Stuffed Mushrooms",
     "Shrimp Cocktail",
+    "Rolls",
+    "Wontons",
+    "Dumplings",
+    "Hummus",
+    "Baba Ghanoush",
+    "Dolma (Stuffed Grape Leaves)",
+    "Samosa",
+    "Add +",
   ],
   "Soups & Salads": [
     "Caesar Salad",
@@ -108,6 +115,7 @@ export const FOOD_TYPES = {
     "Minestrone",
     "Cobb Salad",
     "Caprese Salad",
+    "Add +",
   ],
   "Handhelds": [
     "Burger",
@@ -120,6 +128,9 @@ export const FOOD_TYPES = {
     "Sub",
     "Club Sandwich",
     "Grilled Cheese",
+    "Gyro / Shawarma",
+    "Pita Sandwich",
+    "Add +",
   ],
   "Mains / Entrées": [
     "Steak",
@@ -132,8 +143,27 @@ export const FOOD_TYPES = {
     "Lamb",
     "Salmon",
     "Ribs",
+    "Noodle Dish",
+    "Stir-Fry",
+    "Sushi / Sashimi",
+    "Teriyaki",
+    "Kebab / Souvlaki",
+    "Falafel Plate",
+    "Fried Chicken",
+    "BBQ Ribs",
+    "Pulled Pork / Chicken",
+    "Brisket",
+    "Mac & Cheese",
+    "Meatloaf",
+    "Jerk Chicken / Pork",
+    "Curry Goat / Chicken",
+    "Oxtail",
+    "Roti",
+    "Tandoori",
+    "Biryani",
+    "Add +",
   ],
-  "Pizza & Flatbreads": ["Pizza", "Flatbread", "Calzone", "Stromboli"],
+  "Pizza & Flatbreads": ["Pizza", "Flatbread", "Calzone", "Stromboli", "Add +"],
   "Pasta": [
     "Spaghetti",
     "Fettuccine",
@@ -143,6 +173,7 @@ export const FOOD_TYPES = {
     "Gnocchi",
     "Linguine",
     "Carbonara",
+    "Add +",
   ],
   "Sides": [
     "Fries",
@@ -153,6 +184,8 @@ export const FOOD_TYPES = {
     "Mashed Potatoes",
     "Steamed Vegetables",
     "Mac & Cheese",
+    "Naan",
+    "Add +",
   ],
   "Desserts": [
     "Churro",
@@ -163,6 +196,7 @@ export const FOOD_TYPES = {
     "Brownie",
     "Apple Pie",
     "Crème Brûlée",
+    "Add +",
   ],
   "Drinks (Non-Alcoholic)": [
     "Soda",
@@ -173,6 +207,7 @@ export const FOOD_TYPES = {
     "Milkshake",
     "Lemonade",
     "Water",
+    "Add +",
   ],
   "Drinks (Alcoholic)": [
     "Beer",
@@ -183,6 +218,7 @@ export const FOOD_TYPES = {
     "Rum",
     "Tequila",
     "Margarita",
+    "Add +",
   ],
   "Breakfast & Brunch": [
     "Pancakes",
@@ -193,6 +229,7 @@ export const FOOD_TYPES = {
     "Breakfast Burrito",
     "Bagel",
     "Avocado Toast",
+    "Add +",
   ],
 };
 
@@ -206,6 +243,7 @@ export const FOOD_SUBTYPES = {
     "Mushroom Swiss Burger",
     "Turkey Burger",
     "Black Bean Burger",
+    "Add +",
   ],
   "Tacos": [
     "Beef",
@@ -216,6 +254,7 @@ export const FOOD_SUBTYPES = {
     "Carnitas",
     "Shrimp",
     "Vegetarian",
+    "Add +",
   ],
   "Burrito": [
     "Beef",
@@ -226,6 +265,7 @@ export const FOOD_SUBTYPES = {
     "Breakfast",
     "Veggie",
     "Fish",
+    "Add +",
   ],
   "Hot Dog": [
     "Classic",
@@ -234,6 +274,7 @@ export const FOOD_SUBTYPES = {
     "New York Style",
     "Corn Dog",
     "Specialty",
+    "Add +",
   ],
   "Sandwich": [
     "Club",
@@ -244,6 +285,7 @@ export const FOOD_SUBTYPES = {
     "Reuben",
     "Grilled Chicken",
     "Tuna Melt",
+    "Add +",
   ],
   "Steak": [
     "Filet Mignon",
@@ -253,6 +295,7 @@ export const FOOD_SUBTYPES = {
     "New York Strip",
     "Porterhouse",
     "Flank Steak",
+    "Add +",
   ],
   "Fried Rice": [
     "Chicken",
@@ -261,14 +304,22 @@ export const FOOD_SUBTYPES = {
     "Vegetable",
     "Pork",
     "Combination",
+    "Add +",
   ],
   "Curry": [
+    "Tikka Masala",
+    "Vindaloo",
+    "Korma",
+    "Saag",
+    "Butter Chicken",
+    "Rogan Josh",
     "Red Curry",
     "Green Curry",
     "Panang Curry",
     "Yellow Curry",
     "Thai Curry",
     "Indian Curry",
+    "Add +",
   ],
   "Pizza": [
     "Cheese",
@@ -279,6 +330,7 @@ export const FOOD_SUBTYPES = {
     "Meat Lovers",
     "Veggie",
     "BBQ Chicken",
+    "Add +",
   ],
   "Fries": [
     "Regular",
@@ -287,12 +339,14 @@ export const FOOD_SUBTYPES = {
     "Curly",
     "Steak Fries",
     "Shoestring",
+    "Add +",
   ],
   "Churro": [
     "Plain",
     "Filled (Caramel)",
     "Filled (Chocolate)",
     "Cinnamon Sugar",
+    "Add +",
   ],
   "Cake": [
     "Chocolate",
@@ -301,7 +355,79 @@ export const FOOD_SUBTYPES = {
     "Red Velvet",
     "Vanilla",
     "Strawberry",
+    "Add +",
   ],
+  "Noodle Dish": [
+    "Pho",
+    "Ramen",
+    "Pad Thai",
+    "Lo Mein",
+    "Chow Mein",
+    "Dan Dan Noodles",
+    "Drunken Noodles",
+    "Vermicelli Bowl",
+    "Add +",
+  ],
+  "Stir-Fry": [
+    "General Tso's Chicken",
+    "Sweet and Sour Pork",
+    "Sweet and Sour Chicken",
+    "Kung Pao Chicken",
+    "Mongolian Beef",
+    "Broccoli Beef",
+    "Add +",
+  ],
+  "Dumplings": [
+    "Pork",
+    "Chicken",
+    "Shrimp",
+    "Vegetable",
+    "Soup Dumplings (Xiao Long Bao)",
+    "Add +",
+  ],
+  "Sushi / Sashimi": [
+    "Tuna (Maguro)",
+    "Salmon (Sake)",
+    "Yellowtail (Hamachi)",
+    "Eel (Unagi)",
+    "California Roll",
+    "Spicy Tuna Roll",
+    "Dragon Roll",
+    "Add +",
+  ],
+  "Teriyaki": ["Chicken", "Beef", "Salmon", "Tofu", "Add +"],
+  "Rolls": ["Spring Roll", "Egg Roll", "Summer Roll", "Add +"],
+  "Wontons": ["Fried Wontons", "Wonton Soup", "Crab Rangoon", "Add +"],
+  "Gyro / Shawarma": ["Lamb", "Chicken", "Beef", "Combo", "Falafel", "Add +"],
+  "Pita Sandwich": [
+    "Chicken Souvlaki",
+    "Pork Souvlaki",
+    "Falafel",
+    "Hummus & Veggie",
+    "Add +",
+  ],
+  "Kebab / Souvlaki": [
+    "Chicken",
+    "Beef",
+    "Lamb",
+    "Shrimp",
+    "Vegetable",
+    "Add +",
+  ],
+  "Fried Chicken": [
+    "Southern Style",
+    "Spicy / Hot Chicken",
+    "Chicken & Waffles",
+    "Chicken Tenders / Fingers",
+    "Add +",
+  ],
+  "BBQ Ribs": ["Pork", "Beef", "Add +"],
+  "Mac & Cheese": ["Classic", "Baked", "Lobster", "Bacon", "Add +"],
+  "Roti": ["Chicken", "Goat", "Beef", "Vegetable", "Add +"],
+  "Tandoori": ["Chicken", "Fish", "Shrimp", "Add +"],
+  "Biryani": ["Chicken", "Lamb", "Vegetable", "Add +"],
+  "Samosa": ["Vegetable", "Lamb", "Chicken", "Add +"],
+  "Naan": ["Plain", "Garlic", "Butter", "Add +"],
 };
 
 export const DIETARY_TAGS = [
@@ -536,17 +662,11 @@ export const INFO_DATA = {
   },
 
   // Cuisine Types
-  "American (New)": {
-    description: "Modern American cuisine with creative twists",
-    examples: "Farm-to-table restaurants, fusion dishes, craft cocktails",
+  "American": {
+    description: "Classic American cuisine and modern interpretations",
+    examples: "Burgers, mac and cheese, BBQ, farm-to-table dishes",
     characteristics:
-      "• Creative interpretations\n• Local ingredients\n• Modern techniques\n• Contemporary presentation",
-  },
-  "American (Traditional)": {
-    description: "Classic American comfort food and dishes",
-    examples: "Burgers, mac and cheese, apple pie, meatloaf",
-    characteristics:
-      "• Comfort food focus\n• Familiar flavors\n• Hearty portions\n• Traditional recipes",
+      "• Comfort food traditions\n• Regional specialties\n• Modern interpretations\n• Hearty portions",
   },
   "BBQ": {
     description: "Barbecued meats with regional sauce styles",
@@ -734,5 +854,67 @@ export const INFO_DATA = {
     examples: "Plant-based burgers, vegetable curries, vegan desserts",
     characteristics:
       "• Plant-based focus\n• Creative preparations\n• Health-conscious\n• Sustainable choices",
+  },
+
+  // New Food Types Information
+  "Noodle Dish": {
+    description: "Asian noodle-based dishes with various preparations",
+    examples: "Pho, ramen, pad thai, lo mein, chow mein",
+    characteristics:
+      "• Rice or wheat noodles\n• Broth or sauce-based\n• Asian origins\n• Comfort food appeal",
+  },
+  "Stir-Fry": {
+    description: "Quick-cooked dishes in a wok with high heat",
+    examples: "General Tso's chicken, kung pao chicken, mongolian beef",
+    characteristics:
+      "• High-heat cooking\n• Quick preparation\n• Mixed vegetables\n• Asian technique",
+  },
+  "Sushi / Sashimi": {
+    description: "Japanese raw fish preparations with rice or alone",
+    examples: "Tuna sashimi, California roll, spicy tuna roll",
+    characteristics:
+      "• Fresh raw fish\n• Vinegared rice\n• Artistic presentation\n• Japanese tradition",
+  },
+  "Teriyaki": {
+    description: "Japanese grilled dishes with sweet soy glaze",
+    examples: "Teriyaki chicken, teriyaki salmon, teriyaki beef",
+    characteristics:
+      "• Sweet soy marinade\n• Grilled preparation\n• Japanese style\n• Caramelized finish",
+  },
+  "Gyro / Shawarma": {
+    description: "Mediterranean rotisserie meat in pita bread",
+    examples: "Lamb gyro, chicken shawarma, falafel wrap",
+    characteristics:
+      "• Rotisserie cooking\n• Pita bread serving\n• Mediterranean spices\n• Street food style",
+  },
+  "Kebab / Souvlaki": {
+    description: "Grilled meat skewers with Mediterranean flavors",
+    examples: "Chicken souvlaki, lamb kebab, shrimp skewers",
+    characteristics:
+      "• Skewered grilling\n• Mediterranean herbs\n• Charred flavor\n• Ancient cooking method",
+  },
+  "Fried Chicken": {
+    description: "Crispy battered and fried chicken preparations",
+    examples: "Southern fried chicken, Nashville hot chicken, chicken tenders",
+    characteristics:
+      "• Crispy coating\n• Deep fried\n• Comfort food\n• Regional variations",
+  },
+  "Jerk Chicken / Pork": {
+    description: "Caribbean spiced and grilled meat with bold flavors",
+    examples: "Jamaican jerk chicken, jerk pork, jerk seasoning",
+    characteristics:
+      "• Caribbean spices\n• Scotch bonnet peppers\n• Grilled preparation\n• Bold flavors",
+  },
+  "Tandoori": {
+    description: "Indian clay oven cooking with yogurt marinades",
+    examples: "Tandoori chicken, tandoori fish, tandoori shrimp",
+    characteristics:
+      "• Clay oven cooking\n• Yogurt marinades\n• High heat cooking\n• Smoky flavors",
+  },
+  "Biryani": {
+    description: "Fragrant Indian rice dish with meat or vegetables",
+    examples: "Chicken biryani, lamb biryani, vegetable biryani",
+    characteristics:
+      "• Basmati rice\n• Layered cooking\n• Aromatic spices\n• One-pot meal",
   },
 };

@@ -18,21 +18,31 @@ function StandardizedDropdown({
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredOptions, setFilteredOptions] = useState(options);
   const [activeSuggestion, setActiveSuggestion] = useState(0);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customInputValue, setCustomInputValue] = useState("");
+  const [customOptions, setCustomOptions] = useState([]);
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
+  const customInputRef = useRef(null);
+
+  // Combine original options with custom options, keeping "Add +" at the end
+  const allOptions = React.useMemo(() => {
+    const baseOptions = options.filter((opt) => opt !== "Add +");
+    return [...baseOptions, ...customOptions, "Add +"];
+  }, [options, customOptions]);
 
   // Filter options based on search term
   useEffect(() => {
     if (searchTerm.trim() === "") {
-      setFilteredOptions(options);
+      setFilteredOptions(allOptions);
     } else {
-      const filtered = options.filter((option) =>
+      const filtered = allOptions.filter((option) =>
         option.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredOptions(filtered);
     }
     setActiveSuggestion(0);
-  }, [searchTerm, options]);
+  }, [searchTerm, allOptions]);
 
   // Handle clicking outside to close dropdown
   useEffect(() => {
@@ -40,6 +50,8 @@ function StandardizedDropdown({
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsOpen(false);
         setSearchTerm(""); // Clear search term when closing
+        setShowCustomInput(false);
+        setCustomInputValue("");
       }
     };
 
@@ -47,8 +59,26 @@ function StandardizedDropdown({
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
+  // Focus custom input when it appears
+  useEffect(() => {
+    if (showCustomInput && customInputRef.current) {
+      customInputRef.current.focus();
+    }
+  }, [showCustomInput]);
+
   // Handle keyboard navigation
   const handleKeyDown = (e) => {
+    if (showCustomInput) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleCustomSubmit();
+      } else if (e.key === "Escape") {
+        setShowCustomInput(false);
+        setCustomInputValue("");
+      }
+      return;
+    }
+
     if (!isOpen || filteredOptions.length === 0) return;
 
     if (e.key === "ArrowDown") {
@@ -72,6 +102,12 @@ function StandardizedDropdown({
   };
 
   const handleOptionSelect = (option) => {
+    if (option === "Add +") {
+      setShowCustomInput(true);
+      setCustomInputValue("");
+      return;
+    }
+
     if (allowMultiple) {
       const currentValues = value || [];
       if (currentValues.includes(option)) {
@@ -87,6 +123,27 @@ function StandardizedDropdown({
       setSearchTerm("");
       inputRef.current?.blur();
     }
+  };
+
+  const handleCustomSubmit = () => {
+    const trimmedValue = customInputValue.trim();
+    if (trimmedValue && !allOptions.includes(trimmedValue)) {
+      // Add to custom options
+      setCustomOptions((prev) => [...prev, trimmedValue]);
+
+      // Select the new custom option
+      if (allowMultiple) {
+        const currentValues = value || [];
+        onChange([...currentValues, trimmedValue]);
+      } else {
+        onChange(trimmedValue);
+        setIsOpen(false);
+        setSearchTerm("");
+      }
+    }
+
+    setShowCustomInput(false);
+    setCustomInputValue("");
   };
 
   const handleRemoveTag = (tagToRemove) => {
@@ -189,7 +246,39 @@ function StandardizedDropdown({
 
         {isOpen && !disabled && (
           <div className="dropdown-options" style={{ maxHeight }}>
-            {filteredOptions.length > 0 ? (
+            {showCustomInput ? (
+              <div className="custom-input-container">
+                <input
+                  ref={customInputRef}
+                  type="text"
+                  className="custom-input"
+                  placeholder="Enter custom option..."
+                  value={customInputValue}
+                  onChange={(e) => setCustomInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+                <div className="custom-input-buttons">
+                  <button
+                    type="button"
+                    className="custom-submit-btn"
+                    onClick={handleCustomSubmit}
+                    disabled={!customInputValue.trim()}
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    className="custom-cancel-btn"
+                    onClick={() => {
+                      setShowCustomInput(false);
+                      setCustomInputValue("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => (
                 <div
                   key={option}
@@ -199,13 +288,25 @@ function StandardizedDropdown({
                     allowMultiple && value && value.includes(option)
                       ? "selected"
                       : ""
-                  }`}
+                  } ${option === "Add +" ? "add-option" : ""}`}
                   onClick={() => handleOptionSelect(option)}
                 >
-                  {allowMultiple && value && value.includes(option) && (
-                    <span className="option-checkmark">✓</span>
-                  )}
-                  <span className="option-text">{option}</span>
+                  {allowMultiple &&
+                    value &&
+                    value.includes(option) &&
+                    option !== "Add +" && (
+                      <span className="option-checkmark">✓</span>
+                    )}
+                  <span className="option-text">
+                    {option === "Add +" ? (
+                      <>
+                        <span className="add-icon">+</span>
+                        Add custom option
+                      </>
+                    ) : (
+                      option
+                    )}
+                  </span>
                   {INFO_DATA[option] && (
                     <div onClick={(e) => e.stopPropagation()}>
                       <InfoTooltip option={option} position="left" />
