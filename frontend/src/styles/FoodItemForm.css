@@ -37,6 +37,26 @@
   width: 100%;
 }
 
+/* Ensure food items list takes full width in form-step */
+.form-step .food-items-list {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+}
+
+.form-step .food-items-list ul {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.form-step .food-items-list li {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
