@@ -774,14 +774,20 @@ function LeaderboardsPage() {
                         >
                           <span className="global-rank">{index + 1}.</span>
                           <div className="global-item-info">
-                            <span className="global-item-name">
-                              {category.type === "cities"
-                                ? item.name
-                                : item.name ||
-                                  item.foodItem?.name ||
-                                  "Unknown Item"}
-                            </span>
-                            <div className="global-item-details">
+                            <div
+                              className={`global-item-header ${
+                                category.type === "cities"
+                                  ? "cities-layout"
+                                  : ""
+                              }`}
+                            >
+                              <span className="global-item-name">
+                                {category.type === "cities"
+                                  ? item.name
+                                  : item.name ||
+                                    item.foodItem?.name ||
+                                    "Unknown Item"}
+                              </span>
                               <span className="global-item-score">
                                 {category.type === "cities"
                                   ? getScore(item) === "N/A"
@@ -793,9 +799,11 @@ function LeaderboardsPage() {
                                   ? "N/A"
                                   : `${getScore(item)}/100`}
                               </span>
+                            </div>
 
-                              {/* Show additional details for food items */}
-                              {category.type === "food-items" && (
+                            {/* Show additional details for food items */}
+                            {category.type === "food-items" && (
+                              <>
                                 <div className="global-extra-info">
                                   {(item.foodItem?.restaurant?.name ||
                                     item.restaurant?.name) && (
@@ -805,8 +813,15 @@ function LeaderboardsPage() {
                                         item.restaurant?.name}
                                     </span>
                                   )}
-                                  {(item.foodItem?.restaurant?.address ||
-                                    item.restaurant?.address) && (
+                                  {(item.foodItem?.price || item.price) && (
+                                    <span className="global-price">
+                                      💰 ${item.foodItem?.price || item.price}
+                                    </span>
+                                  )}
+                                </div>
+                                {(item.foodItem?.restaurant?.address ||
+                                  item.restaurant?.address) && (
+                                  <div className="global-address-row">
                                     <span className="global-address">
                                       📍{" "}
                                       {item.foodItem?.restaurant?.address
@@ -822,30 +837,18 @@ function LeaderboardsPage() {
                                         ?.city ||
                                         item.restaurant?.address?.city}
                                     </span>
-                                  )}
-                                  {(item.foodItem?.price || item.price) && (
-                                    <span className="global-price">
-                                      💰 ${item.foodItem?.price || item.price}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
+                                  </div>
+                                )}
+                              </>
+                            )}
 
-                              {/* Show additional details for overall food items */}
-                              {category.type === "overall" && (
+                            {/* Show additional details for overall food items */}
+                            {category.type === "overall" && (
+                              <>
                                 <div className="global-extra-info">
                                   {item.restaurant?.name && (
                                     <span className="global-restaurant">
                                       🏪 {item.restaurant.name}
-                                    </span>
-                                  )}
-                                  {item.restaurant?.address && (
-                                    <span className="global-address">
-                                      📍{" "}
-                                      {item.restaurant.address.street
-                                        ? `${item.restaurant.address.street}, `
-                                        : ""}
-                                      {item.restaurant.address.city}
                                     </span>
                                   )}
                                   {item.price && (
@@ -854,23 +857,34 @@ function LeaderboardsPage() {
                                     </span>
                                   )}
                                 </div>
-                              )}
-
-                              {/* Show address for restaurants and cuisine categories */}
-                              {(category.type === "restaurants" ||
-                                category.type === "cuisine") &&
-                                item.address && (
-                                  <div className="global-extra-info">
+                                {item.restaurant?.address && (
+                                  <div className="global-address-row">
                                     <span className="global-address">
                                       📍{" "}
-                                      {item.address.street
-                                        ? `${item.address.street}, `
+                                      {item.restaurant.address.street
+                                        ? `${item.restaurant.address.street}, `
                                         : ""}
-                                      {item.address.city}
+                                      {item.restaurant.address.city}
                                     </span>
                                   </div>
                                 )}
-                            </div>
+                              </>
+                            )}
+
+                            {/* Show address for restaurants and cuisine categories */}
+                            {(category.type === "restaurants" ||
+                              category.type === "cuisine") &&
+                              item.address && (
+                                <div className="global-extra-info">
+                                  <span className="global-address">
+                                    📍{" "}
+                                    {item.address.street
+                                      ? `${item.address.street}, `
+                                      : ""}
+                                    {item.address.city}
+                                  </span>
+                                </div>
+                              )}
                           </div>
                         </div>
                       ))
