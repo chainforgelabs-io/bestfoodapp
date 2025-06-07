@@ -33,7 +33,7 @@ function RatingScale({ onRatingChange, foodItemName, initialRating = 50 }) {
     if (score <= 75) return "#32CD32"; // Mid Green
     if (score <= 85) return "#228B22"; // Dark Green
     if (score <= 95) return "#00FF7F"; // Emerald Green
-    return "#FFD700"; // Gold
+    return "#d4af37"; // Gold
   };
 
   return (
@@ -121,11 +121,11 @@ function RatingScale({ onRatingChange, foodItemName, initialRating = 50 }) {
             <div className="info-item">
               <span
                 className="score-range"
-                style={{ backgroundColor: "#FFD700", color: "#000" }}
+                style={{ backgroundColor: "#d4af37" }}
               >
                 96-100
               </span>
-              <span>Masterpiece - Perfect, life-changing experience</span>
+              <span>Masterpiece - Lifechanging, flawless, near perfection</span>
             </div>
           </div>
         </div>
