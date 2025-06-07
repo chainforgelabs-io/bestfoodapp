@@ -9,7 +9,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: 3000;
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -181,28 +181,63 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .modal-overlay {
+    z-index: 3000;
+    overflow-x: hidden;
+  }
+
   .edit-modal {
-    width: 95%;
-    margin: 20px;
-    max-height: 95vh;
+    width: 92vw;
+    margin: 0;
+    max-height: 90vh;
+    max-width: none;
+    overflow-x: hidden;
   }
 
   .modal-header,
   .modal-content,
   .modal-footer {
-    padding: 20px;
+    padding: 15px;
+    overflow-x: hidden;
+  }
+
+  .modal-content {
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .modal-header h3 {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
   }
 
   .modal-footer {
     flex-direction: column;
+    gap: 10px;
   }
 
   .btn-primary,
   .btn-secondary {
     width: 100%;
+    padding: 12px;
+    min-width: auto;
+  }
+
+  /* Ensure all form elements fit */
+  .edit-modal * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .edit-modal .form-group {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .edit-modal .form-input {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 12px 10px;
+    font-size: 16px;
+    border-width: 1px;
   }
 }
