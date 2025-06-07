@@ -190,6 +190,7 @@
   );
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  touch-action: pan-y;
 }
 
 .rating-slider:hover {
@@ -297,6 +298,8 @@
   .rating-scale-container {
     padding: 20px;
     margin: 10px;
+    touch-action: pan-y;
+    overflow-x: hidden;
   }
 
   .scale-labels {
@@ -337,6 +340,14 @@
 
   .gradient-bar {
     padding: 8px;
+    touch-action: pan-y;
+    overflow-x: hidden;
+  }
+
+  .rating-slider {
+    touch-action: pan-y;
+    -webkit-appearance: none;
+    -moz-appearance: none;
   }
 
   .rating-slider::-webkit-slider-thumb {
