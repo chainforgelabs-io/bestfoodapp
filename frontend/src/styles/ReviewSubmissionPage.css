@@ -767,3 +767,112 @@
   color: #999;
   font-weight: 400;
 }
+
+/* Step 6 Review Summary Styling */
+.summary-item {
+  background: linear-gradient(135deg, #fafbff 0%, #f9f9fc 100%);
+  border: 2px solid #f0f4ff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(176, 139, 212, 0.08);
+  transition: all 0.3s ease;
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.summary-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(176, 139, 212, 0.12);
+  border-color: #e8f0ff;
+}
+
+.summary-item strong {
+  color: #b08bd4;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: block;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.summary-item ul {
+  margin: 12px 0 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summary-item li {
+  background: white;
+  border: 1px solid #e8f0ff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(176, 139, 212, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-item li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.summary-item li:hover {
+  transform: translateX(4px);
+  border-color: #b08bd4;
+  box-shadow: 0 4px 16px rgba(176, 139, 212, 0.15);
+}
+
+.summary-item li:hover::before {
+  transform: scaleY(1);
+}
+
+.summary-item li strong {
+  color: #228b22;
+  font-size: 1rem;
+  display: inline;
+  margin: 0;
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
+}
+
+/* Mobile responsiveness for summary */
+@media (max-width: 768px) {
+  .summary-item {
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+
+  .summary-item strong {
+    font-size: 1rem;
+  }
+
+  .summary-item li {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+}

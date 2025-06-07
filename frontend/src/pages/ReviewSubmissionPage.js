@@ -829,8 +829,11 @@ function ReviewSubmissionPage() {
                   <ul>
                     {formData.foodItems.map((item, index) => (
                       <li key={index}>
-                        {item.name} - {item.category} ({item.subCategory}),
-                        Price: ${item.price} -{" "}
+                        {item.name} - {item.category}
+                        {item.subCategory &&
+                          item.subCategory.trim() !== "" &&
+                          ` (${item.subCategory})`}
+                        , Price: ${item.price} -{" "}
                         <strong>
                           Rating: {formData.ratings[index] || "Not rated"}/100
                         </strong>
