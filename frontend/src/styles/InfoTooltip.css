@@ -209,7 +209,7 @@
 /* Mobile optimization */
 @media (max-width: 768px) {
   .info-tooltip {
-    width: 350px;
+    width: 300px;
     max-width: 95vw;
     max-height: 85vh;
     font-size: 0.9rem;
