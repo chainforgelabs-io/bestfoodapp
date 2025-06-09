@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Best Food App",
+  "name": "Best Food App - Discover the Best Restaurants",
+  "description": "Discover, rate, and review the best restaurants in your city. Find top-rated food spots and explore local culinary gems.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,16 +11,46 @@
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "portrait",
+  "theme_color": "#ff6b35",
+  "background_color": "#ffffff",
+  "categories": ["food", "lifestyle", "social"],
+  "lang": "en",
+  "scope": "/",
+  "id": "bestfoodapp",
+  "shortcuts": [
+    {
+      "name": "Find Restaurants",
+      "short_name": "Find",
+      "description": "Find restaurants near you",
+      "url": "/",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Leaderboards",
+      "short_name": "Rankings",
+      "description": "View restaurant leaderboards",
+      "url": "/leaderboards",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Profile",
+      "short_name": "Profile",
+      "description": "View your profile and reviews",
+      "url": "/profile",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    }
+  ]
 }

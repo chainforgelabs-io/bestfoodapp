@@ -4,32 +4,103 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+
+    <!-- SEO Meta Tags -->
+    <meta name="theme-color" content="#ff6b35" />
     <meta
       name="description"
-      content="Web site created using create-react-app"
+      content="Best Food App - Discover, rate, and review the best restaurants in your city. Find top-rated food spots, share your dining experiences, and explore local culinary gems."
     />
+    <meta
+      name="keywords"
+      content="food, restaurants, reviews, ratings, dining, best food, restaurant finder, food app, culinary, local restaurants"
+    />
+    <meta name="author" content="Best Food App" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph Meta Tags for Social Media -->
+    <meta
+      property="og:title"
+      content="Best Food App - Discover the Best Restaurants"
+    />
+    <meta
+      property="og:description"
+      content="Discover, rate, and review the best restaurants in your city. Find top-rated food spots and explore local culinary gems."
+    />
+    <meta property="og:image" content="%PUBLIC_URL%/logo512.png" />
+    <meta property="og:url" content="https://bestfoodapp.com" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Best Food App" />
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Best Food App - Discover the Best Restaurants"
+    />
+    <meta
+      name="twitter:description"
+      content="Discover, rate, and review the best restaurants in your city. Find top-rated food spots and explore local culinary gems."
+    />
+    <meta name="twitter:image" content="%PUBLIC_URL%/logo512.png" />
+
+    <!-- Mobile Web App Capable -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Best Food App" />
+
+    <!-- Icons for different devices -->
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="%PUBLIC_URL%/logo192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="%PUBLIC_URL%/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="%PUBLIC_URL%/favicon-16x16.png"
+    />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://bestfoodapp.com" />
+
     <!-- FontAwesome CDN -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Best Food App",
+        "description": "Discover, rate, and review the best restaurants in your city",
+        "url": "https://bestfoodapp.com",
+        "applicationCategory": "FoodAndDrinkApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+
+    <title>Best Food App - Discover the Best Restaurants in Your City</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
