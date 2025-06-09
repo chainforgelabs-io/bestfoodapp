@@ -201,9 +201,13 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .login-page {
+    padding: 40px;
+  }
+
   .login-form {
-    padding: 20px;
-    margin: 10px;
+    padding: 30px;
+    margin: 0;
   }
 
   .login-page h2 {
@@ -218,6 +222,43 @@
 
   .password-input {
     padding-right: 45px; /* Adjust for smaller toggle button on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 35px;
+  }
+
+  .login-form {
+    padding: 30px 25px;
+    margin: 0;
+  }
+
+  .login-page h2 {
+    font-size: 1.8rem;
+    margin-bottom: 25px;
+  }
+
+  .login-input {
+    padding: 14px 18px;
+    font-size: 0.95rem;
+  }
+
+  .login-btn {
+    padding: 14px 18px;
+    font-size: 0.95rem;
+  }
+
+  .password-toggle {
+    font-size: 1rem;
+    width: 26px;
+    height: 26px;
+    right: 10px;
+  }
+
+  .password-input {
+    padding-right: 42px;
   }
 }
 
