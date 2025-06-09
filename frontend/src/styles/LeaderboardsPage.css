@@ -94,7 +94,7 @@
 /* Reset City Button - Updated to match app theme */
 .reset-city-button {
   position: static;
-  margin: 0 auto 1px;
+  margin: 18px auto 6px;
   display: flex;
   padding: 5px 10px;
   font-size: 0.75rem;
@@ -883,6 +883,18 @@
     font-size: 1rem;
   }
 
+  /* Fix city search container padding to ensure equal spacing */
+  .city-search-container {
+    padding-left: 25px !important;
+    padding-right: 25px !important;
+  }
+
+  .city-search-container .search-input {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: calc(100% - 0px) !important;
+  }
+
   /* Keep 3-column but smaller cards */
   .global-grid {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1070,6 +1082,18 @@
 
   .page-title {
     font-size: 1.8rem;
+  }
+
+  /* Fix city search container padding */
+  .city-search-container {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  .city-search-container .search-input {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: calc(100% - 0px) !important;
   }
 
   /* Very small screens - 2 columns instead of 3 */
