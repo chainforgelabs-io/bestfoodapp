@@ -1,154 +1,130 @@
 /* Profile page container */
 .profile-container {
-  position: relative; /* Add this for absolute positioning to work */
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   min-height: 100vh;
-  background-color: #f9f9fc; /* Light background */
+  background: linear-gradient(135deg, #f9f9fc 0%, #f0f4ff 100%);
   padding: 20px;
-  text-align: center;
+  padding-top: 120px;
 }
 
 .logout-button {
   position: absolute;
-  top: 80px; /* Position below nav bar */
+  top: 90px;
   right: 20px;
-  padding: 10px 20px;
-  background-color: #ff4b4b;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #ff4757, #ff3838);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 25px;
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  box-shadow: 0 2px 8px rgba(255, 75, 75, 0.3);
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
   transition: all 0.3s ease;
-  z-index: 100; /* Lower z-index so it doesn't interfere with nav */
+  z-index: 100;
 }
 
 .logout-button:hover {
-  background-color: #ff1f1f;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 75, 75, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
 }
 
-/* User info section */
+/* User info section - Modern card design */
 .user-info {
-  background-color: #efe4fc; /* Light purple background */
-  padding: 20px;
-  border: 2px solid #ccc;
-  border-radius: 15px;
+  background: white;
+  padding: 40px 30px;
+  border-radius: 20px;
   width: 100%;
-  max-width: 600px;
-  margin-bottom: 30px;
-  text-align: center;
+  max-width: 500px;
+  margin-bottom: 40px;
+  box-shadow: 0 10px 40px rgba(176, 139, 212, 0.15);
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.user-info:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 50px rgba(176, 139, 212, 0.2);
 }
 
 .user-info img.profile-picture {
-  width: 150px;
-  height: 150px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  border: 4px solid #f8f9fa;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .user-info h2 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 10px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #333;
+  letter-spacing: -0.5px;
 }
 
 .user-info p {
   font-size: 1rem;
   color: #666;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  line-height: 1.5;
 }
 
-/* User reviews section */
-.user-reviews {
-  width: 100%;
-  max-width: 600px;
-}
-
-.user-reviews h3 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
-
-.user-reviews ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.user-reviews li {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  padding: 15px;
-  margin-bottom: 10px;
-}
-
-/* Followers and Following sections */
+/* Remove unused sections for cleaner design */
+.user-reviews,
 .followers-section,
 .following-section {
-  width: 100%;
-  max-width: 600px;
-  margin-top: 30px;
+  display: none;
 }
 
-.followers-section h3,
-.following-section h3 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
-
-.followers-section ul,
-.following-section ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.followers-section li,
-.following-section li {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-
-/* User Reviews Section */
+/* User Reviews Section - Modern grid design */
 .user-reviews-section {
-  margin-top: 30px;
+  margin-top: 20px;
   width: 100%;
-  max-width: 1200px; /* Allow wider than the profile info */
+  max-width: 1000px;
 }
 
 .user-reviews-section h3 {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   color: #333;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: -0.5px;
 }
 
 .reviews-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
   margin-top: 20px;
   width: 100%;
 }
 
 .review-card {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: white;
+  border-radius: 15px;
+  padding: 24px;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.review-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
 }
 
 .review-card.clickable {
@@ -156,101 +132,225 @@
 }
 
 .review-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 35px rgba(176, 139, 212, 0.15);
+  border-color: #e8e0ff;
 }
 
 .review-card.clickable:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-  border-color: #b08bd4;
+  transform: translateY(-8px);
+  box-shadow: 0 15px 40px rgba(176, 139, 212, 0.2);
 }
 
 .review-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .review-header h4 {
   margin: 0;
   color: #333;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
   flex: 1;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
 }
 
 .review-score {
   font-weight: bold;
-  font-size: 1.2rem;
-  margin-left: 10px;
+  font-size: 1.4rem;
+  margin-left: 15px;
+  background: linear-gradient(135deg, #32cd32, #228b22);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  min-width: 40px;
+  text-align: right;
 }
 
 .restaurant-info {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .restaurant-info p {
-  margin: 4px 0;
+  margin: 6px 0;
   color: #555;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .restaurant-info .cuisine {
   font-size: 0.9rem;
   color: #777;
   font-style: italic;
+  background: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-top: 4px;
 }
 
 .review-comment {
-  margin: 12px 0;
+  margin: 16px 0;
   font-style: italic;
   color: #666;
-  background: #f8f9fa;
-  padding: 10px;
-  border-radius: 6px;
-  border-left: 3px solid #b08bd4;
+  background: linear-gradient(135deg, #f8f9ff, #f0f4ff);
+  padding: 16px;
+  border-radius: 10px;
+  border-left: 4px solid #b08bd4;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .review-details {
   display: flex;
-  gap: 15px;
-  margin: 12px 0;
+  gap: 10px;
+  margin: 16px 0;
   flex-wrap: wrap;
 }
 
 .review-details .category {
-  background: #e9ecef;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  color: #495057;
+  background: linear-gradient(135deg, #e8e0ff, #f0e8ff);
+  color: #6b46c1;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid #d8c7ff;
 }
 
 .review-details .price {
-  background: #d4edda;
+  background: linear-gradient(135deg, #d4edda, #c3e6cb);
   color: #155724;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid #a3d9a5;
 }
 
 .review-date {
-  margin-top: 12px;
+  margin-top: 16px;
   font-size: 0.85rem;
-  color: #888;
-  border-top: 1px solid #f0f0f0;
-  padding-top: 8px;
+  color: #999;
+  border-top: 1px solid #f5f5f5;
+  padding-top: 12px;
+  text-align: right;
 }
 
-/* Responsive adjustments */
+/* Responsive design */
 @media (max-width: 768px) {
+  .profile-container {
+    padding: 20px;
+    padding-top: 130px;
+  }
+
+  .logout-button {
+    top: 85px;
+    right: 20px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  .user-info {
+    padding: 30px 20px;
+    margin-bottom: 30px;
+  }
+
+  .user-info img.profile-picture {
+    width: 100px;
+    height: 100px;
+  }
+
+  .user-info h2 {
+    font-size: 1.5rem;
+  }
+
+  .user-reviews-section h3 {
+    font-size: 1.5rem;
+    margin-bottom: 25px;
+  }
+
   .reviews-grid {
     grid-template-columns: 1fr;
     gap: 15px;
   }
 
   .review-card {
-    padding: 15px;
+    padding: 20px;
+  }
+
+  .review-header h4 {
+    font-size: 1.1rem;
+  }
+
+  .review-score {
+    font-size: 1.2rem;
+    margin-left: 10px;
+  }
+
+  .review-comment {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+
+  .review-details {
+    gap: 8px;
+  }
+
+  .review-details .category,
+  .review-details .price {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-container {
+    padding: 25px;
+    padding-top: 140px;
+  }
+
+  .logout-button {
+    top: 85px;
+    right: 25px;
+  }
+
+  .user-info {
+    padding: 25px 15px;
+  }
+
+  .user-info img.profile-picture {
+    width: 80px;
+    height: 80px;
+  }
+
+  .user-info h2 {
+    font-size: 1.3rem;
+  }
+
+  .user-info p {
+    font-size: 0.9rem;
+  }
+
+  .reviews-grid {
+    gap: 12px;
+  }
+
+  .review-card {
+    padding: 16px;
+  }
+
+  .review-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .review-score {
+    margin-left: 0;
+    align-self: flex-end;
   }
 }

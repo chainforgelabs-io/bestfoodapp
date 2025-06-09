@@ -14,11 +14,13 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ReviewSubmissionPage from "./pages/ReviewSubmissionPage";
 import ReviewSuccessPage from "./pages/ReviewSuccessPage";
 import AddRestaurantPage from "./pages/AddRestaurantPage";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   return (
     <Router>
       <div>
+        <ScrollToTop />
         <Navbar />
         <main className="main-content">
           <Routes>
