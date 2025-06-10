@@ -26,11 +26,11 @@ app.use(express.json());
 
 // Import routes directly
 const authRoutes = require("../backend/routes/auth");
-const userRoutes = require("../backend/routes/users");
-const restaurantRoutes = require("../backend/routes/restaurants");
-const reviewRoutes = require("../backend/routes/reviews");
-const leaderboardRoutes = require("../backend/routes/leaderboards");
-const foodItemRoutes = require("../backend/routes/foodItems");
+const userRoutes = require("../backend/routes/user");
+const restaurantRoutes = require("../backend/routes/restaurant");
+const reviewRoutes = require("../backend/routes/review");
+const leaderboardRoutes = require("../backend/routes/leaderboard");
+const foodItemRoutes = require("../backend/routes/foodItem");
 
 // Use routes (MODIFIED - removed /api prefix)
 app.use("/auth", authRoutes);
@@ -52,3 +52,4 @@ app.use("*", (req, res) => {
 
 // Export for Vercel serverless
 module.exports = app;
+module.exports.default = app;
