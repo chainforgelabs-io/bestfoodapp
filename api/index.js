@@ -20,6 +20,16 @@ mongoose
 // Create Express app for Vercel
 const app = express();
 
+// Middleware to handle Vercel path rewriting
+app.use((req, res, next) => {
+  // If there's a path query parameter, use it to set the correct URL
+  if (req.query.path) {
+    req.url = "/" + req.query.path;
+    delete req.query.path;
+  }
+  next();
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());

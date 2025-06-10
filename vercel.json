@@ -3,7 +3,7 @@
   "buildCommand": "ls -la && pwd && npm run build",
   "outputDirectory": "frontend/build",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/" },
+    { "source": "/api/(.*)", "destination": "/api?path=$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
