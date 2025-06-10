@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Notification from "./Notification";
 import StandardizedDropdown from "./StandardizedDropdown";
 import {
@@ -135,7 +135,7 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
       console.log("Updating food item:", updatedFoodItemData);
 
       const response = await axios.put(
-        `http://localhost:5000/api/food-items/${foodItem._id}`,
+        `/api/food-items/${foodItem._id}`,
         updatedFoodItemData,
         config
       );

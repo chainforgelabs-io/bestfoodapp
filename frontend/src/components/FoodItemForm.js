@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import Notification from "./Notification";
 import EditFoodItemModal from "./EditFoodItemModal";
@@ -241,7 +241,7 @@ function FoodItemForm({
       console.log("Creating new food item:", foodItemData);
 
       const response = await axios.post(
-        "http://localhost:5000/api/food-items",
+        "/api/food-items",
         foodItemData,
         config
       );

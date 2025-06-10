@@ -83,10 +83,11 @@ const LoginPage = () => {
     }
 
     try {
-      const { data } = await axios.post(
-        `${process.env.REACT_APP_API_BASE_URL}/api/auth/login`,
-        { email, password, keepLoggedIn }
-      );
+      const { data } = await axios.post(`/auth/login`, {
+        email,
+        password,
+        keepLoggedIn,
+      });
 
       console.log("Login successful:", data);
 
@@ -188,10 +189,9 @@ const LoginPage = () => {
     }
 
     try {
-      const { data } = await axios.post(
-        `${process.env.REACT_APP_API_BASE_URL}/api/users/forgot-password`,
-        { email: forgotEmail }
-      );
+      const { data } = await axios.post(`/users/forgot-password`, {
+        email: forgotEmail,
+      });
 
       setResetMessage("Password reset email sent. Please check your inbox.");
       showNotification("Password reset email sent successfully!", "success");

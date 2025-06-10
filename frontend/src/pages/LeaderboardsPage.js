@@ -1,6 +1,6 @@
 // src/pages/LeaderboardsPage.js
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import CitySearch from "../components/CitySearch";
@@ -8,9 +8,7 @@ import { useCityFromUrl } from "../hooks/useCityFromUrl";
 import { generateSeoMeta, generateCityUrl } from "../utils/cityUtils";
 import "../styles/LeaderboardsPage.css"; // Import your CSS file for styling
 
-// Configure the API base URL
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+// API base URL is now handled by the configured axios instance
 
 function LeaderboardsPage() {
   const navigate = useNavigate();
@@ -220,9 +218,7 @@ function LeaderboardsPage() {
     setLoading(true);
     try {
       console.log("Fetching optimized global leaderboards...");
-      const response = await axios.get(
-        `${API_BASE_URL}/api/leaderboards/global`
-      );
+      const response = await axios.get(`/leaderboards/global`);
       setGlobalLeaderboards(response.data);
       console.log("Global leaderboards loaded successfully:", response.data);
     } catch (error) {
@@ -241,7 +237,7 @@ function LeaderboardsPage() {
   // Fetch dynamic categories from database
   const fetchAvailableCategories = async () => {
     try {
-      let endpoint = `${API_BASE_URL}/api/leaderboards/categories`;
+      let endpoint = `/leaderboards/categories`;
       const params = {};
 
       // If city is selected, filter categories by city
@@ -267,7 +263,7 @@ function LeaderboardsPage() {
     setLoading(true);
     try {
       // Use the new advanced filtering endpoint
-      const endpoint = `${API_BASE_URL}/api/leaderboards/filtered`;
+      const endpoint = `/leaderboards/filtered`;
       const params = {
         city: city.city,
         province: city.province,
@@ -303,7 +299,7 @@ function LeaderboardsPage() {
 
         switch (activeCategory) {
           case "restaurants":
-            fallbackEndpoint = `${API_BASE_URL}/api/restaurants/search`;
+            fallbackEndpoint = `/restaurants/search`;
             fallbackParams = {
               city: city.city,
               province: city.province,
@@ -312,11 +308,11 @@ function LeaderboardsPage() {
             break;
 
           case "food-items":
-            fallbackEndpoint = `${API_BASE_URL}/api/food-items/rank/category/${selectedFoodCategory}/city/${city.city}`;
+            fallbackEndpoint = `/food-items/rank/category/${selectedFoodCategory}/city/${city.city}`;
             break;
 
           case "cuisines":
-            fallbackEndpoint = `${API_BASE_URL}/api/restaurants/search`;
+            fallbackEndpoint = `/restaurants/search`;
             fallbackParams = {
               city: city.city,
               province: city.province,

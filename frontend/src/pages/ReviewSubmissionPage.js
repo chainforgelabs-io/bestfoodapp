@@ -5,7 +5,7 @@ import RatingScale from "../components/RatingScale";
 import RestaurantModal from "../components/RestaurantModal";
 import Notification from "../components/Notification";
 import SuccessOverlay from "../components/SuccessOverlay";
-import axios from "axios";
+import axios from "../api/axios";
 import "../styles/ReviewSubmissionPage.css";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -87,7 +87,7 @@ function ReviewSubmissionPage() {
         try {
           // Pre-fetch all food items for the selected restaurant
           const response = await axios.get(
-            `http://localhost:5000/api/food-items/restaurant/${formData.restaurantId}`
+            `/api/food-items/restaurant/${formData.restaurantId}`
           );
 
           // Store the fetched food items in existingFoodItems for search, keep formData.foodItems empty for selected items
@@ -367,11 +367,7 @@ function ReviewSubmissionPage() {
 
         console.log("Sending review data:", reviewData);
 
-        return axios.post(
-          `http://localhost:5000/api/reviews`,
-          reviewData,
-          config
-        );
+        return axios.post(`/api/reviews`, reviewData, config);
       });
 
       // Submit all reviews

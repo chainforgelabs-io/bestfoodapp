@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import CitySearch from "../components/CitySearch"; // Adjust the path if necessary
@@ -75,16 +75,13 @@ function HomePage() {
     }
 
     try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
-        {
-          params: {
-            city: cityData.city,
-            province: cityData.province,
-            country: cityData.country,
-          },
-        }
-      );
+      const response = await axios.get(`/restaurants/search`, {
+        params: {
+          city: cityData.city,
+          province: cityData.province,
+          country: cityData.country,
+        },
+      });
       console.log(response.data);
       setResults(response.data);
       setHasSearched(true);
@@ -134,7 +131,7 @@ function HomePage() {
 
     try {
       const response = await axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/api/food-items/rank/city/${citySelected.city}`,
+        `/food-items/rank/city/${citySelected.city}`,
         {
           params: {
             province: citySelected.province,
@@ -172,16 +169,13 @@ function HomePage() {
       if (!restaurantSearchTerm) {
         // Return silently - user can search without a term to see all restaurants
         try {
-          const response = await axios.get(
-            `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
-            {
-              params: {
-                city: citySelected.city,
-                province: citySelected.province,
-                country: citySelected.country,
-              },
-            }
-          );
+          const response = await axios.get(`/restaurants/search`, {
+            params: {
+              city: citySelected.city,
+              province: citySelected.province,
+              country: citySelected.country,
+            },
+          });
           setResults(response.data);
           return;
         } catch (error) {
@@ -193,7 +187,7 @@ function HomePage() {
 
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/rank/type-or-cuisine/city/${citySelected.city}`,
+          `/restaurants/rank/type-or-cuisine/city/${citySelected.city}`,
           {
             params: {
               search: restaurantSearchTerm, // Send single search term for either type or cuisine
@@ -218,16 +212,13 @@ function HomePage() {
         );
         // Fallback to basic restaurant search if the ranking endpoint fails
         try {
-          const response = await axios.get(
-            `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
-            {
-              params: {
-                city: citySelected.city,
-                province: citySelected.province,
-                country: citySelected.country,
-              },
-            }
-          );
+          const response = await axios.get(`/restaurants/search`, {
+            params: {
+              city: citySelected.city,
+              province: citySelected.province,
+              country: citySelected.country,
+            },
+          });
           // Filter restaurants by the search term locally
           const filteredResults = restaurantSearchTerm
             ? response.data.filter(
@@ -261,7 +252,7 @@ function HomePage() {
 
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_API_BASE_URL}/api/food-items/rank/category/${foodSearchTerm}/city/${citySelected.city}`,
+          `/food-items/rank/category/${foodSearchTerm}/city/${citySelected.city}`,
           {
             params: {
               province: citySelected.province,
@@ -300,7 +291,7 @@ function HomePage() {
   const fetchRestaurantScores = async (restaurantId) => {
     try {
       const response = await axios.get(
-        `${process.env.REACT_APP_API_BASE_URL}/api/food-items/restaurant/${restaurantId}/scores`
+        `/food-items/restaurant/${restaurantId}/scores`
       );
       return response.data;
     } catch (error) {
