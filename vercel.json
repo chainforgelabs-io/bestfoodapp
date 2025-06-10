@@ -2,8 +2,18 @@
   "version": 2,
   "buildCommand": "ls -la && pwd && npm run build",
   "outputDirectory": "frontend/build",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api?path=$1" },
-    { "source": "/((?!static/).)*", "destination": "/index.html" }
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api?path=$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
   ]
 }
