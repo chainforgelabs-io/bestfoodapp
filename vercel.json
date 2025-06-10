@@ -2,6 +2,13 @@
   "version": 2,
   "buildCommand": "ls -la && pwd && npm run build",
   "outputDirectory": "frontend/build",
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs18.x",
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/(.*)", "destination": "/index.html" }
