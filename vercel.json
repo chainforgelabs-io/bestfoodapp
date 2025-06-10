@@ -4,6 +4,6 @@
   "outputDirectory": "frontend/build",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api?path=$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!static/).)*", "destination": "/index.html" }
   ]
 }
