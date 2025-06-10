@@ -3,7 +3,7 @@ import axios from "axios";
 const instance = axios.create({
   // Use relative URL for API requests - this will automatically use the current domain
   // Works for both local development and all Vercel environments (preview URLs and custom domain)
-  baseURL: process.env.NODE_ENV === 'production' ? '' : process.env.REACT_APP_API_BASE_URL
+  baseURL: process.env.NODE_ENV === 'production' ? '/api' : process.env.REACT_APP_API_BASE_URL
 });
 
 // Optional: Token interceptors to include token in every request
