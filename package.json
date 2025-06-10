@@ -2,11 +2,25 @@
   "name": "food-ranking-app",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["frontend", "backend"],
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
     "start": "cd backend && npm run start",
     "build": "ls -la && cd frontend && npm install && npm run build",
     "dev": "concurrently \"cd backend && npm run start:dev\" \"cd frontend && npm start\""
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.30.1",
+    "mongodb": "^6.8.0",
+    "mongoose": "^8.5.4",
+    "nodemailer": "^6.9.15"
   },
   "devDependencies": {
     "concurrently": "^8.2.0"
