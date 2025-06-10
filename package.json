@@ -1,0 +1,14 @@
+{
+  "name": "food-ranking-app",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["frontend", "backend"],
+  "scripts": {
+    "start": "cd backend && npm run start",
+    "build": "cd frontend && npm run build",
+    "dev": "concurrently \"cd backend && npm run start:dev\" \"cd frontend && npm start\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

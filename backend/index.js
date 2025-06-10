@@ -6,7 +6,7 @@ const dotenv = require("dotenv");
 // Load environment-specific .env file based on NODE_ENV
 dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
 
-// Fallback to .env if no specific file is found
+// Fallback to .env if no specific file is not found
 dotenv.config(); // This ensures .env is loaded if NODE_ENV is not set or is invalid
 
 const app = express();
@@ -54,7 +54,14 @@ mongoose
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.log("Error connecting to MongoDB", err));
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+// For Vercel deployment: Check if this is being run directly (dev environment) 
+// or as a module (production/Vercel)
+if (require.main === module) {
+  // Start server only when running directly (not in Vercel)
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
+
+// Export the Express app for Vercel serverless functions
+module.exports = app;
