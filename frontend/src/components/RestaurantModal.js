@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import api from "../services/api";
+import axios from "../api/axios";
 import StandardizedDropdown from "./StandardizedDropdown";
 import {
   RESTAURANT_TYPES,
@@ -64,7 +64,7 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
         postalCode: restaurantData.postalCode,
       };
 
-      const addressResponse = await api.post(
+      const addressResponse = await axios.post(
         `/api/addresses`,
         addressData,
         config
@@ -84,7 +84,7 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
           : [],
       };
 
-      const restaurantResponse = await api.post(
+      const restaurantResponse = await axios.post(
         `/api/restaurants`,
         restaurantPayload,
         config
