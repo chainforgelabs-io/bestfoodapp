@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 import "../styles/FeedPage.css"; // Create this file for styling
 
 function FeedPage() {
@@ -15,13 +15,13 @@ function FeedPage() {
     const fetchFeedData = async () => {
       try {
         // Fetch local reviews
-        const localReviewsResponse = await axios.get(
+        const localReviewsResponse = await api.get(
           `/api/reviews/local?location=${userLocation}`
         );
         setLocalReviews(localReviewsResponse.data);
 
         // Fetch reviews from followed users
-        const followedReviewsResponse = await axios.get(
+        const followedReviewsResponse = await api.get(
           `/api/reviews/followed?userId=${userId}`
         );
         setFollowedReviews(followedReviewsResponse.data);

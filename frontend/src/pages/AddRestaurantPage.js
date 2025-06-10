@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 import { useNavigate, useLocation } from "react-router-dom";
 import StandardizedDropdown from "../components/StandardizedDropdown";
 import {
@@ -55,8 +55,8 @@ function AddRestaurantPage() {
         postalCode: restaurantData.postalCode,
       };
 
-      const addressResponse = await axios.post(
-        `${process.env.REACT_APP_API_BASE_URL}/api/addresses`,
+      const addressResponse = await api.post(
+        `/api/addresses`,
         addressData,
         config
       );
@@ -74,11 +74,7 @@ function AddRestaurantPage() {
           : [],
       };
 
-      await axios.post(
-        `${process.env.REACT_APP_API_BASE_URL}/api/restaurants`,
-        restaurantPayload,
-        config
-      );
+      await api.post(`/api/restaurants`, restaurantPayload, config);
       setSuccessMessage("Restaurant added successfully!"); // Display success message
       navigate("/submit-review", { state: { formData, step: 2 } }); // Go back to Step 2 with form data
     } catch (error) {

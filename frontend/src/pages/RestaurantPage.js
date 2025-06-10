@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../styles/RestaurantPage.css";
-import axios from "axios";
+import api from "../services/api";
 
 function RestaurantPage() {
   const { restaurantID } = useParams();
@@ -16,14 +16,14 @@ function RestaurantPage() {
         setLoading(true);
 
         // Fetch restaurant details
-        const restaurantResponse = await axios.get(
-          `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/${restaurantID}`
+        const restaurantResponse = await api.get(
+          `/api/restaurants/${restaurantID}`
         );
         setRestaurant(restaurantResponse.data);
 
         // Fetch food items for this restaurant
-        const foodItemsResponse = await axios.get(
-          `${process.env.REACT_APP_API_BASE_URL}/api/food-items/restaurant/${restaurantID}`
+        const foodItemsResponse = await api.get(
+          `/api/food-items/restaurant/${restaurantID}`
         );
         console.log(foodItemsResponse.data);
         setFoodItems(foodItemsResponse.data);

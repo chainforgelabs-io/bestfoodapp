@@ -175,16 +175,13 @@ function ReviewSubmissionPage() {
       formData.location.country
     ) {
       try {
-        const response = await axios.get(
-          `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
-          {
-            params: {
-              city: formData.location.city,
-              province: formData.location.province,
-              country: formData.location.country,
-            },
-          }
-        );
+        const response = await axios.get(`/api/restaurants/search`, {
+          params: {
+            city: formData.location.city,
+            province: formData.location.province,
+            country: formData.location.country,
+          },
+        });
 
         let filteredRestaurants;
         if (searchTerm.trim() === "") {
@@ -215,16 +212,13 @@ function ReviewSubmissionPage() {
       formData.location.country
     ) {
       try {
-        const response = await axios.get(
-          `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
-          {
-            params: {
-              city: formData.location.city,
-              province: formData.location.province,
-              country: formData.location.country,
-            },
-          }
-        );
+        const response = await axios.get(`/api/restaurants/search`, {
+          params: {
+            city: formData.location.city,
+            province: formData.location.province,
+            country: formData.location.country,
+          },
+        });
 
         let restaurantsToShow;
         if (formData.restaurant.trim() === "") {
@@ -260,16 +254,13 @@ function ReviewSubmissionPage() {
     // Refresh the restaurant search to include the new restaurant
     if (formData.restaurant) {
       try {
-        const response = await axios.get(
-          `${process.env.REACT_APP_API_BASE_URL}/api/restaurants/search`,
-          {
-            params: {
-              city: formData.location.city,
-              province: formData.location.province,
-              country: formData.location.country,
-            },
-          }
-        );
+        const response = await axios.get(`/api/restaurants/search`, {
+          params: {
+            city: formData.location.city,
+            province: formData.location.province,
+            country: formData.location.country,
+          },
+        });
 
         const filteredRestaurants = response.data.filter((restaurant) =>
           restaurant.name
