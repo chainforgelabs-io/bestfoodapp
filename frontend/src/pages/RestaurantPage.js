@@ -17,13 +17,13 @@ function RestaurantPage() {
 
         // Fetch restaurant details
         const restaurantResponse = await axios.get(
-          `/api/restaurants/${restaurantID}`
+          `/restaurants/${restaurantID}`
         );
         setRestaurant(restaurantResponse.data);
 
         // Fetch food items for this restaurant
         const foodItemsResponse = await axios.get(
-          `/api/food-items/restaurant/${restaurantID}`
+          `/food-items/restaurant/${restaurantID}`
         );
         console.log(foodItemsResponse.data);
         setFoodItems(foodItemsResponse.data);
