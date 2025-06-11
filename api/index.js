@@ -41,6 +41,7 @@ const restaurantRoutes = require("../backend/routes/restaurant");
 const reviewRoutes = require("../backend/routes/review");
 const leaderboardRoutes = require("../backend/routes/leaderboard");
 const foodItemRoutes = require("../backend/routes/foodItem");
+const addressRoutes = require("../backend/routes/address");
 
 // Use routes (MODIFIED - removed /api prefix)
 app.use("/auth", authRoutes);
@@ -49,6 +50,7 @@ app.use("/restaurants", restaurantRoutes);
 app.use("/reviews", reviewRoutes);
 app.use("/leaderboards", leaderboardRoutes);
 app.use("/food-items", foodItemRoutes);
+app.use("/addresses", addressRoutes);
 
 // Basic route for testing (MODIFIED - now accessible at /api/)
 app.get("/", (req, res) => {
