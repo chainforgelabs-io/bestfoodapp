@@ -40,8 +40,8 @@ function ProfilePage() {
           });
         }
 
-        // Fetch user details and reviews from localhost:5000
-        const userResponse = await axios.get(`/api/users/${userId}`);
+        // Fetch user details and reviews
+        const userResponse = await axios.get(`/users/${userId}`);
         console.log("User details response:", userResponse);
 
         // Access the 'user' object inside 'data' and set it

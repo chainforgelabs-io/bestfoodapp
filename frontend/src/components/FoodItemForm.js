@@ -240,11 +240,7 @@ function FoodItemForm({
 
       console.log("Creating new food item:", foodItemData);
 
-      const response = await axios.post(
-        "/api/food-items",
-        foodItemData,
-        config
-      );
+      const response = await axios.post("/food-items", foodItemData, config);
 
       const savedFoodItem = response.data;
       console.log("Food item created successfully:", savedFoodItem);

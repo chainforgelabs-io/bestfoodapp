@@ -16,13 +16,13 @@ function FeedPage() {
       try {
         // Fetch local reviews
         const localReviewsResponse = await axios.get(
-          `/api/reviews/local?location=${userLocation}`
+          `/reviews/local?location=${userLocation}`
         );
         setLocalReviews(localReviewsResponse.data);
 
         // Fetch reviews from followed users
         const followedReviewsResponse = await axios.get(
-          `/api/reviews/followed?userId=${userId}`
+          `/reviews/followed?userId=${userId}`
         );
         setFollowedReviews(followedReviewsResponse.data);
 

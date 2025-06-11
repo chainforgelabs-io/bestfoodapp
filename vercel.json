@@ -8,6 +8,10 @@
       "dest": "/static/$1"
     },
     {
+      "src": "/(manifest\\.json|sw\\.js|favicon\\.ico|robots\\.txt|.*\\.(png|jpg|jpeg|gif|css|js)$)",
+      "dest": "/$1"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api?path=$1"
     },

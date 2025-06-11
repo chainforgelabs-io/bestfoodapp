@@ -135,7 +135,7 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
       console.log("Updating food item:", updatedFoodItemData);
 
       const response = await axios.put(
-        `/api/food-items/${foodItem._id}`,
+        `/food-items/${foodItem._id}`,
         updatedFoodItemData,
         config
       );

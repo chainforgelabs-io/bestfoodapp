@@ -78,7 +78,7 @@ function RegisterPage() {
       validationErrors = validateStep1();
       if (Object.keys(validationErrors).length === 0) {
         try {
-          const response = await axios.post("/api/users/checkAvailability", {
+          const response = await axios.post("/users/checkAvailability", {
             username: formData.username,
             email: formData.email,
           });
@@ -131,13 +131,13 @@ function RegisterPage() {
         country: formData.country,
       };
 
-      const registrationResponse = await axios.post("/api/users", {
+      const registrationResponse = await axios.post("/users", {
         ...formData,
         location,
       });
       console.log("Registration successful:", registrationResponse.data);
 
-      const loginResponse = await axios.post("/api/auth/login", {
+      const loginResponse = await axios.post("/auth/login", {
         email: formData.email,
         password: formData.password,
       });

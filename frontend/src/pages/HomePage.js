@@ -385,7 +385,7 @@ function HomePage() {
         comment: reviewText,
         score: reviewScore,
       };
-      await axios.post("/api/reviews", reviewData);
+      await axios.post("/reviews", reviewData);
       alert("Review submitted successfully!");
       setReviewText("");
       setReviewScore("");

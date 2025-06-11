@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const fetchLeaderboards = async (category, sortOption) => {
   try {
-    const response = await axios.get(`/api/leaderboards`, {
+    const response = await axios.get(`/leaderboards`, {
       params: { category, sort: sortOption },
     });
     return response.data;
