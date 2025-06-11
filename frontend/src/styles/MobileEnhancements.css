@@ -1,0 +1,383 @@
+/* Mobile Enhancements CSS - Import this into your main components */
+
+/* Prevent horizontal scrolling globally */
+* {
+  max-width: 100%;
+}
+
+/* Container query support for better responsive design */
+@supports (container-type: inline-size) {
+  .responsive-container {
+    container-type: inline-size;
+  }
+}
+
+/* Modern touch-friendly improvements */
+.touch-friendly {
+  -webkit-tap-highlight-color: rgba(176, 139, 212, 0.2);
+  touch-action: manipulation; /* Remove 300ms delay on mobile taps */
+}
+
+/* Button and interactive element improvements */
+button,
+.button,
+.btn {
+  min-height: 44px; /* Apple's recommended minimum touch target */
+  min-width: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(176, 139, 212, 0.2);
+}
+
+/* Input improvements for better mobile UX */
+input,
+textarea,
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: 8px; /* Consistent with design system */
+  touch-action: manipulation;
+}
+
+/* Focus improvements for keyboard navigation */
+input:focus,
+textarea:focus,
+select:focus,
+button:focus {
+  outline: 2px solid #b08bd4;
+  outline-offset: 2px;
+}
+
+/* Prevent zoom on input focus for iOS */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important; /* Prevents zoom on focus in iOS */
+  }
+}
+
+/* Improved scrolling behavior */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Text that should remain readable on all devices */
+.readable-text {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Responsive images */
+img,
+video,
+iframe {
+  max-width: 100% !important;
+  height: auto !important;
+  object-fit: cover;
+}
+
+/* Card and container improvements */
+.mobile-card {
+  margin: 0.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white;
+  box-sizing: border-box;
+  width: calc(100% - 1rem);
+}
+
+/* Responsive grid that prevents overflow */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Safe area utilities */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+.safe-area-all {
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+
+/* Viewport unit utilities using modern units */
+.full-height {
+  height: 100dvh; /* Dynamic viewport height */
+}
+
+.min-full-height {
+  min-height: 100dvh;
+}
+
+.full-width {
+  width: 100dvw; /* Dynamic viewport width */
+}
+
+/* Container queries for advanced responsive design */
+@container (max-width: 600px) {
+  .container-responsive {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+@container (min-width: 601px) {
+  .container-responsive {
+    padding: 1rem;
+    font-size: 1rem;
+  }
+}
+
+/* Orientation-specific styles */
+@media (orientation: landscape) and (max-height: 500px) {
+  .landscape-adjustments {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* High DPI display improvements */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .high-dpi {
+    font-weight: 400; /* Slightly lighter font weight for crisp rendering */
+  }
+}
+
+/* Dark mode preparation */
+@media (prefers-color-scheme: dark) {
+  .dark-mode-ready {
+    color-scheme: dark;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible for better accessibility */
+.focus-visible {
+  outline: none;
+}
+
+.focus-visible:focus-visible {
+  outline: 2px solid #b08bd4;
+  outline-offset: 2px;
+}
+
+/* Text selection improvements */
+::selection {
+  background-color: rgba(176, 139, 212, 0.3);
+  color: inherit;
+}
+
+/* Scrollbar improvements */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #b08bd4;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9562d4;
+}
+
+/* Prevent text size adjustment */
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Prevent horizontal scrolling from anywhere */
+body,
+html,
+#root {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+/* Additional mobile scroll locking */
+body {
+  position: relative;
+  width: 100%;
+  /* Lock horizontal scrolling on mobile */
+  overscroll-behavior-x: none;
+  /* Prevent elastic scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  /* Only allow vertical pan gestures */
+  touch-action: pan-y pinch-zoom;
+  /* Additional iOS specific fixes */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  /* Prevent text selection and callouts from interfering with scrolling */
+}
+
+/* Apply to all interactive elements to prevent scroll interference */
+button,
+input,
+textarea,
+select,
+a {
+  /* Only allow manipulation for interactive elements */
+  touch-action: manipulation;
+}
+
+/* Special handling for touch areas to prevent scroll issues */
+.touch-area,
+.result-item,
+.nav-item,
+.filter-button {
+  /* Ensure proper touch handling */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(176, 139, 212, 0.2);
+}
+
+/* Prevent any element from causing horizontal overflow */
+* {
+  /* Ensure no element can exceed the viewport width */
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+/* Special fixes for common overflow culprits */
+img,
+video,
+canvas,
+svg,
+iframe {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* Fix for tables that might cause overflow */
+table {
+  table-layout: fixed;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Fix for pre and code elements */
+pre,
+code {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Emergency overflow fix for any element */
+.no-overflow {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Responsive table improvements */
+.responsive-table {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table table {
+  min-width: 600px; /* Ensure table doesn't become too cramped */
+}
+
+/* Loading states for better UX */
+.skeleton-loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Standalone app (PWA) specific styles */
+@media all and (display-mode: standalone) {
+  .pwa-specific {
+    /* Remove any browser-specific padding when running as PWA */
+    user-select: none; /* Prevent text selection in PWA mode */
+  }
+
+  .pwa-navbar {
+    top: env(safe-area-inset-top);
+  }
+
+  .pwa-content {
+    padding-top: calc(70px + env(safe-area-inset-top));
+  }
+}
+
+/* Very small screen optimizations */
+@media (max-width: 320px) {
+  .ultra-small-screen {
+    font-size: 0.875rem;
+    padding: 0.25rem;
+  }
+
+  .ultra-small-screen .button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Large screen optimizations */
+@media (min-width: 1200px) {
+  .large-screen-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+}

@@ -17,16 +17,17 @@ import ReviewSuccessPage from "./pages/ReviewSuccessPage";
 import AddRestaurantPage from "./pages/AddRestaurantPage";
 import ScrollToTop from "./components/ScrollToTop";
 import SEO from "./components/SEO";
+import "./styles/MobileEnhancements.css"; // Import mobile enhancements
 
 function App() {
   return (
     <HelmetProvider>
       <Router>
-        <div>
+        <div className="App no-overflow">
           <SEO />
           <ScrollToTop />
           <Navbar />
-          <main className="main-content">
+          <main className="main-content no-overflow">
             <Routes>
               <Route path="/" element={<HomePage />} />
 

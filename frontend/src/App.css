@@ -1,5 +1,8 @@
 .App {
   text-align: center;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
 }
 
 .App-logo {
@@ -40,10 +43,45 @@
 /* Main content wrapper to prevent content hiding behind fixed navbar */
 .main-content {
   padding-top: 70px;
+  width: 100%;
+  overflow-x: hidden;
+  /* Add safe area support */
+  padding-left: max(env(safe-area-inset-left), 0px);
+  padding-right: max(env(safe-area-inset-right), 0px);
+  box-sizing: border-box;
 }
 
+/* Enhanced mobile breakpoints */
 @media (max-width: 768px) {
   .main-content {
     padding-top: 60px;
+  }
+}
+
+/* For very small devices */
+@media (max-width: 375px) {
+  .main-content {
+    padding-top: 55px;
+  }
+}
+
+/* Landscape phones */
+@media (max-width: 768px) and (orientation: landscape) {
+  .main-content {
+    padding-top: 50px;
+  }
+}
+
+/* Standalone app mode */
+@media all and (display-mode: standalone) {
+  .main-content {
+    /* Adjust for when running as PWA without browser UI */
+    padding-top: calc(70px + env(safe-area-inset-top));
+  }
+}
+
+@media all and (display-mode: standalone) and (max-width: 768px) {
+  .main-content {
+    padding-top: calc(60px + env(safe-area-inset-top));
   }
 }
