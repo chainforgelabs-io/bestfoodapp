@@ -37,6 +37,7 @@ function ReviewSubmissionPage() {
     message: "",
     type: "error",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   // Handle clicking outside the suggestions dropdown to close it
@@ -277,6 +278,9 @@ function ReviewSubmissionPage() {
 
   // Submit the entire form at the end
   const handleSubmit = async () => {
+    if (isSubmitting) return; // Prevent double submission
+
+    setIsSubmitting(true);
     try {
       const token = localStorage.getItem("token");
 
@@ -358,7 +362,7 @@ function ReviewSubmissionPage() {
 
         console.log("Sending review data:", reviewData);
 
-        return axios.post(`/api/reviews`, reviewData, config);
+        return axios.post(`/reviews`, reviewData, config);
       });
 
       // Submit all reviews
@@ -399,6 +403,8 @@ function ReviewSubmissionPage() {
           type: "error",
         });
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -853,8 +859,9 @@ function ReviewSubmissionPage() {
                 <button
                   onClick={handleSubmit}
                   className="nav-button btn-success"
+                  disabled={isSubmitting}
                 >
-                  Submit Review
+                  {isSubmitting ? "Submitting..." : "Submit Review"}
                 </button>
               </div>
             </div>
