@@ -29,7 +29,7 @@ function ResetPasswordPage() {
     }
 
     try {
-      const response = await axios.post(`/api/users/reset-password/${token}`, {
+      const response = await axios.post(`/users/reset-password/${token}`, {
         password,
       });
       console.log("Password reset successful:", response.data);

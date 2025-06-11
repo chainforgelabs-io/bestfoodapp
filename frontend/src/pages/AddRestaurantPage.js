@@ -56,7 +56,7 @@ function AddRestaurantPage() {
       };
 
       const addressResponse = await axios.post(
-        `/api/addresses`,
+        `/addresses`,
         addressData,
         config
       );
@@ -74,7 +74,7 @@ function AddRestaurantPage() {
           : [],
       };
 
-      await axios.post(`/api/restaurants`, restaurantPayload, config);
+      await axios.post(`/restaurants`, restaurantPayload, config);
       setSuccessMessage("Restaurant added successfully!"); // Display success message
       navigate("/submit-review", { state: { formData, step: 2 } }); // Go back to Step 2 with form data
     } catch (error) {

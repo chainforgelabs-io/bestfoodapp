@@ -65,7 +65,7 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
       };
 
       const addressResponse = await axios.post(
-        `/api/addresses`,
+        `/addresses`,
         addressData,
         config
       );
@@ -85,7 +85,7 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
       };
 
       const restaurantResponse = await axios.post(
-        `/api/restaurants`,
+        `/restaurants`,
         restaurantPayload,
         config
       );

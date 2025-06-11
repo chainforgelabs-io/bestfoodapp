@@ -88,7 +88,7 @@ function ReviewSubmissionPage() {
         try {
           // Pre-fetch all food items for the selected restaurant
           const response = await axios.get(
-            `/api/food-items/restaurant/${formData.restaurantId}`
+            `/food-items/restaurant/${formData.restaurantId}`
           );
 
           // Store the fetched food items in existingFoodItems for search, keep formData.foodItems empty for selected items
@@ -176,7 +176,7 @@ function ReviewSubmissionPage() {
       formData.location.country
     ) {
       try {
-        const response = await axios.get(`/api/restaurants/search`, {
+        const response = await axios.get(`/restaurants/search`, {
           params: {
             city: formData.location.city,
             province: formData.location.province,
@@ -213,7 +213,7 @@ function ReviewSubmissionPage() {
       formData.location.country
     ) {
       try {
-        const response = await axios.get(`/api/restaurants/search`, {
+        const response = await axios.get(`/restaurants/search`, {
           params: {
             city: formData.location.city,
             province: formData.location.province,
@@ -255,7 +255,7 @@ function ReviewSubmissionPage() {
     // Refresh the restaurant search to include the new restaurant
     if (formData.restaurant) {
       try {
-        const response = await axios.get(`/api/restaurants/search`, {
+        const response = await axios.get(`/restaurants/search`, {
           params: {
             city: formData.location.city,
             province: formData.location.province,
