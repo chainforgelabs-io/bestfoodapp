@@ -4,11 +4,19 @@
   "outputDirectory": "frontend/build",
   "routes": [
     {
+      "src": "/static/css/(.*)",
+      "dest": "/static/css/$1"
+    },
+    {
+      "src": "/static/js/(.*)",
+      "dest": "/static/js/$1"
+    },
+    {
       "src": "/static/(.*)",
       "dest": "/static/$1"
     },
     {
-      "src": "/(manifest\\.json|sw\\.js|favicon\\.ico|robots\\.txt|.*\\.(png|jpg|jpeg|gif|css|js)$)",
+      "src": "/(manifest\\.json|sw\\.js|favicon\\.ico|robots\\.txt)",
       "dest": "/$1"
     },
     {
