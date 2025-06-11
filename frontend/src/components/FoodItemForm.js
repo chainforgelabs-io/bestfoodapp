@@ -330,7 +330,8 @@ function FoodItemForm({
                 >
                   {item.name} - {item.category}
                   {item.subType && ` (${item.subType})`}
-                  {item.price && ` - $${item.price}`}
+                  {item.price != null && item.price > 0 && ` - $${item.price}`}
+                  {item.price === 0 && ` - Free`}
                 </li>
               ))}
             </ul>
