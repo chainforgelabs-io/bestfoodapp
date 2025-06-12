@@ -30,8 +30,45 @@ app.use((req, res, next) => {
   next();
 });
 
+// Enhanced CORS configuration for better authentication support
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // In development, allow all origins
+    if (process.env.NODE_ENV === "development") {
+      return callback(null, true);
+    }
+
+    // In production, allow specific domains
+    const allowedOrigins = [
+      "https://bestfoodapp.com",
+      "https://www.bestfoodapp.com",
+      "https://bestfoodapp.vercel.app",
+      // Add any preview URLs or additional domains as needed
+    ];
+
+    // Allow Vercel preview URLs
+    if (origin.includes(".vercel.app")) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true, // Important for authentication
+  optionsSuccessStatus: 200,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  exposedHeaders: ["Authorization"],
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Import routes directly

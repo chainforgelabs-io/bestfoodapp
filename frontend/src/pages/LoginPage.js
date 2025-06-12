@@ -35,6 +35,32 @@ const LoginPage = () => {
       }
       navigate("/profile");
     }
+
+    // Add global debug function for production troubleshooting
+    window.authDebug = () => {
+      const debugInfo = tokenUtils.getAuthDebugInfo();
+      console.log("🔍 Authentication Debug Info:", debugInfo);
+
+      // Test localStorage
+      try {
+        const testKey = "test_storage_" + Date.now();
+        localStorage.setItem(testKey, "test");
+        const retrieved = localStorage.getItem(testKey);
+        localStorage.removeItem(testKey);
+        console.log(
+          "📦 localStorage test:",
+          retrieved === "test" ? "✅ WORKING" : "❌ FAILED"
+        );
+      } catch (error) {
+        console.error("📦 localStorage error:", error);
+      }
+
+      return debugInfo;
+    };
+
+    console.log(
+      "💡 Debug tip: Run authDebug() in console for authentication diagnostics"
+    );
   }, [navigate]);
 
   // Clear error when user starts typing
@@ -115,6 +141,10 @@ const LoginPage = () => {
           "localStorage keepLoggedIn:",
           localStorage.getItem("keepLoggedIn")
         );
+
+        // Additional debug info for production troubleshooting
+        const debugInfo = tokenUtils.getAuthDebugInfo();
+        console.log("🔍 Full auth debug info after login:", debugInfo);
       } else {
         console.log("⏰ Standard session - token expires in 1 hour");
       }

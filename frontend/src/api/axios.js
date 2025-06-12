@@ -3,7 +3,10 @@ import axios from "axios";
 const instance = axios.create({
   // Use relative URL for API requests - this will automatically use the current domain
   // Works for both local development and all Vercel environments (preview URLs and custom domain)
-  baseURL: process.env.NODE_ENV === 'production' ? '/api' : process.env.REACT_APP_API_BASE_URL
+  baseURL:
+    process.env.NODE_ENV === "production"
+      ? "/api"
+      : process.env.REACT_APP_API_BASE_URL,
 });
 
 // Optional: Token interceptors to include token in every request
@@ -46,18 +49,50 @@ instance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Token is expired or invalid, remove it from storage
-      localStorage.removeItem("token");
-      localStorage.removeItem("keepLoggedIn");
-      console.log("Token was invalid/expired - removed from localStorage");
+      console.log("🚫 Received 401 Unauthorized response");
+
+      // Log current auth state before clearing
+      try {
+        const token = localStorage.getItem("token");
+        const keepLoggedIn = localStorage.getItem("keepLoggedIn");
+        console.log("📊 Auth state before clearing:", {
+          hasToken: !!token,
+          tokenLength: token ? token.length : 0,
+          keepLoggedIn: keepLoggedIn === "true",
+          url: error.config?.url,
+          hasAuthHeader: !!error.config?.headers?.Authorization,
+        });
+      } catch (e) {
+        console.error("Error logging auth state:", e);
+      }
+
+      // Clear authentication data
+      try {
+        const items = [
+          "token",
+          "keepLoggedIn",
+          "tokenSetAt",
+          "tokenExpectedExp",
+        ];
+        items.forEach((item) => localStorage.removeItem(item));
+        console.log("🧹 Authentication data cleared due to 401");
+      } catch (e) {
+        console.error("Error clearing auth data:", e);
+      }
 
       // Only redirect to login if this was a protected route (not a public search)
       // We can tell this by checking if the request had an Authorization header
       if (error.config?.headers?.Authorization) {
         console.log(
-          "Unauthorized access to protected route, redirecting to login"
+          "🔄 Redirecting to login - protected route accessed with invalid token"
         );
-        window.location.href = "/login";
+
+        // Add a small delay to ensure logging is complete
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 100);
+      } else {
+        console.log("ℹ️ 401 on public route - no redirect needed");
       }
     }
     return Promise.reject(error);
