@@ -358,6 +358,7 @@ const LoginPage = () => {
                 className="login-checkbox"
                 disabled={isLoading}
               />
+              <div className="checkbox-custom"></div>
               <label htmlFor="keepLoggedIn" className="checkbox-label">
                 Keep me logged in (30 days)
               </label>

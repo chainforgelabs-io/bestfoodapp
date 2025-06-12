@@ -166,24 +166,72 @@
   color: #9562d4;
 }
 
-/* Checkbox styling */
+/* Enhanced Checkbox styling */
 .checkbox-group {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
   gap: 12px;
+  position: relative;
 }
 
+/* Hide the default checkbox */
 .login-checkbox {
-  width: 18px;
-  height: 18px;
-  accent-color: #b08bd4;
+  position: absolute;
+  opacity: 0;
   cursor: pointer;
-  transition: all 0.3s ease;
+  width: 20px;
+  height: 20px;
 }
 
-.login-checkbox:hover {
-  transform: scale(1.1);
+/* Create custom checkbox */
+.checkbox-group::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Hover state for checkbox */
+.checkbox-group:hover::before {
+  border-color: #b08bd4;
+  transform: scale(1.05);
+  box-shadow: 0 0 0 2px rgba(176, 139, 212, 0.1);
+}
+
+/* Checked state */
+.login-checkbox:checked + .checkbox-label::before,
+.checkbox-group:has(.login-checkbox:checked)::before {
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  border-color: #b08bd4;
+  box-shadow: 0 2px 8px rgba(176, 139, 212, 0.3);
+}
+
+/* Checkmark icon */
+.login-checkbox:checked + .checkbox-label::after,
+.checkbox-group:has(.login-checkbox:checked)::after {
+  content: "✓";
+  position: absolute;
+  left: 6px;
+  top: 1px;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+/* Focus state for accessibility */
+.login-checkbox:focus + .checkbox-label::before,
+.checkbox-group:has(.login-checkbox:focus)::before {
+  outline: 2px solid #b08bd4;
+  outline-offset: 2px;
 }
 
 .checkbox-label {
@@ -193,10 +241,67 @@
   cursor: pointer;
   user-select: none;
   transition: color 0.3s ease;
+  margin-left: 8px;
+  position: relative;
 }
 
 .checkbox-label:hover {
   color: #b08bd4;
+}
+
+/* Fallback for browsers that don't support :has() */
+@supports not selector(:has(*)) {
+  .checkbox-group {
+    position: relative;
+  }
+
+  .checkbox-group .login-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  .checkbox-group .checkbox-custom {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+
+  .checkbox-group:hover .checkbox-custom {
+    border-color: #b08bd4;
+    transform: scale(1.05);
+    box-shadow: 0 0 0 2px rgba(176, 139, 212, 0.1);
+  }
+
+  .checkbox-group .login-checkbox:checked + .checkbox-custom {
+    background: linear-gradient(135deg, #b08bd4, #9562d4);
+    border-color: #b08bd4;
+    box-shadow: 0 2px 8px rgba(176, 139, 212, 0.3);
+  }
+
+  .checkbox-group .login-checkbox:checked + .checkbox-custom::after {
+    content: "✓";
+    position: absolute;
+    left: 3px;
+    top: -1px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  .checkbox-group .login-checkbox:focus + .checkbox-custom {
+    outline: 2px solid #b08bd4;
+    outline-offset: 2px;
+  }
 }
 
 /* Mobile responsiveness */
@@ -340,6 +445,56 @@
 .login-checkbox:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Disabled state for custom checkbox */
+.checkbox-group:has(.login-checkbox:disabled)::before,
+.checkbox-group .login-checkbox:disabled + .checkbox-custom {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f8f9fa;
+  border-color: #e9ecef;
+}
+
+.checkbox-group:has(.login-checkbox:disabled):hover::before,
+.checkbox-group:hover .login-checkbox:disabled + .checkbox-custom {
+  transform: none;
+  border-color: #e9ecef;
+  box-shadow: none;
+}
+
+.checkbox-group:has(.login-checkbox:disabled) .checkbox-label,
+.checkbox-group .login-checkbox:disabled ~ .checkbox-label {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Mobile responsive adjustments for checkbox */
+@media (max-width: 480px) {
+  .checkbox-group {
+    gap: 10px;
+  }
+
+  .checkbox-group::before,
+  .checkbox-group .checkbox-custom {
+    width: 18px;
+    height: 18px;
+  }
+
+  .checkbox-group:has(.login-checkbox:checked)::after {
+    left: 5px;
+    font-size: 11px;
+  }
+
+  .checkbox-group .login-checkbox:checked + .checkbox-custom::after {
+    left: 2px;
+    font-size: 11px;
+  }
+
+  .checkbox-label {
+    font-size: 0.9rem;
+    margin-left: 6px;
+  }
 }
 
 /* Forgot password form styling */
