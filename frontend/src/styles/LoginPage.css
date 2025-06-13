@@ -127,31 +127,33 @@
 .password-input-container {
   position: relative;
   width: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .password-input {
-  padding-right: 50px; /* Make room for the toggle button */
+  width: 100%;
+  padding-right: 45px; /* Space for the eye icon */
+  box-sizing: border-box;
 }
 
 .password-toggle {
   position: absolute;
-  right: 12px;
+  right: 15px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
   font-size: 1.2rem;
   cursor: pointer;
-  padding: 5px;
-  border-radius: 4px;
-  transition: all 0.3s ease;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   color: #b08bd4;
-  z-index: 2; /* Ensure it's above the input */
+  z-index: 2;
 }
 
 .password-toggle:hover {
@@ -320,15 +322,24 @@
     font-size: 2rem;
   }
 
-  .password-toggle {
-    right: 8px; /* Move closer to the right edge */
-    width: 36px; /* Slightly larger touch target */
-    height: 36px;
-    font-size: 1.3rem; /* Slightly larger icon */
+  .password-input-container {
+    position: relative;
+    width: 100%;
   }
 
   .password-input {
-    padding-right: 44px; /* Adjust padding to accommodate the larger icon */
+    width: 100%;
+    padding-right: 40px;
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    font-size: 1.3rem;
   }
 }
 
@@ -357,15 +368,24 @@
     font-size: 0.95rem;
   }
 
-  .password-toggle {
-    right: 6px; /* Even closer to the edge on smaller screens */
-    width: 40px; /* Even larger touch target for mobile */
-    height: 40px;
-    font-size: 1.4rem;
+  .password-input-container {
+    position: relative;
+    width: 100%;
   }
 
   .password-input {
-    padding-right: 48px; /* Adjust padding for the larger icon */
+    width: 100%;
+    padding-right: 35px;
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    font-size: 1.2rem;
   }
 }
 
