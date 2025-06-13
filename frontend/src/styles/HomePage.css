@@ -132,10 +132,7 @@
   justify-content: center;
   margin-bottom: 30px;
   width: 100%;
-  max-width: min(
-    600px,
-    90vw
-  ); /* Responsive max-width that won't cause overflow */
+  max-width: min(600px, 90vw);
   background: white;
   border-radius: 16px;
   padding: 8px;
@@ -143,7 +140,7 @@
   animation: fadeInUp 0.8s ease-out 0.4s both;
   transition: all 0.3s ease;
   position: relative;
-  gap: 8px; /* Add gap between input and button */
+  gap: 8px;
   box-sizing: border-box;
 }
 
@@ -550,6 +547,7 @@
     gap: 12px;
     padding: 0 15px;
     width: 100%;
+    margin-top: 15px; /* Add extra space above filter section */
   }
 
   .filter-button {
@@ -613,6 +611,11 @@
     padding: 12px 24px;
     font-size: 0.95rem;
     display: block;
+    margin-top: 15px; /* Add extra space above reset button */
+  }
+
+  .search-form {
+    margin-bottom: 45px; /* Increased space below search form on mobile */
   }
 }
 
@@ -643,6 +646,7 @@
   .filter-section {
     width: 100%;
     padding: 0 10px;
+    margin-top: 20px; /* More space above filter section on smaller screens */
   }
 
   .filter-button {
@@ -690,6 +694,7 @@
     margin: 4px auto;
     padding: 10px 20px;
     font-size: 0.9rem;
+    margin-top: 20px; /* More space above reset button on smaller screens */
   }
 
   .address-text,
@@ -698,6 +703,10 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
     max-width: 100%;
+  }
+
+  .search-form {
+    margin-bottom: 50px; /* Even more space on smaller screens */
   }
 }
 
