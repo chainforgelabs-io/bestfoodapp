@@ -130,7 +130,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 30px;
+  margin-bottom: 40px; /* Increased bottom margin */
   width: 100%;
   max-width: min(600px, 90vw);
   background: white;
@@ -547,7 +547,6 @@
     gap: 12px;
     padding: 0 15px;
     width: 100%;
-    margin-top: 15px; /* Add extra space above filter section */
   }
 
   .filter-button {
@@ -611,11 +610,10 @@
     padding: 12px 24px;
     font-size: 0.95rem;
     display: block;
-    margin-top: 15px; /* Add extra space above reset button */
   }
 
   .search-form {
-    margin-bottom: 45px; /* Increased space below search form on mobile */
+    margin-bottom: 50px; /* Even more margin on mobile */
   }
 }
 
@@ -646,7 +644,6 @@
   .filter-section {
     width: 100%;
     padding: 0 10px;
-    margin-top: 20px; /* More space above filter section on smaller screens */
   }
 
   .filter-button {
@@ -694,7 +691,6 @@
     margin: 4px auto;
     padding: 10px 20px;
     font-size: 0.9rem;
-    margin-top: 20px; /* More space above reset button on smaller screens */
   }
 
   .address-text,
@@ -706,7 +702,7 @@
   }
 
   .search-form {
-    margin-bottom: 50px; /* Even more space on smaller screens */
+    margin-bottom: 60px; /* Maximum margin on smaller devices */
   }
 }
 
