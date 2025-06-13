@@ -42,33 +42,44 @@
 
 /* Main content wrapper to prevent content hiding behind fixed navbar */
 .main-content {
-  padding-top: 70px;
+  padding-top: calc(70px + env(safe-area-inset-top));
   width: 100%;
   overflow-x: hidden;
   /* Add safe area support */
   padding-left: max(env(safe-area-inset-left), 0px);
   padding-right: max(env(safe-area-inset-right), 0px);
+  padding-bottom: calc(
+    40px + env(safe-area-inset-bottom)
+  ); /* Add bottom padding for all pages */
   box-sizing: border-box;
+  min-height: calc(100dvh - 70px); /* Account for navbar height */
 }
 
 /* Enhanced mobile breakpoints */
 @media (max-width: 768px) {
   .main-content {
-    padding-top: 60px;
+    padding-top: calc(60px + env(safe-area-inset-top));
+    padding-bottom: calc(
+      60px + env(safe-area-inset-bottom)
+    ); /* More bottom padding on mobile */
   }
 }
 
 /* For very small devices */
 @media (max-width: 375px) {
   .main-content {
-    padding-top: 55px;
+    padding-top: calc(55px + env(safe-area-inset-top));
+    padding-bottom: calc(
+      70px + env(safe-area-inset-bottom)
+    ); /* Even more bottom padding on small devices */
   }
 }
 
 /* Landscape phones */
 @media (max-width: 768px) and (orientation: landscape) {
   .main-content {
-    padding-top: 50px;
+    padding-top: calc(50px + env(safe-area-inset-top));
+    padding-bottom: calc(50px + env(safe-area-inset-bottom));
   }
 }
 
@@ -77,11 +88,13 @@
   .main-content {
     /* Adjust for when running as PWA without browser UI */
     padding-top: calc(70px + env(safe-area-inset-top));
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
   }
 }
 
 @media all and (display-mode: standalone) and (max-width: 768px) {
   .main-content {
     padding-top: calc(60px + env(safe-area-inset-top));
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
   }
 }
