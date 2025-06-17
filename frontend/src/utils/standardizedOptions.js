@@ -318,6 +318,7 @@ export const FOOD_SUBTYPES = {
     "Italian",
     "Reuben",
     "Grilled Chicken",
+    "Fried Chicken Sandwich",
     "Tuna Melt",
     "Add +",
   ],
