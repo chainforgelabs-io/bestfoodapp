@@ -238,14 +238,26 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .success-overlay {
+    z-index: 100000 !important; /* Force high z-index on mobile */
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
   .success-content {
     padding: 40px 30px;
-    margin: 20px;
+    max-width: 90%;
+    z-index: 100000 !important; /* Ensure content is also at highest level */
+    position: relative !important;
   }
 
   .checkmark-circle {
     width: 100px;
     height: 100px;
+    margin-bottom: 25px;
   }
 
   .checkmark {
@@ -253,7 +265,7 @@
   }
 
   .success-text h2 {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 
   .success-text p {

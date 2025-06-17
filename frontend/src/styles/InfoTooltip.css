@@ -208,17 +208,28 @@
 
 /* Mobile optimization */
 @media (max-width: 768px) {
+  .info-tooltip-backdrop {
+    z-index: 100001 !important; /* Force highest z-index on mobile */
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
   .info-tooltip {
-    width: 300px;
-    max-width: 95vw;
-    max-height: 85vh;
-    font-size: 0.9rem;
-    border-radius: 12px;
+    z-index: 100002 !important; /* Force even higher z-index on mobile */
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 95vw !important;
+    max-width: 400px !important;
+    max-height: 85vh !important;
   }
 
   .tooltip-header {
     padding: 16px 20px 12px 20px;
-    border-radius: 9px 9px 0 0;
   }
 
   .tooltip-content {
@@ -226,7 +237,7 @@
   }
 
   .tooltip-title {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
   }
 
   .tooltip-close {
@@ -245,6 +256,24 @@
 
   .characteristic-item {
     font-size: 0.85rem;
+  }
+}
+
+/* Additional mobile support for smaller screens */
+@media (max-width: 480px) {
+  .info-tooltip-backdrop {
+    z-index: 100001 !important;
+    position: fixed !important;
+  }
+
+  .info-tooltip {
+    z-index: 100002 !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 98vw !important;
+    max-width: 350px !important;
   }
 }
 

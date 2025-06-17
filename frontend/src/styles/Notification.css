@@ -104,6 +104,8 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .notification {
+    z-index: 100000 !important; /* Force high z-index on mobile */
+    position: fixed !important;
     top: 10px;
     right: 10px;
     left: 10px;
