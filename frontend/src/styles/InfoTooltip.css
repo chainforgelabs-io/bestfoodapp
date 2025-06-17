@@ -1,4 +1,4 @@
-/* InfoTooltip - Modern tooltip styling for mobile and desktop */
+/* InfoTooltip - Mobile-first aggressive styling */
 .info-tooltip-container {
   position: relative;
   display: inline-block;
@@ -19,12 +19,15 @@
   height: 20px;
   margin-left: 6px;
   vertical-align: middle;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
 }
 
 .info-trigger:hover {
   color: #b08bd4;
   background: rgba(176, 139, 212, 0.1);
-  transform: scale(1.1);
+  transform: scale(1.1) translate3d(0, 0, 0);
+  -webkit-transform: scale(1.1) translate3d(0, 0, 0);
 }
 
 .info-trigger:focus {
@@ -45,9 +48,18 @@
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 10002;
+  z-index: 2147483646;
   animation: backdropFadeIn 0.3s ease-out;
+  isolation: isolate;
+  contain: layout style paint;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 @keyframes backdropFadeIn {
@@ -64,12 +76,13 @@
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) translate3d(0, 0, 0);
+  -webkit-transform: translate(-50%, -50%) translate3d(0, 0, 0);
   background: white;
   border: 3px solid #b08bd4;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  z-index: 10003;
+  z-index: 2147483647;
   width: 500px;
   max-width: 90vw;
   max-height: 80vh;
@@ -77,16 +90,27 @@
   animation: tooltipFadeIn 0.4s ease-out;
   font-size: 1rem;
   line-height: 1.5;
+  isolation: isolate;
+  contain: layout style paint;
+  will-change: transform, opacity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.info-tooltip * {
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
 }
 
 @keyframes tooltipFadeIn {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
+    transform: translate(-50%, -50%) scale(0.8) translate3d(0, 0, 0);
+    -webkit-transform: translate(-50%, -50%) scale(0.8) translate3d(0, 0, 0);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, -50%) scale(1) translate3d(0, 0, 0);
+    -webkit-transform: translate(-50%, -50%) scale(1) translate3d(0, 0, 0);
   }
 }
 

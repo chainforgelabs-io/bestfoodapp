@@ -1,17 +1,31 @@
-/* RestaurantModal - Modern styling with animations */
+/* RestaurantModal - Mobile-first aggressive styling */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 2147483647;
   animation: fadeIn 0.3s ease-out;
   backdrop-filter: blur(5px);
+  isolation: isolate;
+  contain: layout style paint;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.modal-overlay * {
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
 }
 
 @keyframes fadeIn {
@@ -33,6 +47,13 @@
   overflow-y: auto;
   position: relative;
   animation: slideInUp 0.4s ease-out;
+  z-index: 2147483647;
+  isolation: isolate;
+  contain: layout style paint;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes slideInUp {
