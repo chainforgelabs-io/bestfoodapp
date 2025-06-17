@@ -3,7 +3,7 @@
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 1100;
+  z-index: 10001;
   min-width: 300px;
   max-width: 500px;
   animation: slideInRight 0.4s ease-out;

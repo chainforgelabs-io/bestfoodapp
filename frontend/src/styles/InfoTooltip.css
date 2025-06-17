@@ -46,7 +46,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 9998;
+  z-index: 10002;
   animation: backdropFadeIn 0.3s ease-out;
 }
 
@@ -69,7 +69,7 @@
   border: 3px solid #b08bd4;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  z-index: 9999;
+  z-index: 10003;
   width: 500px;
   max-width: 90vw;
   max-height: 80vh;
