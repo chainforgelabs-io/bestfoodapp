@@ -198,6 +198,7 @@ export const FOOD_TYPES = {
   ],
   "Sides": [
     "Fries",
+    "Hash Browns",
     "Onion Rings",
     "Coleslaw",
     "Garlic Bread",
@@ -365,6 +366,7 @@ export const FOOD_SUBTYPES = {
     "Poutine",
     "Add +",
   ],
+  "Hash Browns": ["Patty Style", "Shredded", "Cubed / Diced", "Add +"],
   "Churro": [
     "Plain",
     "Filled (Caramel)",
