@@ -424,16 +424,16 @@ function LeaderboardsPage() {
     switch (activeCategory) {
       case "restaurants":
         return selectedCuisine === "All"
-          ? `All Restaurants in ${selectedCity.city}`
-          : `Best ${selectedCuisine} Restaurants in ${selectedCity.city}`;
+          ? `Top 10 Restaurants in ${selectedCity.city}`
+          : `Top 10 ${selectedCuisine} Restaurants in ${selectedCity.city}`;
       case "food-items":
         return selectedFoodCategory === "All"
-          ? `All Food Items in ${selectedCity.city}`
-          : `Best ${selectedFoodCategory} in ${selectedCity.city}`;
+          ? `Top 10 Food Items in ${selectedCity.city}`
+          : `Top 10 ${selectedFoodCategory} in ${selectedCity.city}`;
       case "cuisines":
         return selectedCuisine === "All"
-          ? `All Cuisine Types in ${selectedCity.city}`
-          : `Top ${selectedCuisine} Spots in ${selectedCity.city}`;
+          ? `Top 10 Cuisine Types in ${selectedCity.city}`
+          : `Top 10 ${selectedCuisine} Spots in ${selectedCity.city}`;
       default:
         return `Leaderboards for ${selectedCity.city}`;
     }
