@@ -26,6 +26,8 @@
   box-shadow: 0 10px 40px rgba(176, 139, 212, 0.15);
   overflow: hidden;
   animation: slideInUp 0.8s ease-out 0.2s both;
+  position: relative;
+  z-index: 1;
 }
 
 @keyframes slideInUp {
@@ -315,19 +317,14 @@
   left: 0;
   right: 0;
   background: white;
-  border-radius: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  list-style: none;
-  margin: 0;
-  padding: 8px 0;
-  max-height: 300px;
+  z-index: 1000;
+  max-height: 200px;
   overflow-y: auto;
-  z-index: 1001;
+  -webkit-overflow-scrolling: touch;
   animation: slideDown 0.3s ease-out;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  border: 1px solid #eee;
-  border-top: none;
 }
 
 @keyframes slideDown {
@@ -570,6 +567,11 @@
 
   .star {
     font-size: 2rem;
+  }
+
+  .suggestions-dropdown {
+    z-index: 1000;
+    max-height: 150px;
   }
 }
 
