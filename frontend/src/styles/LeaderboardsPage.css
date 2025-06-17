@@ -5,6 +5,7 @@
   min-height: 105vh;
   background: linear-gradient(135deg, #f9f9fc 0%, #f0f4ff 100%);
   padding: 20px;
+  padding-bottom: 100px;
   animation: fadeInUp 0.8s ease-out;
 }
 
