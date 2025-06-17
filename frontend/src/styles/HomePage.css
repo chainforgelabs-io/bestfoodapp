@@ -515,27 +515,38 @@
 /* Mobile responsiveness - Enhanced to prevent horizontal scrolling */
 @media (max-width: 768px) {
   .home-container {
-    padding: 16px;
-    padding-top: calc(80px + env(safe-area-inset-top));
+    padding-top: calc(
+      80px + env(safe-area-inset-top)
+    ); /* Increased top padding for mobile */
+    padding-bottom: calc(
+      120px + env(safe-area-inset-bottom)
+    ); /* Increased bottom padding */
   }
 
   .home-container.has-searched {
-    padding-top: calc(80px + env(safe-area-inset-top));
+    padding-top: calc(
+      120px + env(safe-area-inset-top)
+    ); /* More space when city is searched */
   }
 
   .logo-container {
-    margin-bottom: 20px;
+    margin-top: 20px; /* Add space from top on mobile */
+    margin-bottom: 40px; /* Increase space below logo */
   }
 
   .home-title {
-    font-size: 1.8rem;
+    font-size: 2rem;
     margin-bottom: 20px;
+    padding: 0 10px;
+    line-height: 1.2;
   }
 
   .filter-section {
-    margin-top: 30px; /* Added margin-top for spacing */
-    margin-bottom: 30px;
+    flex-direction: column;
+    align-items: center;
     gap: 12px;
+    padding: 0 15px;
+    width: 100%;
   }
 
   .filter-button {
@@ -603,6 +614,14 @@
 
   .search-form {
     margin-bottom: 50px; /* Even more margin on mobile */
+  }
+
+  .home-container.has-searched .search-form {
+    margin-bottom: 40px; /* Add significant space after search form */
+  }
+
+  .home-container.has-searched .filter-section {
+    margin-top: 20px; /* Add space before filter section */
   }
 }
 
