@@ -51,6 +51,7 @@ export const CUISINE_TYPES = [
   "Turkish",
 
   // Global & Fusion
+  "Bakery / Pastry",
   "Fusion",
   "Gastropub",
   "Seafood",
@@ -78,6 +79,7 @@ export const FOOD_CATEGORIES = [
   "Mains / Entrées",
   "Pizza & Flatbreads",
   "Pasta",
+  "Pastries & Baked Goods",
   "Sides",
   "Desserts",
   "Drinks (Non-Alcoholic)",
@@ -175,6 +177,22 @@ export const FOOD_TYPES = {
     "Gnocchi",
     "Linguine",
     "Carbonara",
+    "Add +",
+  ],
+  "Pastries & Baked Goods": [
+    "Doughnuts",
+    "Croissants",
+    "Danish",
+    "Muffins",
+    "Scones",
+    "Bagels",
+    "Cinnamon Rolls",
+    "Turnovers",
+    "Éclairs",
+    "Cream Puffs",
+    "Macarons",
+    "Cookies",
+    "Biscuits",
     "Add +",
   ],
   "Sides": [
@@ -551,6 +569,12 @@ export const INFO_DATA = {
     characteristics:
       "• Italian cuisine\n• Noodle-based\n• Various sauces\n• Comfort food",
   },
+  "Pastries & Baked Goods": {
+    description: "Fresh baked pastries, breads, and sweet treats",
+    examples: "Doughnuts, croissants, muffins, danish, scones",
+    characteristics:
+      "• Fresh baked items\n• Sweet & savory options\n• Breakfast & snack items\n• Artisan preparations",
+  },
   "Sides": {
     description: "Accompaniments to main dishes",
     examples: "Fries, onion rings, garlic bread",
@@ -832,6 +856,12 @@ export const INFO_DATA = {
     examples: "Kebabs, Turkish delight, baklava, Turkish coffee",
     characteristics:
       "• European-Asian fusion\n• Grilled specialties\n• Sweet pastries\n• Coffee culture",
+  },
+  "Bakery / Pastry": {
+    description: "Specialized baked goods and pastry cuisine",
+    examples: "Artisan breads, French pastries, specialty cakes",
+    characteristics:
+      "• Baking specialization\n• Fresh daily preparation\n• Traditional techniques\n• Sweet & savory options",
   },
   "Fusion": {
     description: "Creative combinations of different culinary traditions",
