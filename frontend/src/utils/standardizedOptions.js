@@ -298,6 +298,7 @@ export const FOOD_SUBTYPES = {
     "Add +",
   ],
   "Sandwich": [
+    "Breakfast Sandwich",
     "Club",
     "BLT",
     "Philly Cheesesteak",

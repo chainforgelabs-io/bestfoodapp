@@ -7,6 +7,9 @@
   min-height: 100dvh; /* Use dynamic viewport height for better mobile support */
   background: linear-gradient(135deg, #f9f9fc 0%, #f0f4ff 100%);
   padding: 20px;
+  padding-top: calc(
+    90px + env(safe-area-inset-top)
+  ); /* Add top padding for navbar clearance */
   text-align: center;
   position: relative;
   overflow-x: hidden; /* Prevent horizontal scrolling */
@@ -21,7 +24,7 @@
 /* Add space from navbar only when a city has been searched */
 .home-container.has-searched {
   padding-top: calc(
-    100px + env(safe-area-inset-top)
+    110px + env(safe-area-inset-top)
   ); /* Account for mobile browser UI */
 }
 
@@ -516,7 +519,7 @@
 @media (max-width: 768px) {
   .home-container {
     padding-top: calc(
-      80px + env(safe-area-inset-top)
+      85px + env(safe-area-inset-top)
     ); /* Increased top padding for mobile */
     padding-bottom: calc(
       120px + env(safe-area-inset-bottom)
@@ -525,7 +528,7 @@
 
   .home-container.has-searched {
     padding-top: calc(
-      120px + env(safe-area-inset-top)
+      125px + env(safe-area-inset-top)
     ); /* More space when city is searched */
   }
 
@@ -998,5 +1001,45 @@
 @media (max-width: 375px) and (max-height: 667px) {
   .logo-container {
     margin-bottom: 15px; /* Reduced from 30px to bring logo closer to heading */
+  }
+}
+
+/* Windows specific adjustments - particularly for HP laptops */
+@media screen and (min-width: 1024px) {
+  .home-container {
+    padding-top: calc(
+      100px + env(safe-area-inset-top)
+    ); /* Extra padding for Windows desktop */
+  }
+
+  .home-container.has-searched {
+    padding-top: calc(
+      120px + env(safe-area-inset-top)
+    ); /* More space when city is searched on desktop */
+  }
+
+  .logo-container {
+    margin-top: 20px; /* Additional top margin for desktop */
+    margin-bottom: 40px; /* Increased bottom margin */
+  }
+}
+
+/* Large desktop screens - common on HP laptops */
+@media screen and (min-width: 1366px) {
+  .home-container {
+    padding-top: calc(
+      110px + env(safe-area-inset-top)
+    ); /* Even more padding for large screens */
+  }
+
+  .home-container.has-searched {
+    padding-top: calc(
+      130px + env(safe-area-inset-top)
+    ); /* More space when city is searched on large screens */
+  }
+
+  .logo-container {
+    margin-top: 30px; /* Additional top margin for large screens */
+    margin-bottom: 50px; /* Increased bottom margin for large screens */
   }
 }
