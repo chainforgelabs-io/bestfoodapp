@@ -872,6 +872,7 @@
 @media (max-width: 768px) {
   .leaderboards-page {
     padding: 12px;
+    padding-bottom: 100px;
   }
 
   .leaderboards-header {
@@ -1081,6 +1082,7 @@
 @media (max-width: 480px) {
   .leaderboards-page {
     padding: 10px;
+    padding-bottom: 100px;
   }
 
   .leaderboards-header {
