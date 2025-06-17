@@ -360,6 +360,7 @@ export const FOOD_SUBTYPES = {
     "Curly",
     "Steak Fries",
     "Shoestring",
+    "Poutine",
     "Add +",
   ],
   "Churro": [
