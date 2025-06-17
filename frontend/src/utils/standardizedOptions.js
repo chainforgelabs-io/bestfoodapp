@@ -138,6 +138,7 @@ export const FOOD_TYPES = {
     "Add +",
   ],
   "Mains / Entrées": [
+    "Bowl",
     "Steak",
     "Fried Rice",
     "Curry",
@@ -276,6 +277,16 @@ export const FOOD_SUBTYPES = {
     "Carnitas",
     "Shrimp",
     "Vegetarian",
+    "Add +",
+  ],
+  "Bowl": [
+    "Burrito Bowl",
+    "Poke Bowl",
+    "Grain Bowl",
+    "Buddha Bowl",
+    "Rice Bowl",
+    "Noodle Bowl",
+    "Salad Bowl",
     "Add +",
   ],
   "Burrito": [
