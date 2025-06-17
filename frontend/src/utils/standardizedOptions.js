@@ -327,6 +327,7 @@ export const FOOD_SUBTYPES = {
     "Pepperoni",
     "Deluxe",
     "Margherita",
+    "Canadian",
     "Hawaiian",
     "Meat Lovers",
     "Veggie",
@@ -459,7 +460,7 @@ export const INFO_DATA = {
   },
   "Fast Casual": {
     description: "Higher quality than fast food, counter ordering",
-    examples: "Chipotle, Shake Shack, Panera Bread, Five Guys",
+    examples: "Chipotle, Shake Shack, Panera Bread, Five Guys, Pizza Chains",
     characteristics:
       "• Better quality ingredients\n• Counter service\n• Fresh preparations\n• Mid-range pricing",
   },
