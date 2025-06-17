@@ -7,6 +7,7 @@ export const RESTAURANT_TYPES = [
   "Fine Dining",
   "Cafe / Coffee Shop",
   "Bar / Pub / Tavern",
+  "Gastropub",
   "Food Truck / Cart",
   "Buffet",
   "Diner",
@@ -507,6 +508,12 @@ export const INFO_DATA = {
     examples: "Sports bars, Irish pubs, local taverns",
     characteristics:
       "• Alcoholic beverages focus\n• Pub food menu\n• Social atmosphere\n• Evening hours",
+  },
+  "Gastropub": {
+    description: "Upscale pub with elevated food and craft beverages",
+    examples: "Congress Beer House, craft beer bars with chef-driven menus",
+    characteristics:
+      "• Elevated pub cuisine\n• Craft beer & cocktails\n• Chef-driven menu\n• Upscale casual atmosphere",
   },
   "Food Truck / Cart": {
     description: "Mobile food vendor",
