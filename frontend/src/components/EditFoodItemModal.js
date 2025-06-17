@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import axios from "../api/axios";
 import Notification from "./Notification";
 import StandardizedDropdown from "./StandardizedDropdown";
@@ -193,10 +194,16 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
     onClose();
   };
 
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  };
+
   if (!isOpen) return null;
 
-  return (
-    <div className="modal-overlay">
+  return ReactDOM.createPortal(
+    <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="edit-modal">
         <div className="modal-header">
           <h3>Edit Food Item</h3>
@@ -311,7 +318,8 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
           onClose={() => setNotification({ ...notification, isVisible: false })}
         />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

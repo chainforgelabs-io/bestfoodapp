@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ReactDOM from "react-dom";
 import axios from "../api/axios";
 import StandardizedDropdown from "./StandardizedDropdown";
 import {
@@ -130,10 +131,17 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
     onClose();
   };
 
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  };
+
   if (!isOpen) return null;
 
-  return (
-    <div className="modal-overlay" onClick={handleClose}>
+  // Render modal via React Portal to document.body
+  return ReactDOM.createPortal(
+    <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">Add New Restaurant</h2>
@@ -246,7 +254,8 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

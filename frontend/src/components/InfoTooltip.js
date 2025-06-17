@@ -1,16 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { INFO_DATA } from "../utils/standardizedOptions";
 import "../styles/InfoTooltip.css";
 
 function InfoTooltip({ option, position = "right" }) {
   const [isVisible, setIsVisible] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState(position);
+  const [triggerRect, setTriggerRect] = useState(null);
   const tooltipRef = useRef(null);
   const triggerRef = useRef(null);
 
   const info = INFO_DATA[option];
 
   const handleToggle = () => {
+    if (!isVisible && triggerRef.current) {
+      // Store trigger position when opening tooltip
+      const rect = triggerRef.current.getBoundingClientRect();
+      setTriggerRect(rect);
+    }
     setIsVisible(!isVisible);
   };
 
@@ -36,8 +43,7 @@ function InfoTooltip({ option, position = "right" }) {
 
   // Adjust position based on screen size and position
   useEffect(() => {
-    if (isVisible && tooltipRef.current && triggerRef.current) {
-      const triggerRect = triggerRef.current.getBoundingClientRect();
+    if (isVisible && tooltipRef.current && triggerRect) {
       const tooltipRect = tooltipRef.current.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
@@ -69,7 +75,47 @@ function InfoTooltip({ option, position = "right" }) {
 
       setTooltipPosition(newPosition);
     }
-  }, [isVisible, position]);
+  }, [isVisible, position, triggerRect]);
+
+  // Calculate tooltip positioning
+  const getTooltipStyle = () => {
+    if (!triggerRect) return {};
+
+    const offset = 8;
+    let style = {
+      position: "fixed",
+      zIndex: 2147483648, // Higher than modal
+    };
+
+    switch (tooltipPosition) {
+      case "right":
+        style.left = triggerRect.right + offset;
+        style.top = triggerRect.top + triggerRect.height / 2;
+        style.transform = "translateY(-50%)";
+        break;
+      case "left":
+        style.right = window.innerWidth - triggerRect.left + offset;
+        style.top = triggerRect.top + triggerRect.height / 2;
+        style.transform = "translateY(-50%)";
+        break;
+      case "top":
+        style.left = triggerRect.left + triggerRect.width / 2;
+        style.bottom = window.innerHeight - triggerRect.top + offset;
+        style.transform = "translateX(-50%)";
+        break;
+      case "bottom":
+        style.left = triggerRect.left + triggerRect.width / 2;
+        style.top = triggerRect.bottom + offset;
+        style.transform = "translateX(-50%)";
+        break;
+      default:
+        style.left = triggerRect.right + offset;
+        style.top = triggerRect.top + triggerRect.height / 2;
+        style.transform = "translateY(-50%)";
+    }
+
+    return style;
+  };
 
   // Don't render if no info available
   if (!info) return null;
@@ -102,56 +148,59 @@ function InfoTooltip({ option, position = "right" }) {
         </svg>
       </button>
 
-      {isVisible && (
-        <>
-          <div
-            className="info-tooltip-backdrop"
-            onClick={() => setIsVisible(false)}
-          />
-          <div
-            ref={tooltipRef}
-            className={`info-tooltip ${tooltipPosition}`}
-            role="tooltip"
-          >
-            <div className="tooltip-header">
-              <h4 className="tooltip-title">{option}</h4>
-              <button
-                className="tooltip-close"
-                onClick={() => setIsVisible(false)}
-                aria-label="Close tooltip"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="tooltip-content">
-              <div className="tooltip-section">
-                <p className="tooltip-description">{info.description}</p>
+      {isVisible &&
+        ReactDOM.createPortal(
+          <>
+            <div
+              className="info-tooltip-backdrop"
+              onClick={() => setIsVisible(false)}
+            />
+            <div
+              ref={tooltipRef}
+              className={`info-tooltip ${tooltipPosition}`}
+              style={getTooltipStyle()}
+              role="tooltip"
+            >
+              <div className="tooltip-header">
+                <h4 className="tooltip-title">{option}</h4>
+                <button
+                  className="tooltip-close"
+                  onClick={() => setIsVisible(false)}
+                  aria-label="Close tooltip"
+                >
+                  ×
+                </button>
               </div>
 
-              {info.examples && (
+              <div className="tooltip-content">
                 <div className="tooltip-section">
-                  <strong className="tooltip-label">Examples:</strong>
-                  <p className="tooltip-examples">{info.examples}</p>
+                  <p className="tooltip-description">{info.description}</p>
                 </div>
-              )}
 
-              {info.characteristics && (
-                <div className="tooltip-section">
-                  <strong className="tooltip-label">Characteristics:</strong>
-                  <div className="tooltip-characteristics">
-                    {info.characteristics.split("\n").map((char, index) => (
-                      <div key={index} className="characteristic-item">
-                        {char}
-                      </div>
-                    ))}
+                {info.examples && (
+                  <div className="tooltip-section">
+                    <strong className="tooltip-label">Examples:</strong>
+                    <p className="tooltip-examples">{info.examples}</p>
                   </div>
-                </div>
-              )}
+                )}
+
+                {info.characteristics && (
+                  <div className="tooltip-section">
+                    <strong className="tooltip-label">Characteristics:</strong>
+                    <div className="tooltip-characteristics">
+                      {info.characteristics.split("\n").map((char, index) => (
+                        <div key={index} className="characteristic-item">
+                          {char}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>,
+          document.body
+        )}
     </div>
   );
 }

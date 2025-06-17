@@ -2,6 +2,7 @@
 .info-tooltip-container {
   position: relative;
   display: inline-block;
+  z-index: 2147483648; /* Very high z-index for container */
 }
 
 .info-trigger {
@@ -45,8 +46,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 9998;
+  width: 100vw;
+  height: 100dvh; /* Use dynamic viewport height for mobile */
+  min-height: 100vh; /* Fallback */
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2147483648; /* Higher than modal */
   animation: backdropFadeIn 0.3s ease-out;
 }
 
@@ -62,14 +66,11 @@
 /* Tooltip */
 .info-tooltip {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   background: white;
   border: 3px solid #b08bd4;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  z-index: 9999;
+  z-index: 2147483649; /* Highest z-index */
   width: 500px;
   max-width: 90vw;
   max-height: 80vh;
@@ -82,32 +83,20 @@
 @keyframes tooltipFadeIn {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
+    transform: scale(0.8);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
 }
 
-/* Remove old positioning classes - no longer needed since we're centering */
+/* Position classes for different tooltip orientations */
 .info-tooltip.right,
 .info-tooltip.left,
 .info-tooltip.top,
 .info-tooltip.bottom {
-  /* Override any positioning */
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Remove arrows - no longer needed for centered modal */
-.info-tooltip.right::before,
-.info-tooltip.left::before,
-.info-tooltip.top::before,
-.info-tooltip.bottom::before {
-  display: none;
+  /* Positioning is now handled via inline styles from React */
 }
 
 /* Tooltip header */
@@ -198,27 +187,38 @@
 .characteristic-item {
   color: #666;
   margin: 4px 0;
-  font-size: 0.95rem;
-  line-height: 1.4;
+  padding-left: 12px;
+  position: relative;
+}
+
+.characteristic-item::before {
+  content: "•";
+  color: #b08bd4;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
 }
 
 .characteristic-item:empty {
   display: none;
 }
 
-/* Mobile optimization */
 @media (max-width: 768px) {
   .info-tooltip {
-    width: 300px;
+    width: 95vw;
     max-width: 95vw;
     max-height: 85vh;
-    font-size: 0.9rem;
-    border-radius: 12px;
+    margin: 20px auto;
+    /* Ensure tooltip is properly centered on mobile */
+    left: 50% !important;
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
   }
 
   .tooltip-header {
     padding: 16px 20px 12px 20px;
-    border-radius: 9px 9px 0 0;
   }
 
   .tooltip-content {
@@ -226,13 +226,13 @@
   }
 
   .tooltip-title {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
   }
 
   .tooltip-close {
     width: 28px;
     height: 28px;
-    font-size: 1.6rem;
+    font-size: 1.5rem;
   }
 
   .tooltip-description {
@@ -244,7 +244,22 @@
   }
 
   .characteristic-item {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .info-tooltip {
+    width: 98vw;
+    max-height: 90vh;
+  }
+
+  .tooltip-header {
+    padding: 12px 16px 10px 16px;
+  }
+
+  .tooltip-content {
+    padding: 12px 16px 16px 16px;
   }
 }
 

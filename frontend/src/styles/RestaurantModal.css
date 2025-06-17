@@ -5,13 +5,25 @@
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100vw;
+  height: 100dvh; /* Use dynamic viewport height for mobile */
+  min-height: 100vh; /* Fallback for browsers that don't support dvh */
   background: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to flex-start */
   justify-content: center;
-  z-index: 1000;
+  z-index: 2147483647; /* Very high z-index to be above everything */
   animation: fadeIn 0.3s ease-out;
   backdrop-filter: blur(5px);
+  padding-top: env(
+    safe-area-inset-top,
+    60px
+  ); /* Account for iOS notch and navbar */
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+  padding-left: env(safe-area-inset-left, 10px);
+  padding-right: env(safe-area-inset-right, 10px);
+  box-sizing: border-box;
+  overflow-y: auto; /* Allow scrolling if content is too tall */
 }
 
 @keyframes fadeIn {
@@ -29,10 +41,11 @@
   box-shadow: 0 20px 60px rgba(176, 139, 212, 0.3);
   max-width: 500px;
   width: 90%;
-  max-height: 90vh;
+  max-height: calc(100vh - 120px); /* Account for navbar and padding */
   overflow-y: auto;
   position: relative;
   animation: slideInUp 0.4s ease-out;
+  margin-top: 20px; /* Additional top margin for mobile */
 }
 
 @keyframes slideInUp {
@@ -195,9 +208,17 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .modal-overlay {
+    padding-top: calc(
+      80px + env(safe-area-inset-top, 20px)
+    ); /* Account for navbar height + safe area */
+    align-items: flex-start;
+  }
+
   .modal-content {
     width: 95%;
-    margin: 10px;
+    margin: 20px 10px; /* Add horizontal margin and increase top margin */
+    max-height: calc(100vh - 160px); /* More space for navbar and safe areas */
   }
 
   .modal-header {
@@ -227,5 +248,19 @@
     font-size: 1.5rem;
     width: 35px;
     height: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding-top: calc(
+      100px + env(safe-area-inset-top, 20px)
+    ); /* More space for smaller screens */
+  }
+
+  .modal-content {
+    width: 98%;
+    margin: 10px 5px;
+    max-height: calc(100vh - 180px);
   }
 }
