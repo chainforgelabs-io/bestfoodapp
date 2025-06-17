@@ -10,6 +10,7 @@ export const RESTAURANT_TYPES = [
   "Food Truck / Cart",
   "Buffet",
   "Diner",
+  "Bakery",
 ];
 
 export const CUISINE_TYPES = [
@@ -505,6 +506,12 @@ export const INFO_DATA = {
     examples: "Local diners, Denny's, IHOP",
     characteristics:
       "• Classic American fare\n• Counter & booth seating\n• Extended hours\n• Comfort food focus",
+  },
+  "Bakery": {
+    description: "Specializes in fresh baked goods and pastries",
+    examples: "Local bakeries, artisan bread shops, pastry shops",
+    characteristics:
+      "• Fresh baked goods focus\n• Display case service\n• Early morning hours\n• Takeaway & eat-in options",
   },
 
   // Food Categories
