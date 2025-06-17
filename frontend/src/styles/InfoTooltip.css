@@ -46,7 +46,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 10004;
+  z-index: 9998;
   animation: backdropFadeIn 0.3s ease-out;
 }
 
@@ -69,12 +69,11 @@
   border: 3px solid #b08bd4;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  z-index: 10005;
+  z-index: 9999;
   width: 500px;
   max-width: 90vw;
   max-height: 80vh;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   animation: tooltipFadeIn 0.4s ease-out;
   font-size: 1rem;
   line-height: 1.5;
@@ -210,14 +209,9 @@
 /* Mobile optimization */
 @media (max-width: 768px) {
   .info-tooltip {
-    width: 95vw;
+    width: 300px;
     max-width: 95vw;
     max-height: 85vh;
-    z-index: 10005;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     font-size: 0.9rem;
     border-radius: 12px;
   }

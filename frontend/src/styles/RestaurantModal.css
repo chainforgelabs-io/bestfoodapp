@@ -9,13 +9,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
-  padding: 20px;
-  box-sizing: border-box;
-  height: 100vh;
-  height: 100dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  z-index: 1000;
   animation: fadeIn 0.3s ease-out;
   backdrop-filter: blur(5px);
 }
@@ -31,17 +25,13 @@
 
 .modal-content {
   background: white;
-  border-radius: 16px;
-  width: 100%;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(176, 139, 212, 0.3);
   max-width: 500px;
-  max-height: calc(100vh - 40px);
-  max-height: calc(100dvh - 40px);
+  width: 90%;
+  max-height: 90vh;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   position: relative;
-  z-index: 10001;
-  margin: auto;
   animation: slideInUp 0.4s ease-out;
 }
 
@@ -205,25 +195,9 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
-  .modal-overlay {
-    padding: 10px;
-    position: fixed;
-    z-index: 10000;
-    height: 100vh;
-    height: 100dvh;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-  }
-
   .modal-content {
-    max-height: calc(100vh - 20px);
-    max-height: calc(100dvh - 20px);
-    width: calc(100vw - 20px);
-    max-width: calc(100vw - 20px);
-    z-index: 10001;
-    position: relative;
+    width: 95%;
+    margin: 10px;
   }
 
   .modal-header {
@@ -253,19 +227,5 @@
     font-size: 1.5rem;
     width: 35px;
     height: 35px;
-  }
-}
-
-@media (max-width: 480px) {
-  .modal-overlay {
-    padding: 5px;
-  }
-
-  .modal-content {
-    max-height: calc(100vh - 10px);
-    max-height: calc(100dvh - 10px);
-    width: calc(100vw - 10px);
-    max-width: calc(100vw - 10px);
-    border-radius: 12px;
   }
 }

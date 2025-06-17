@@ -28,16 +28,9 @@ function InfoTooltip({ option, position = "right" }) {
   useEffect(() => {
     if (isVisible) {
       document.addEventListener("mousedown", handleClickOutside);
-      // Add body scroll lock for mobile
-      document.body.classList.add("modal-open");
-
       return () => {
         document.removeEventListener("mousedown", handleClickOutside);
-        document.body.classList.remove("modal-open");
       };
-    } else {
-      // Remove body scroll lock when tooltip is hidden
-      document.body.classList.remove("modal-open");
     }
   }, [isVisible]);
 

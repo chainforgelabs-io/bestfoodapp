@@ -3,7 +3,6 @@
   position: relative;
   width: 100%;
   margin-bottom: 20px;
-  z-index: 100; /* Base z-index for dropdown container */
 }
 
 .dropdown-label {
@@ -169,13 +168,12 @@
   left: 0;
   right: 0;
   background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  z-index: 9999; /* High z-index for dropdown options */
-  max-height: 200px;
+  border: 2px solid #b08bd4;
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   animation: dropdownSlideDown 0.3s ease-out;
 }
 
@@ -273,58 +271,10 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Tooltip styles - ensure they're above everything */
-.info-tooltip {
-  position: relative;
-  z-index: 10002; /* Higher than modals */
-}
-
-.info-tooltip .tooltip-content {
-  position: absolute;
-  z-index: 10003; /* Highest z-index for tooltip content */
-  background: #333;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  /* Ensure tooltips are visible on mobile */
-  max-width: 250px;
-  white-space: normal;
-  word-wrap: break-word;
-}
-
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .dropdown-options {
-    z-index: 9999;
-    /* Ensure dropdown is properly positioned on mobile */
-    position: absolute;
-    width: 100%;
-    left: 0;
-    right: 0;
-  }
-
-  .info-tooltip .tooltip-content {
-    z-index: 10003;
-    /* Adjust tooltip positioning for mobile */
-    max-width: 200px;
-    font-size: 0.8rem;
-    padding: 6px 10px;
-  }
-
-  /* Ensure tooltips don't get cut off on mobile */
-  .info-tooltip .tooltip-content.left {
-    right: 0;
-    left: auto;
-    transform: translateX(0);
-  }
-
-  .info-tooltip .tooltip-content.right {
-    left: 0;
-    right: auto;
-    transform: translateX(0);
+    max-height: 150px;
   }
 
   .tag-container {
@@ -354,14 +304,6 @@
   .dropdown-option .info-trigger svg {
     width: 12px;
     height: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .info-tooltip .tooltip-content {
-    max-width: 180px;
-    font-size: 0.75rem;
-    padding: 5px 8px;
   }
 }
 

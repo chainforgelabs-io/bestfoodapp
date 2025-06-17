@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "../api/axios";
 import StandardizedDropdown from "./StandardizedDropdown";
 import {
@@ -19,20 +19,6 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Handle body scroll lock when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.classList.add("modal-open");
-    } else {
-      document.body.classList.remove("modal-open");
-    }
-
-    // Cleanup on unmount
-    return () => {
-      document.body.classList.remove("modal-open");
-    };
-  }, [isOpen]);
 
   const handleChange = (e) => {
     setRestaurantData({ ...restaurantData, [e.target.name]: e.target.value });
