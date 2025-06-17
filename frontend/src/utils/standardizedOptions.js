@@ -311,6 +311,7 @@ export const FOOD_SUBTYPES = {
   ],
   "Sandwich": [
     "Breakfast Sandwich",
+    "Bánh Mì",
     "Club",
     "BLT",
     "Philly Cheesesteak",
