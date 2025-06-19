@@ -268,15 +268,21 @@ function RegisterPage() {
 
       {step === 2 && (
         <form className="register-form">
-          <input
-            type="date"
-            placeholder="Date of Birth"
-            value={formData.dateOfBirth}
-            onChange={(e) =>
-              setFormData({ ...formData, dateOfBirth: e.target.value })
-            }
-            className="register-input"
-          />
+          <div className="input-group">
+            <label htmlFor="dateOfBirth" className="input-label">
+              Date of Birth
+            </label>
+            <input
+              id="dateOfBirth"
+              type="date"
+              placeholder="Date of Birth"
+              value={formData.dateOfBirth}
+              onChange={(e) =>
+                setFormData({ ...formData, dateOfBirth: e.target.value })
+              }
+              className="register-input"
+            />
+          </div>
           <select
             value={formData.sex}
             onChange={(e) => setFormData({ ...formData, sex: e.target.value })}
