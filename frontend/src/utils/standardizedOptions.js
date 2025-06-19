@@ -181,6 +181,7 @@ export const FOOD_TYPES = {
     "Gnocchi",
     "Linguine",
     "Carbonara",
+    "Alfredo",
     "Add +",
   ],
   "Pastries & Baked Goods": [
@@ -369,6 +370,15 @@ export const FOOD_SUBTYPES = {
     "Meat Lovers",
     "Veggie",
     "BBQ Chicken",
+    "Add +",
+  ],
+  "Alfredo": [
+    "Fettuccine Alfredo",
+    "Chicken Alfredo",
+    "Shrimp Alfredo",
+    "Broccoli Alfredo",
+    "Penne Alfredo",
+    "Linguine Alfredo",
     "Add +",
   ],
   "Fries": [

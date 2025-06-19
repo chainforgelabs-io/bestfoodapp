@@ -557,7 +557,7 @@ router.get("/global", async (req, res) => {
       bestItalian,
       bestVietnamese,
       bestMexican,
-      bestFastFood,
+      bestBreakfastFood,
       bestAsian,
     ] = await Promise.all([
       calculateBestCities(),
@@ -574,7 +574,7 @@ router.get("/global", async (req, res) => {
       calculateBestCuisine("Italian"),
       calculateBestCuisine("Vietnamese"),
       calculateBestCuisine("Mexican"),
-      calculateBestCuisine("Fast Food"),
+      calculateBestCuisine("Breakfast"),
       calculateBestCuisine("Asian"),
     ]);
 
@@ -593,7 +593,7 @@ router.get("/global", async (req, res) => {
       bestItalian,
       bestVietnamese,
       bestMexican,
-      bestFastFood,
+      bestBreakfastFood,
       bestAsian,
     };
 

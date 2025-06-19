@@ -200,9 +200,9 @@ function LeaderboardsPage() {
       type: "cuisine",
     },
     {
-      key: "bestFastFood",
-      title: "⚡ Best Fast Food",
-      category: "Fast Food",
+      key: "bestBreakfastFood",
+      title: "🍳 Best Breakfast Food",
+      category: "Breakfast Food",
       type: "cuisine",
     },
     {
