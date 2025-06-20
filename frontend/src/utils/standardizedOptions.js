@@ -8,6 +8,7 @@ export const RESTAURANT_TYPES = [
   "Cafe / Coffee Shop",
   "Bar / Pub / Tavern",
   "Gastropub",
+  "Sandwich Shop / Deli",
   "Food Truck / Cart",
   "Buffet",
   "Diner",
@@ -221,6 +222,7 @@ export const FOOD_TYPES = {
     "Tiramisu",
     "Brownie",
     "Pie",
+    "Tart",
     "Crème Brûlée",
     "Add +",
   ],
@@ -423,6 +425,19 @@ export const FOOD_SUBTYPES = {
     "Strawberry Rhubarb Pie",
     "Add +",
   ],
+  "Tart": [
+    "Butter Tart",
+    "Pecan Tart",
+    "Lemon Tart",
+    "Chocolate Tart",
+    "Fruit Tart",
+    "Custard Tart",
+    "Almond Tart",
+    "Caramel Tart",
+    "Apple Tart",
+    "Berry Tart",
+    "Add +",
+  ],
   "Noodle Dish": [
     "Pho",
     "Ramen",
@@ -576,6 +591,12 @@ export const INFO_DATA = {
     examples: "Congress Beer House, craft beer bars with chef-driven menus",
     characteristics:
       "• Elevated pub cuisine\n• Craft beer & cocktails\n• Chef-driven menu\n• Upscale casual atmosphere",
+  },
+  "Sandwich Shop / Deli": {
+    description: "Specializes in sandwiches, subs, and deli items",
+    examples: "Subway, Jimmy John's, Jersey Mike's, local delis",
+    characteristics:
+      "• Sandwich focus\n• Counter service\n• Made-to-order\n• Deli meats & fresh ingredients",
   },
   "Food Truck / Cart": {
     description: "Mobile food vendor",
