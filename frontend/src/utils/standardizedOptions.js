@@ -323,6 +323,7 @@ export const FOOD_SUBTYPES = {
     "Meatball Sub",
     "Italian",
     "Reuben",
+    "Cuban Sandwich",
     "Grilled Chicken",
     "Fried Chicken Sandwich",
     "Tuna Melt",

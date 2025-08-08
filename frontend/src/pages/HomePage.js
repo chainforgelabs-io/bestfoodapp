@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import SEO from "../components/SEO";
 import CitySearch from "../components/CitySearch"; // Adjust the path if necessary
 import { useCityFromUrl } from "../hooks/useCityFromUrl";
 import { generateSeoMeta } from "../utils/cityUtils";
@@ -411,11 +412,11 @@ function HomePage() {
 
   return (
     <div className={`home-container ${hasSearched ? "has-searched" : ""}`}>
-      <Helmet>
-        <title>{seoMeta.title}</title>
-        <meta name="description" content={seoMeta.description} />
-        <meta name="keywords" content={seoMeta.keywords} />
-      </Helmet>
+      <SEO
+        title={seoMeta.title}
+        description={seoMeta.description}
+        keywords={seoMeta.keywords}
+      />
       {!hasSearched ? (
         <>
           {/* Initial layout (before search) */}

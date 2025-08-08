@@ -4,6 +4,7 @@ import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import tokenUtils from "../utils/auth";
 import "../styles/ProfilePage.css";
+import SEO from "../components/SEO";
 
 function ProfilePage() {
   const [user, setUser] = useState({});
@@ -100,104 +101,115 @@ function ProfilePage() {
   };
 
   return (
-    <div className="profile-container">
-      <div className="user-info">
-        {/* <img
-          src={user.profilePicture}
-          alt="Profile"
-          className="profile-picture"
-        /> */}
-        <h2>{user.username}</h2>
-        <p>{user.bio}</p>
-        <p>Total Points: {user.points}</p>
-      </div>
+    <div className="profile-page">
+      <SEO
+        title="Your Profile | Best Food App"
+        description="Manage your account and review history."
+        noindex={true}
+      />
+      <div className="profile-container">
+        <div className="user-info">
+          {/* <img
+            src={user.profilePicture}
+            alt="Profile"
+            className="profile-picture"
+          /> */}
+          <h2>{user.username}</h2>
+          <p>{user.bio}</p>
+          <p>Total Points: {user.points}</p>
+        </div>
 
-      <div className="user-stats">
-        <p>
-          <strong>Reviews:</strong> {reviewCount}
-        </p>
-        <p>
-          <strong>Followers:</strong> {followerCount}
-        </p>
-        <p>
-          <strong>Following:</strong> {followingCount}
-        </p>
-      </div>
+        <div className="user-stats">
+          <p>
+            <strong>Reviews:</strong> {reviewCount}
+          </p>
+          <p>
+            <strong>Followers:</strong> {followerCount}
+          </p>
+          <p>
+            <strong>Following:</strong> {followingCount}
+          </p>
+        </div>
 
-      {/* User Reviews Section */}
-      {reviews.length > 0 && (
-        <div className="user-reviews-section">
-          <h3>My Reviews ({reviewCount})</h3>
-          <div className="reviews-grid">
-            {reviews.map((review) => (
-              <div
-                key={review._id}
-                className="review-card clickable"
-                onClick={() => handleReviewClick(review.restaurantId?._id)}
-                title={`Go to ${
-                  review.restaurantId?.name || "restaurant"
-                } page`}
-              >
-                <div className="review-header">
-                  <h4>{review.foodItem?.name || "Food Item"}</h4>
-                  <div
-                    className="review-score"
-                    style={{ color: getScoreColor(review.score) }}
-                  >
-                    {review.score}/100
+        {/* User Reviews Section */}
+        {reviews.length > 0 && (
+          <div className="user-reviews-section">
+            <h3>My Reviews ({reviewCount})</h3>
+            <div className="reviews-grid">
+              {reviews.map((review) => (
+                <div
+                  key={review._id}
+                  className="review-card clickable"
+                  onClick={() => handleReviewClick(review.restaurantId?._id)}
+                  title={`Go to ${
+                    review.restaurantId?.name || "restaurant"
+                  } page`}
+                >
+                  <div className="review-header">
+                    <h4>{review.foodItem?.name || "Food Item"}</h4>
+                    <div
+                      className="review-score"
+                      style={{ color: getScoreColor(review.score) }}
+                    >
+                      {review.score}/100
+                    </div>
+                  </div>
+
+                  <div className="restaurant-info">
+                    <p>
+                      <strong>
+                        {review.restaurantId?.name || "Restaurant"}
+                      </strong>
+                    </p>
+                    {review.restaurantId?.cuisine && (
+                      <p className="cuisine">
+                        {review.restaurantId.cuisine.join(", ")}
+                      </p>
+                    )}
+                  </div>
+
+                  {review.comment && (
+                    <p className="review-comment">"{review.comment}"</p>
+                  )}
+
+                  <div className="review-details">
+                    <span className="category">
+                      {review.foodItem?.category}
+                    </span>
+                    {review.foodItem?.price && (
+                      <span className="price">${review.foodItem.price}</span>
+                    )}
+                  </div>
+
+                  <div className="review-date">
+                    {formatDate(review.reviewDate)}
                   </div>
                 </div>
-
-                <div className="restaurant-info">
-                  <p>
-                    <strong>{review.restaurantId?.name || "Restaurant"}</strong>
-                  </p>
-                  {review.restaurantId?.cuisine && (
-                    <p className="cuisine">
-                      {review.restaurantId.cuisine.join(", ")}
-                    </p>
-                  )}
-                </div>
-
-                {review.comment && (
-                  <p className="review-comment">"{review.comment}"</p>
-                )}
-
-                <div className="review-details">
-                  <span className="category">{review.foodItem?.category}</span>
-                  {review.foodItem?.price && (
-                    <span className="price">${review.foodItem.price}</span>
-                  )}
-                </div>
-
-                <div className="review-date">
-                  {formatDate(review.reviewDate)}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Debug info - remove in production
-      {process.env.NODE_ENV === "development" && (
-        <div
-          className="debug-info"
-          style={{
-            marginTop: "20px",
-            padding: "10px",
-            background: "#f0f0f0",
-            borderRadius: "5px",
-          }}
-        >
-          <h4>Session Debug Info:</h4>
-          <pre>{JSON.stringify(tokenUtils.getTokenInfo(), null, 2)}</pre>
-        </div>
-      )} */}
+        {/* Debug info - remove in production
+        {process.env.NODE_ENV === "development" && (
+          <div
+            className="debug-info"
+            style={{
+              marginTop: "20px",
+              padding: "10px",
+              background: "#f0f0f0",
+              borderRadius: "5px",
+            }}
+          >
+            <h4>Session Debug Info:</h4>
+            <pre>{JSON.stringify(tokenUtils.getTokenInfo(), null, 2)}</pre>
+          </div>
+        )} */}
 
-      <button onClick={handleLogout} className="logout-button">
-        Logout
-      </button>
+        <button onClick={handleLogout} className="logout-button">
+          Logout
+        </button>
+      </div>
     </div>
   );
 }

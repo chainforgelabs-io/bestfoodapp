@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "../api/axios";
 import { useNavigate, useParams } from "react-router-dom";
 import "../styles/RegisterPage.css"; // Reusing the register page styles
+import SEO from "../components/SEO";
 
 function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -48,7 +49,12 @@ function ResetPasswordPage() {
   };
 
   return (
-    <div className="register-page">
+    <div className="reset-password-page">
+      <SEO
+        title="Reset Password | Best Food App"
+        description="Reset your password securely."
+        noindex={true}
+      />
       <h2>Reset Password</h2>
       <form className="register-form" onSubmit={handlePasswordReset}>
         <div className="password-container">

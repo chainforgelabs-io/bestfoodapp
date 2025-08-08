@@ -4,6 +4,7 @@ import axios from "../api/axios";
 import tokenUtils from "../utils/auth";
 import Notification from "../components/Notification";
 import "../styles/LoginPage.css"; // Style your page accordingly
+import SEO from "../components/SEO";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -247,6 +248,11 @@ const LoginPage = () => {
 
   return (
     <div className="login-page">
+      <SEO
+        title="Login | Best Food App"
+        description="Login to manage your reviews and profile."
+        noindex={true}
+      />
       {/* Notification Component */}
       <Notification
         message={notification.message}

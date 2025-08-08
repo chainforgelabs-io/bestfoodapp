@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../styles/RestaurantPage.css";
 import axios from "../api/axios";
+import SEO from "../components/SEO";
 
 function RestaurantPage() {
   const { restaurantID } = useParams();
@@ -60,8 +61,57 @@ function RestaurantPage() {
     );
   }
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    name: restaurant.name,
+    url: typeof window !== "undefined" ? window.location.href : undefined,
+    address: restaurant.address
+      ? {
+          "@type": "PostalAddress",
+          streetAddress: restaurant.address.street || "",
+          addressLocality: restaurant.address.city || "",
+          addressRegion: restaurant.address.province || "",
+          addressCountry: restaurant.address.country || "",
+        }
+      : undefined,
+    servesCuisine: Array.isArray(restaurant.cuisine)
+      ? restaurant.cuisine
+      : restaurant.type
+      ? [restaurant.type]
+      : undefined,
+    aggregateRating:
+      Array.isArray(foodItems) && foodItems.length > 0
+        ? {
+            "@type": "AggregateRating",
+            ratingValue:
+              Math.round(
+                (foodItems.reduce(
+                  (sum, item) => sum + (item.overallAverageScore || 0),
+                  0
+                ) /
+                  foodItems.length) *
+                  10
+              ) / 10,
+            reviewCount: foodItems.length,
+          }
+        : undefined,
+  };
+
   return (
     <div className="restaurant-page-container">
+      <SEO
+        title={`${restaurant.name} | Restaurant Ratings & Menu`}
+        description={`Explore ${
+          restaurant.name
+        }'s best dishes, ratings, and cuisine in ${
+          restaurant?.address?.city || "your city"
+        }. See top menu items and reviews.`}
+        keywords={`${restaurant.name}, ${restaurant?.type || "restaurant"}, ${
+          restaurant?.address?.city || ""
+        } food, best food, ratings`}
+        jsonLd={jsonLd}
+      />
       {/* Restaurant Header */}
       <div className="restaurant-header">
         <h1 className="restaurant-page-title">{restaurant.name}</h1>

@@ -10,7 +10,9 @@ const CitySearch = ({ onSelectCity, onEnterPress, resetKey }) => {
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
-    googleMapsApiKey: "AIzaSyCj6cdcj9Jit0moxS2Obmng_kHkRyeQYeE",
+    googleMapsApiKey:
+      process.env.REACT_APP_GOOGLE_MAPS_API_KEY ||
+      "AIzaSyCj6cdcj9Jit0moxS2Obmng_kHkRyeQYeE",
     libraries: libraries,
   });
 

@@ -7,6 +7,7 @@ import {
   CUISINE_TYPES,
   AMBIANCE_OPTIONS,
 } from "../utils/standardizedOptions";
+import SEO from "../components/SEO";
 
 function AddRestaurantPage() {
   const { state } = useLocation();
@@ -92,6 +93,11 @@ function AddRestaurantPage() {
 
   return (
     <div className="add-restaurant-form-container">
+      <SEO
+        title="Add a Restaurant | Best Food App"
+        description="Add a new restaurant to the Best Food App database."
+        noindex={true}
+      />
       <h2>
         Add a New Restaurant for {locationData.city}, {locationData.province},{" "}
         {locationData.country}

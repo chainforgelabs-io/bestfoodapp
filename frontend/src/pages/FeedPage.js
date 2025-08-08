@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../styles/FeedPage.css"; // Create this file for styling
+import SEO from "../components/SEO";
 
 function FeedPage() {
   const [localReviews, setLocalReviews] = useState([]);
@@ -72,7 +73,11 @@ function FeedPage() {
   };
 
   return (
-    <div className="feed-container">
+    <div className="feed-page">
+      <SEO
+        title="Food Feed | Best Food App"
+        description="Explore recent reviews and top-rated dishes from the community."
+      />
       {/* Loading State */}
       {loading ? (
         <p>Loading reviews...</p>

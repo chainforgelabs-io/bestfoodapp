@@ -1,0 +1,204 @@
+/* EnterpriseOverrides.css
+   Subtle, professional polish without changing colors or layout
+*/
+
+:root {
+  --brand-gradient: linear-gradient(135deg, #b08bd4, #9562d4);
+  --brand-gradient-strong: linear-gradient(135deg, #9562d4, #8449c7);
+  --surface: #ffffff;
+  --text-primary: #1f2937; /* neutral-800 */
+  --text-secondary: #4b5563; /* neutral-600 */
+  --border-color: #e5e7eb; /* neutral-200 */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --transition-fast: 150ms ease;
+  --transition: 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Typography refinements */
+body {
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.01em;
+}
+
+/* Focus visibility for accessibility */
+:focus-visible {
+  outline: 3px solid rgba(149, 98, 212, 0.35);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Cards and containers */
+.search-form,
+.city-search-container,
+.results-section .result-item,
+.result-item,
+.restaurant-header,
+.food-items-section,
+.notification,
+.modal,
+.success-banner {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+}
+
+/* Reduce overly strong glow effects */
+.search-form:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Inputs */
+.search-input,
+#google-places-autocomplete,
+.login-input,
+.filter-search-input,
+.filter-select,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+select,
+textarea {
+  border: 1.5px solid #e8eaf5;
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition), box-shadow var(--transition),
+    transform var(--transition-fast);
+}
+
+.search-input:focus,
+#google-places-autocomplete:focus,
+.login-input:focus,
+.filter-search-input:focus,
+.filter-select:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+select:focus,
+textarea:focus {
+  border-color: #b08bd4;
+  box-shadow: 0 0 0 3px rgba(176, 139, 212, 0.12);
+}
+
+/* Buttons - unify style without changing color */
+.search-button,
+.reset-city-button,
+.login-btn,
+button.primary,
+button[type="submit"] {
+  background: var(--brand-gradient);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition);
+}
+
+.search-button:hover,
+.reset-city-button:hover,
+.login-btn:hover,
+button.primary:hover,
+button[type="submit"]:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+  background: var(--brand-gradient-strong);
+}
+
+.search-button:active,
+.reset-city-button:active,
+.login-btn:active,
+button.primary:active,
+button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+/* Navbar polish */
+.navbar {
+  border-bottom: 1px solid rgba(176, 139, 212, 0.12);
+  box-shadow: var(--shadow-sm);
+}
+
+.navbar.scrolled {
+  box-shadow: var(--shadow-md);
+}
+
+.nav-link {
+  color: var(--text-primary);
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #fff;
+}
+
+/* Result list items */
+.result-item {
+  transition: box-shadow var(--transition), transform var(--transition-fast),
+    border-color var(--transition);
+}
+
+.result-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(149, 98, 212, 0.25);
+  box-shadow: var(--shadow-lg);
+}
+
+.result-header .overall-score,
+.score-item .score-value {
+  background: #ffffff;
+  border: 1px solid #eef0f7;
+  border-radius: 999px;
+  padding: 6px 10px;
+  min-width: 40px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Subtle animation tuning */
+@media (prefers-reduced-motion: no-preference) {
+  .logo-container,
+  .home-title,
+  .search-form,
+  .leaderboards-header,
+  .category-tabs .category-tab,
+  .result-item {
+    animation-duration: 480ms;
+  }
+}
+
+/* Tables, selects, chips */
+.filter-select {
+  background: #ffffff;
+  border: 1px solid #e8eaf5;
+}
+
+.cuisine-tag,
+.city-badge,
+.category-tab.active {
+  box-shadow: var(--shadow-sm);
+}
+
+/* Footer or utility classes if present */
+.text-muted {
+  color: var(--text-secondary);
+}
+.small {
+  font-size: 0.875rem;
+}
+.semi {
+  font-weight: 600;
+}

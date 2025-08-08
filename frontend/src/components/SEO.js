@@ -10,6 +10,8 @@ const SEO = ({
   type = "website",
   author = "Best Food App",
   canonicalUrl,
+  noindex = false,
+  jsonLd,
 }) => {
   const siteTitle = "Best Food App";
   const fullTitle = title.includes(siteTitle)
@@ -24,7 +26,10 @@ const SEO = ({
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
       <meta name="author" content={author} />
-      <meta name="robots" content="index, follow" />
+      <meta
+        name="robots"
+        content={noindex ? "noindex, nofollow" : "index, follow"}
+      />
 
       {/* Canonical URL */}
       <link rel="canonical" href={currentUrl} />
@@ -48,6 +53,21 @@ const SEO = ({
       <meta name="apple-mobile-web-app-capable" content="yes" />
       <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       <meta name="apple-mobile-web-app-title" content={siteTitle} />
+
+      {/* Optional JSON-LD Structured Data */}
+      {jsonLd ? (
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      ) : (
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: siteTitle,
+            url: currentUrl,
+            logo: `${process.env.PUBLIC_URL}/logo512.png`,
+          })}
+        </script>
+      )}
     </Helmet>
   );
 };

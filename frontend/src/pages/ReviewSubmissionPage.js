@@ -8,6 +8,7 @@ import SuccessOverlay from "../components/SuccessOverlay";
 import axios from "../api/axios";
 import "../styles/ReviewSubmissionPage.css";
 import { useNavigate, useLocation } from "react-router-dom";
+import SEO from "../components/SEO";
 
 function ReviewSubmissionPage() {
   const location = useLocation();
@@ -410,6 +411,11 @@ function ReviewSubmissionPage() {
 
   return (
     <div className="submission-container">
+      <SEO
+        title="Submit a Review | Best Food App"
+        description="Share your dining experience and rate food items."
+        noindex={true}
+      />
       <div className="form-section">
         <div className="form-header">
           <h1 className="form-heading">Submit Your Review</h1>

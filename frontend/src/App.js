@@ -19,6 +19,7 @@ import AddRestaurantPage from "./pages/AddRestaurantPage";
 import ScrollToTop from "./components/ScrollToTop";
 import SEO from "./components/SEO";
 import "./styles/MobileEnhancements.css"; // Import mobile enhancements
+import "./styles/EnterpriseOverrides.css";
 
 function App() {
   return (

@@ -3,6 +3,7 @@ import axios from "../api/axios";
 import CitySearch from "../components/CitySearch";
 import { useNavigate } from "react-router-dom";
 import "../styles/RegisterPage.css";
+import SEO from "../components/SEO";
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -163,6 +164,11 @@ function RegisterPage() {
 
   return (
     <div className="register-page">
+      <SEO
+        title="Register | Best Food App"
+        description="Create an account to submit reviews and personalize your experience."
+        noindex={true}
+      />
       <h2>Register</h2>
 
       {step === 1 && (
