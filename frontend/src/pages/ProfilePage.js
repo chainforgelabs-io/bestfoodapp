@@ -12,70 +12,68 @@ function ProfilePage() {
   const [reviewCount, setReviewCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [sort, setSort] = useState("date"); // date|score|photos
+  const [order, setOrder] = useState("desc");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(12);
+  const [totalPages, setTotalPages] = useState(1);
+  const [view, setView] = useState("grid"); // grid | list
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
-      // Check if user is authenticated
       if (!tokenUtils.isAuthenticated()) {
-        console.log("User not authenticated, redirecting to login");
         navigate("/login");
         return;
       }
-
       const token = tokenUtils.getToken();
       try {
         const decodedToken = jwtDecode(token);
-        console.log("Decoded token:", decodedToken);
-
         const userId = decodedToken.id;
-        console.log("User ID from token:", userId);
-
-        // Log token information for debugging
-        const tokenInfo = tokenUtils.getTokenInfo();
-        if (tokenInfo) {
-          console.log("Current session info:", {
-            expiresAt: tokenInfo.expiresAt,
-            hoursUntilExpiry: tokenInfo.hoursUntilExpiry,
-            keepLoggedIn: tokenInfo.keepLoggedIn,
-          });
-        }
-
-        // Fetch user details and reviews
         const userResponse = await axios.get(`/users/${userId}`);
-        console.log("User details response:", userResponse);
-
-        // Access the 'user' object inside 'data' and set it
         const userData = userResponse.data.user;
-        const userReviews = userResponse.data.reviews || [];
-
         setUser(userData);
-        setReviews(userReviews);
-
-        // Set review count, followers count, and following count
-        setReviewCount(userReviews.length);
         setFollowerCount(userData.followers.length || 0);
         setFollowingCount(userData.following.length || 0);
+        setReviewCount((userResponse.data.reviews || []).length);
       } catch (error) {
-        console.error("Error fetching user data", error);
-        // If there's an error (like token expiry), redirect to login
         tokenUtils.clearToken();
         navigate("/login");
       }
     };
-
     fetchUserData();
   }, [navigate]);
 
-  // Enhanced logout function to clear all authentication data
-  const handleLogout = () => {
-    console.log("Logging out user");
-    tokenUtils.clearToken();
-    console.log("Authentication data cleared");
-    navigate("/login"); // Redirect to login page
+  const loadReviews = async (pageToLoad = 1, reset = false) => {
+    try {
+      setLoading(true);
+      const token = tokenUtils.getToken();
+      const decodedToken = jwtDecode(token);
+      const userId = decodedToken.id;
+      const { data } = await axios.get(`/users/${userId}/reviews-paginated`, {
+        params: { page: pageToLoad, limit, sort, order },
+      });
+      setTotalPages(data.totalPages || 1);
+      setPage(data.page || pageToLoad);
+      setReviews((prev) => (reset ? data.items : [...prev, ...data.items]));
+    } catch (e) {
+      console.error("Failed to load reviews", e?.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Format date for display
+  useEffect(() => {
+    // reload when sort/order changes
+    loadReviews(1, true);
+  }, [sort, order]);
+
+  const handleLogout = () => {
+    tokenUtils.clearToken();
+    navigate("/login");
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -85,20 +83,111 @@ function ProfilePage() {
     });
   };
 
-  // Get score color based on value
   const getScoreColor = (score) => {
-    if (score >= 80) return "#28a745"; // Green
-    if (score >= 60) return "#ffc107"; // Yellow
-    if (score >= 40) return "#fd7e14"; // Orange
-    return "#dc3545"; // Red
+    if (score >= 80) return "#28a745";
+    if (score >= 60) return "#ffc107";
+    if (score >= 40) return "#fd7e14";
+    return "#dc3545";
   };
 
-  // Navigate to restaurant page
-  const handleReviewClick = (restaurantId) => {
-    if (restaurantId) {
-      navigate(`/restaurant/${restaurantId}`);
-    }
-  };
+  const hasPhotos = (r) => Array.isArray(r.photos) && r.photos.length > 0;
+
+  const ReviewGridCard = ({ r }) => (
+    <div
+      className="review-card clickable"
+      onClick={() =>
+        navigate(`/restaurant/${r.restaurant?._id || r.restaurantId}`)
+      }
+    >
+      {hasPhotos(r) ? (
+        <div
+          className="grid-photo"
+          style={{
+            position: "relative",
+            paddingTop: "100%",
+            borderRadius: 12,
+            overflow: "hidden",
+          }}
+        >
+          <img
+            src={r.photos[0]}
+            alt="post"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+          <div
+            className="grid-overlay"
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              padding: 8,
+              background: "linear-gradient(transparent, rgba(0,0,0,0.5))",
+              color: "#fff",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-end",
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 700,
+                textShadow: "0 2px 6px rgba(0,0,0,0.4)",
+              }}
+            >
+              {r.foodItem?.name || "Food Item"}
+            </div>
+            <div
+              className="score-badge"
+              style={{
+                background: "#fff",
+                color: "#333",
+                borderRadius: 999,
+                padding: "4px 8px",
+                fontWeight: 800,
+              }}
+            >
+              {Math.round(r.score)}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="tweet-card" style={{ padding: 16 }}>
+          <div
+            className="tweet-header"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ fontWeight: 700 }}>
+              {r.foodItem?.name || "Food Item"}
+            </div>
+            <div style={{ color: getScoreColor(r.score), fontWeight: 800 }}>
+              {Math.round(r.score)}
+            </div>
+          </div>
+          {r.comment && (
+            <div style={{ marginTop: 8, color: "#555" }}>{r.comment}</div>
+          )}
+          <div
+            className="tweet-meta"
+            style={{ marginTop: 8, fontSize: 12, color: "#888" }}
+          >
+            {r.restaurant?.name || r.restaurantId?.name || "Restaurant"} ·{" "}
+            {formatDate(r.reviewDate)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="profile-page">
@@ -108,105 +197,128 @@ function ProfilePage() {
         noindex={true}
       />
       <div className="profile-container">
-        <div className="user-info">
-          {/* <img
-            src={user.profilePicture}
-            alt="Profile"
-            className="profile-picture"
-          /> */}
-          <h2>{user.username}</h2>
-          <p>{user.bio}</p>
-          <p>Total Points: {user.points}</p>
+        {/* Header */}
+        <div className="user-info" style={{ position: "relative" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              justifyContent: "center",
+            }}
+          >
+            <h2 style={{ margin: 0 }}>{user.username}</h2>
+            {user.role === "admin" && (
+              <span title="Verified" style={{ color: "#1d9bf0", fontSize: 18 }}>
+                ✔︎
+              </span>
+            )}
+          </div>
+          {user.bio && <p style={{ marginTop: 6 }}>{user.bio}</p>}
+          <div
+            style={{
+              display: "flex",
+              gap: 16,
+              justifyContent: "center",
+              marginTop: 8,
+            }}
+          >
+            <span className="semi small">{reviewCount} posts</span>
+            <span className="semi small">{followerCount} followers</span>
+            <span className="semi small">{followingCount} following</span>
+          </div>
         </div>
 
-        <div className="user-stats">
-          <p>
-            <strong>Reviews:</strong> {reviewCount}
-          </p>
-          <p>
-            <strong>Followers:</strong> {followerCount}
-          </p>
-          <p>
-            <strong>Following:</strong> {followingCount}
-          </p>
+        {/* Controls */}
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 16,
+          }}
+        >
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="filter-select"
+          >
+            <option value="date">Newest</option>
+            <option value="score">Score</option>
+            <option value="photos">With Photos</option>
+          </select>
+          <select
+            value={order}
+            onChange={(e) => setOrder(e.target.value)}
+            className="filter-select"
+          >
+            <option value="desc">Desc</option>
+            <option value="asc">Asc</option>
+          </select>
+          <div className="view-toggle" style={{ display: "flex", gap: 8 }}>
+            <button
+              className="search-button"
+              style={{ padding: "8px 12px" }}
+              onClick={() => setView("grid")}
+            >
+              Grid
+            </button>
+            <button
+              className="search-button"
+              style={{ padding: "8px 12px" }}
+              onClick={() => setView("list")}
+            >
+              List
+            </button>
+          </div>
         </div>
 
-        {/* User Reviews Section */}
-        {reviews.length > 0 && (
-          <div className="user-reviews-section">
-            <h3>My Reviews ({reviewCount})</h3>
-            <div className="reviews-grid">
-              {reviews.map((review) => (
-                <div
-                  key={review._id}
-                  className="review-card clickable"
-                  onClick={() => handleReviewClick(review.restaurantId?._id)}
-                  title={`Go to ${
-                    review.restaurantId?.name || "restaurant"
-                  } page`}
-                >
-                  <div className="review-header">
-                    <h4>{review.foodItem?.name || "Food Item"}</h4>
-                    <div
-                      className="review-score"
-                      style={{ color: getScoreColor(review.score) }}
-                    >
-                      {review.score}/100
-                    </div>
-                  </div>
-
-                  <div className="restaurant-info">
-                    <p>
-                      <strong>
-                        {review.restaurantId?.name || "Restaurant"}
-                      </strong>
-                    </p>
-                    {review.restaurantId?.cuisine && (
-                      <p className="cuisine">
-                        {review.restaurantId.cuisine.join(", ")}
-                      </p>
-                    )}
-                  </div>
-
-                  {review.comment && (
-                    <p className="review-comment">"{review.comment}"</p>
-                  )}
-
-                  <div className="review-details">
-                    <span className="category">
-                      {review.foodItem?.category}
-                    </span>
-                    {review.foodItem?.price && (
-                      <span className="price">${review.foodItem.price}</span>
-                    )}
-                  </div>
-
-                  <div className="review-date">
-                    {formatDate(review.reviewDate)}
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* Reviews */}
+        {view === "grid" ? (
+          <div
+            className="reviews-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+              gap: 16,
+            }}
+          >
+            {reviews.map((r) => (
+              <ReviewGridCard key={r._id} r={r} />
+            ))}
+          </div>
+        ) : (
+          <div
+            className="reviews-list"
+            style={{ display: "flex", flexDirection: "column", gap: 12 }}
+          >
+            {reviews.map((r) => (
+              <ReviewGridCard key={r._id} r={r} />
+            ))}
           </div>
         )}
 
-        {/* Debug info - remove in production
-        {process.env.NODE_ENV === "development" && (
-          <div
-            className="debug-info"
-            style={{
-              marginTop: "20px",
-              padding: "10px",
-              background: "#f0f0f0",
-              borderRadius: "5px",
-            }}
-          >
-            <h4>Session Debug Info:</h4>
-            <pre>{JSON.stringify(tokenUtils.getTokenInfo(), null, 2)}</pre>
-          </div>
-        )} */}
+        {/* Pagination */}
+        <div
+          style={{ display: "flex", justifyContent: "center", marginTop: 16 }}
+        >
+          {page < totalPages && (
+            <button
+              className="search-button"
+              onClick={() => loadReviews(page + 1)}
+              disabled={loading}
+            >
+              {loading ? "Loading..." : "Load more"}
+            </button>
+          )}
+        </div>
 
-        <button onClick={handleLogout} className="logout-button">
+        <button
+          onClick={handleLogout}
+          className="logout-button"
+          style={{ position: "static", marginTop: 20 }}
+        >
           Logout
         </button>
       </div>

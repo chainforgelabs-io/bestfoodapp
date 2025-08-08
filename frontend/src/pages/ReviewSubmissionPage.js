@@ -40,6 +40,9 @@ function ReviewSubmissionPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const [uploading, setUploading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState([]); // [{url, key}]
 
   // Handle clicking outside the suggestions dropdown to close it
   useEffect(() => {
@@ -277,6 +280,63 @@ function ReviewSubmissionPage() {
     }
   };
 
+  const requestPresignedUrls = async (files) => {
+    const token = localStorage.getItem("token");
+    const body = {
+      files: files.map((f) => ({ fileName: f.name, contentType: f.type })),
+      prefix: "reviews",
+    };
+    const { data } = await axios.post(`/uploads/photos/presign`, body, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data.uploads; // [{key,url,uploadUrl,contentType}]
+  };
+
+  const uploadToS3 = async (presigned, file) => {
+    await fetch(presigned.uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": presigned.contentType,
+        "x-amz-acl": "public-read",
+      },
+      body: file,
+    });
+    return { url: presigned.url, key: presigned.key };
+  };
+
+  const handleFilesSelected = async (e) => {
+    const files = Array.from(e.target.files || []);
+    setSelectedFiles(files);
+  };
+
+  const handleUploadPhotos = async () => {
+    if (!selectedFiles.length) return;
+    try {
+      setUploading(true);
+      const presigned = await requestPresignedUrls(selectedFiles);
+      const results = [];
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const res = await uploadToS3(presigned[i], selectedFiles[i]);
+        results.push(res);
+      }
+      setUploadedPhotos((prev) => [...prev, ...results]);
+      setNotification({
+        isVisible: true,
+        message: "Photos uploaded",
+        type: "success",
+      });
+    } catch (err) {
+      console.error("Photo upload failed", err);
+      setNotification({
+        isVisible: true,
+        message: "Photo upload failed",
+        type: "error",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // Submit the entire form at the end
   const handleSubmit = async () => {
     if (isSubmitting) return; // Prevent double submission
@@ -332,7 +392,6 @@ function ReviewSubmissionPage() {
 
       const formattedPurchaseDate = formatDate(formData.purchaseDate);
 
-      // Create reviews for each food item
       console.log("DEBUG: formData.foodItems:", formData.foodItems);
 
       const reviewPromises = formData.foodItems.map(async (foodItem, index) => {
@@ -344,7 +403,6 @@ function ReviewSubmissionPage() {
           throw new Error(`Rating is required for ${foodItem.name}`);
         }
 
-        // Check if foodItem has _id
         if (!foodItem._id) {
           throw new Error(
             `Food item "${foodItem.name}" does not have an ID. It may not have been saved to the database.`
@@ -356,8 +414,8 @@ function ReviewSubmissionPage() {
           foodItem: foodItem._id,
           score: parseInt(rating),
           comment: "",
-          photos: formData.photos || [],
-          tags: [],
+          photos: uploadedPhotos.map((p) => p.url),
+          tags: formData.tags || [],
           purchaseDate: formattedPurchaseDate,
         };
 
@@ -366,11 +424,9 @@ function ReviewSubmissionPage() {
         return axios.post(`/reviews`, reviewData, config);
       });
 
-      // Submit all reviews
       const results = await Promise.all(reviewPromises);
       console.log("All reviews submitted:", results); // Debug log
 
-      // Navigate to success page
       navigate("/review-success");
     } catch (error) {
       console.error("Error submitting review:", error);
@@ -776,20 +832,60 @@ function ReviewSubmissionPage() {
               <div className="form-group">
                 <label className="form-label">Upload Photos (Optional)</label>
                 <div className="photo-upload-container">
-                  <div className="coming-soon-message">
-                    📸 Photo upload feature coming soon!
-                  </div>
-                  <div className="photo-upload-disabled">
-                    <input
-                      type="file"
-                      multiple
-                      className="form-input photo-input-disabled"
-                      disabled
-                      style={{ padding: "12px" }}
-                    />
-                    <div className="disabled-overlay">
-                      <span className="coming-soon-text">Coming Soon</span>
-                    </div>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="form-input"
+                    onChange={handleFilesSelected}
+                  />
+                  <button
+                    type="button"
+                    className={`nav-button btn-secondary ${
+                      uploading ? "loading" : ""
+                    }`}
+                    onClick={handleUploadPhotos}
+                    disabled={uploading || selectedFiles.length === 0}
+                  >
+                    {uploading ? "Uploading..." : "Upload Selected"}
+                  </button>
+                  <div
+                    className="photo-previews"
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                      marginTop: 12,
+                    }}
+                  >
+                    {selectedFiles.map((f, i) => (
+                      <img
+                        key={i}
+                        src={URL.createObjectURL(f)}
+                        alt="preview"
+                        style={{
+                          width: 80,
+                          height: 80,
+                          objectFit: "cover",
+                          borderRadius: 8,
+                          border: "1px solid #eee",
+                        }}
+                      />
+                    ))}
+                    {uploadedPhotos.map((p, i) => (
+                      <img
+                        key={`up-${i}`}
+                        src={p.url}
+                        alt="uploaded"
+                        style={{
+                          width: 80,
+                          height: 80,
+                          objectFit: "cover",
+                          borderRadius: 8,
+                          border: "1px solid #eee",
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>

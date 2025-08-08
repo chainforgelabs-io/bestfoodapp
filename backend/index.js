@@ -85,6 +85,10 @@ app.use("/api/admin", adminRoutes); // New line to include admin routes
 const leaderboardRoutes = require("./routes/leaderboard");
 app.use("/api/leaderboards", leaderboardRoutes); // New optimized leaderboard endpoints
 
+// Uploads (S3 presign)
+const uploadsRoutes = require("./routes/uploads");
+app.use("/api/uploads", uploadsRoutes);
+
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;
 mongoose

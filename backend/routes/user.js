@@ -296,6 +296,78 @@ router.get("/:id/reviews", protect, async (req, res) => {
   }
 });
 
+// Paginated & sortable user reviews
+// GET /users/:id/reviews-paginated?page=1&limit=12&sort=date|score|photos&order=desc|asc
+router.get("/:id/reviews-paginated", protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(
+      Math.max(parseInt(req.query.limit || "12", 10), 1),
+      50
+    );
+    const sortKey = (req.query.sort || "date").toLowerCase();
+    const order = (req.query.order || "desc").toLowerCase() === "asc" ? 1 : -1;
+
+    const sort =
+      sortKey === "score"
+        ? { score: order }
+        : sortKey === "photos"
+        ? { photosCount: order, reviewDate: -1 }
+        : { reviewDate: order };
+
+    // Build query
+    const baseMatch = { userId: id };
+
+    // Aggregate to include photos count for sorting
+    const pipeline = [
+      { $match: baseMatch },
+      {
+        $addFields: {
+          photosCount: { $size: { $ifNull: ["$photos", []] } },
+        },
+      },
+      { $sort: sort },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "fooditems",
+          localField: "foodItem",
+          foreignField: "_id",
+          as: "foodItem",
+        },
+      },
+      { $unwind: { path: "$foodItem", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "restaurants",
+          localField: "restaurantId",
+          foreignField: "_id",
+          as: "restaurant",
+        },
+      },
+      { $unwind: { path: "$restaurant", preserveNullAndEmptyArrays: true } },
+    ];
+
+    const [items, total] = await Promise.all([
+      Review.aggregate(pipeline),
+      Review.countDocuments(baseMatch),
+    ]);
+
+    res.json({
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      items,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Get all followers of a specific user
 router.get("/:id/followers", protect, async (req, res) => {
   try {
