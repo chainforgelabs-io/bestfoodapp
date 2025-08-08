@@ -86,7 +86,7 @@ function Navbar() {
               }
               onClick={closeMenu}
             >
-              <span className="nav-icon">📏</span>
+              <span className="nav-icon">⭐</span>
               Scoring
             </NavLink>
           </li>
