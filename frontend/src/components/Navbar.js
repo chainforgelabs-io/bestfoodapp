@@ -68,6 +68,18 @@ function Navbar() {
           </li>
           <li className="nav-item">
             <NavLink
+              to="/scoring-criteria"
+              className={({ isActive }) =>
+                isActive ? "nav-link active" : "nav-link"
+              }
+              onClick={closeMenu}
+            >
+              <span className="nav-icon">⭐</span>
+              Scoring
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink
               to="/profile"
               className={({ isActive }) =>
                 isActive ? "nav-link active" : "nav-link"

@@ -18,6 +18,7 @@ import ReviewSuccessPage from "./pages/ReviewSuccessPage";
 import AddRestaurantPage from "./pages/AddRestaurantPage";
 import ScrollToTop from "./components/ScrollToTop";
 import SEO from "./components/SEO";
+import ScoringCriteriaPage from "./pages/ScoringCriteriaPage";
 import "./styles/MobileEnhancements.css"; // Import mobile enhancements
 import "./styles/EnterpriseOverrides.css";
 
@@ -70,6 +71,10 @@ function App() {
               />
               <Route path="/feed" element={<FeedPage />} />
               <Route path="/leaderboards" element={<LeaderboardsPage />} />
+              <Route
+                path="/scoring-criteria"
+                element={<ScoringCriteriaPage />}
+              />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route
