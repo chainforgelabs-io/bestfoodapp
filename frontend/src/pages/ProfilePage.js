@@ -33,10 +33,14 @@ function ProfilePage() {
         const userId = decodedToken.id;
         const userResponse = await axios.get(`/users/${userId}`);
         const userData = userResponse.data.user;
+        const userReviews = userResponse.data.reviews || [];
         setUser(userData);
         setFollowerCount(userData.followers.length || 0);
         setFollowingCount(userData.following.length || 0);
-        setReviewCount((userResponse.data.reviews || []).length);
+        setReviewCount(userReviews.length);
+        // Seed initial reviews to avoid empty UI if paginated fetch fails
+        setReviews(userReviews);
+        setTotalPages(Math.max(1, Math.ceil(userReviews.length / limit)));
       } catch (error) {
         tokenUtils.clearToken();
         navigate("/login");
@@ -284,18 +288,22 @@ function ProfilePage() {
               gap: 16,
             }}
           >
-            {reviews.map((r) => (
-              <ReviewGridCard key={r._id} r={r} />
-            ))}
+            {reviews && reviews.length > 0 ? (
+              reviews.map((r) => <ReviewGridCard key={r._id || r.id} r={r} />)
+            ) : (
+              <div className="text-muted">No posts yet.</div>
+            )}
           </div>
         ) : (
           <div
             className="reviews-list"
             style={{ display: "flex", flexDirection: "column", gap: 12 }}
           >
-            {reviews.map((r) => (
-              <ReviewGridCard key={r._id} r={r} />
-            ))}
+            {reviews && reviews.length > 0 ? (
+              reviews.map((r) => <ReviewGridCard key={r._id || r.id} r={r} />)
+            ) : (
+              <div className="text-muted">No posts yet.</div>
+            )}
           </div>
         )}
 
