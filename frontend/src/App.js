@@ -19,6 +19,7 @@ import AddRestaurantPage from "./pages/AddRestaurantPage";
 import ScrollToTop from "./components/ScrollToTop";
 import SEO from "./components/SEO";
 import ScoringCriteriaPage from "./pages/ScoringCriteriaPage";
+import MapRatingsPage from "./pages/MapRatingsPage";
 import "./styles/MobileEnhancements.css"; // Import mobile enhancements
 import "./styles/EnterpriseOverrides.css";
 
@@ -71,6 +72,7 @@ function App() {
               />
               <Route path="/feed" element={<FeedPage />} />
               <Route path="/leaderboards" element={<LeaderboardsPage />} />
+              <Route path="/map" element={<MapRatingsPage />} />
               <Route
                 path="/scoring-criteria"
                 element={<ScoringCriteriaPage />}
