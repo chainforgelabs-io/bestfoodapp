@@ -24,7 +24,20 @@ function ReviewSubmissionPage() {
     ratings: [],
     photos: [],
     purchaseDate: "",
+    receiptId:
+      location.state?.receiptId ||
+      location.state?.formData?.receiptId ||
+      "",
+    receiptThumbUrl:
+      location.state?.receiptThumbUrl ||
+      location.state?.formData?.receiptThumbUrl ||
+      null,
   });
+  const [receiptDisplayUrl, setReceiptDisplayUrl] = useState(
+    location.state?.receiptThumbUrl ||
+      location.state?.formData?.receiptThumbUrl ||
+      null
+  );
   const [existingFoodItems, setExistingFoodItems] = useState([]); // Separate state for all existing food items for search
   const [errors, setErrors] = useState({});
   const [restaurantSuggestions, setRestaurantSuggestions] = useState([]);
@@ -43,6 +56,26 @@ function ReviewSubmissionPage() {
   const [uploading, setUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadedPhotos, setUploadedPhotos] = useState([]); // [{url, key}]
+
+  // Load signed receipt preview if we have receiptId but no blob URL (e.g. refresh)
+  useEffect(() => {
+    const id = formData.receiptId;
+    if (!id || receiptDisplayUrl) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await axios.get(`/receipts/${id}/image`);
+        if (!cancelled && data?.url) {
+          setReceiptDisplayUrl(data.url);
+        }
+      } catch (e) {
+        console.warn("Receipt preview unavailable", e?.message);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.receiptId, receiptDisplayUrl]);
 
   // Handle clicking outside the suggestions dropdown to close it
   useEffect(() => {
@@ -418,6 +451,9 @@ function ReviewSubmissionPage() {
           tags: formData.tags || [],
           purchaseDate: formattedPurchaseDate,
         };
+        if (formData.receiptId) {
+          reviewData.receiptId = formData.receiptId;
+        }
 
         console.log("Sending review data:", reviewData);
 
@@ -426,6 +462,21 @@ function ReviewSubmissionPage() {
 
       const results = await Promise.all(reviewPromises);
       console.log("All reviews submitted:", results); // Debug log
+
+      if (formData.receiptId) {
+        try {
+          await axios.patch(
+            `/receipts/${formData.receiptId}`,
+            {
+              restaurantId: formData.restaurantId,
+              status: "confirmed",
+            },
+            config
+          );
+        } catch (patchErr) {
+          console.warn("Receipt confirmation failed (reviews were saved)", patchErr);
+        }
+      }
 
       navigate("/review-success");
     } catch (error) {
@@ -609,6 +660,44 @@ function ReviewSubmissionPage() {
               style={{ width: `${(step / 6) * 100}%` }}
             ></div>
           </div>
+
+          {formData.receiptId && (
+            <div
+              className="receipt-wizard-pill"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "10px 14px",
+                marginBottom: 16,
+                borderRadius: 10,
+                border: "1px solid #d4c4e8",
+                background: "linear-gradient(135deg, #faf7ff 0%, #f3edfa 100%)",
+              }}
+            >
+              {receiptDisplayUrl && (
+                <img
+                  src={receiptDisplayUrl}
+                  alt=""
+                  style={{
+                    width: 56,
+                    height: 56,
+                    objectFit: "cover",
+                    borderRadius: 8,
+                    border: "1px solid #e0e0e0",
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+              <div style={{ fontSize: 13, lineHeight: 1.4, color: "#444" }}>
+                <strong style={{ display: "block", marginBottom: 4 }}>
+                  Receipt attached
+                </strong>
+                Stored privately for your records — not shown on your public
+                review.
+              </div>
+            </div>
+          )}
 
           {/* Step 1: Select Location */}
           {step === 1 && (

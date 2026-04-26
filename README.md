@@ -426,6 +426,10 @@ Set these in Vercel dashboard:
 - `EMAIL_USER`
 - `EMAIL_PASSWORD`
 - `NODE_ENV=production`
+- `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (for S3 uploads)
+- `S3_BUCKET_NAME` — default bucket for public review photos (presigned `PUT` with `public-read` ACL for `prefix=reviews` / default)
+- `S3_RECEIPTS_BUCKET` (optional) — if set, receipt images use this bucket; otherwise the same as `S3_BUCKET_NAME`. Use a **private** bucket (Block all public access) or a bucket policy that denies public reads on the `receipts/` prefix. Receipts are read only via time-limited signed `GET` URLs.
+- `CDN_BASE_URL` (optional) — only used for public review photo URLs, not for private receipts
 
 ### Build Process
 

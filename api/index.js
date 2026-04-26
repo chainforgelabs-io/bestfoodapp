@@ -62,7 +62,7 @@ const corsOptions = {
   },
   credentials: true, // Important for authentication
   optionsSuccessStatus: 200,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   exposedHeaders: ["Authorization"],
 };
@@ -79,8 +79,10 @@ const reviewRoutes = require("../backend/routes/review");
 const leaderboardRoutes = require("../backend/routes/leaderboard");
 const foodItemRoutes = require("../backend/routes/foodItem");
 const addressRoutes = require("../backend/routes/address");
+const uploadsRoutes = require("../backend/routes/uploads");
+const receiptRoutes = require("../backend/routes/receipts");
 
-// Use routes (MODIFIED - removed /api prefix)
+// Use routes (MODIFIED - removed /api prefix; Vercel rewrites /api/* to ?path=*)
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/restaurants", restaurantRoutes);
@@ -88,6 +90,8 @@ app.use("/reviews", reviewRoutes);
 app.use("/leaderboards", leaderboardRoutes);
 app.use("/food-items", foodItemRoutes);
 app.use("/addresses", addressRoutes);
+app.use("/uploads", uploadsRoutes);
+app.use("/receipts", receiptRoutes);
 
 // Basic route for testing (MODIFIED - now accessible at /api/)
 app.get("/", (req, res) => {

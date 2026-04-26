@@ -5,9 +5,10 @@ const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// Expect env vars: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, CDN_BASE_URL
+// Expect env vars: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, CDN_BASE_URL, optional S3_RECEIPTS_BUCKET
 const REGION = process.env.AWS_REGION;
 const BUCKET = process.env.S3_BUCKET_NAME;
+const RECEIPTS_BUCKET = process.env.S3_RECEIPTS_BUCKET || BUCKET;
 const CDN_BASE_URL = process.env.CDN_BASE_URL || ""; // e.g., https://cdn.example.com
 
 if (!REGION || !BUCKET) {
@@ -20,12 +21,22 @@ const s3 = new S3Client({ region: REGION });
 
 // POST /api/uploads/photos/presign
 // Body: { files: [{ fileName, contentType }], prefix? }
-// Returns: [{ key, url, uploadUrl, contentType }]
+// Returns: { uploads: [{ key, url, uploadUrl, contentType, imageBucket }] }
+// For prefix "receipts", objects are private (no public ACL) and use S3_RECEIPTS_BUCKET when set.
 router.post("/photos/presign", protect, async (req, res) => {
   try {
     const { files = [], prefix = "reviews" } = req.body || {};
     if (!Array.isArray(files) || files.length === 0) {
       return res.status(400).json({ message: "files array required" });
+    }
+
+    const isReceipts = prefix === "receipts";
+    const targetBucket = isReceipts ? RECEIPTS_BUCKET : BUCKET;
+
+    if (!targetBucket) {
+      return res
+        .status(500)
+        .json({ message: "S3 bucket not configured for this upload type" });
     }
 
     const userId = req.user?._id?.toString() || "anon";
@@ -39,19 +50,30 @@ router.post("/photos/presign", protect, async (req, res) => {
         );
         const key = `${prefix}/${userId}/${now}_${safeName}`;
         const contentType = f.contentType || "image/jpeg";
-        const command = new PutObjectCommand({
-          Bucket: BUCKET,
+        const putParams = {
+          Bucket: targetBucket,
           Key: key,
           ContentType: contentType,
-          ACL: "public-read",
-        });
+        };
+        if (!isReceipts) {
+          putParams.ACL = "public-read";
+        }
+        const command = new PutObjectCommand(putParams);
         const uploadUrl = await getSignedUrl(s3, command, {
           expiresIn: 60 * 5,
         });
-        const publicUrl = CDN_BASE_URL
-          ? `${CDN_BASE_URL}/${key}`
-          : `https://${BUCKET}.s3.${REGION}.amazonaws.com/${key}`;
-        return { key, url: publicUrl, uploadUrl, contentType };
+        const publicUrl = isReceipts
+          ? null
+          : CDN_BASE_URL
+            ? `${CDN_BASE_URL}/${key}`
+            : `https://${targetBucket}.s3.${REGION}.amazonaws.com/${key}`;
+        return {
+          key,
+          url: publicUrl,
+          uploadUrl,
+          contentType,
+          imageBucket: targetBucket,
+        };
       })
     );
 

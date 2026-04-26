@@ -10,7 +10,7 @@ function ReviewSuccessPage() {
   };
 
   const handleSubmitAnother = () => {
-    navigate("/submit-review");
+    navigate("/submit-review/scan");
   };
 
   return (

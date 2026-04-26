@@ -56,6 +56,18 @@ function Navbar() {
           </li> */}
           <li className="nav-item">
             <NavLink
+              to="/submit-review/scan"
+              className={({ isActive }) =>
+                isActive ? "nav-link active" : "nav-link"
+              }
+              onClick={closeMenu}
+            >
+              <span className="nav-icon">✍️</span>
+              Submit
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink
               to="/leaderboards"
               className={({ isActive }) =>
                 isActive ? "nav-link active" : "nav-link"

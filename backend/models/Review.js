@@ -54,6 +54,10 @@ const reviewSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  receiptId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Receipt",
+  },
 });
 
 module.exports = mongoose.model("Review", reviewSchema);

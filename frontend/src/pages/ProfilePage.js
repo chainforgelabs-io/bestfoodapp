@@ -19,6 +19,12 @@ function ProfilePage() {
   const [totalPages, setTotalPages] = useState(1);
   const [view, setView] = useState("grid"); // grid | list
   const [loading, setLoading] = useState(false);
+  const [receipts, setReceipts] = useState([]);
+  const [receiptsLoading, setReceiptsLoading] = useState(true);
+  const [receiptLightbox, setReceiptLightbox] = useState({
+    open: false,
+    url: "",
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -73,6 +79,25 @@ function ProfilePage() {
     loadReviews(1, true);
   }, [sort, order]);
 
+  useEffect(() => {
+    const loadReceipts = async () => {
+      if (!tokenUtils.isAuthenticated()) return;
+      try {
+        setReceiptsLoading(true);
+        const { data } = await axios.get("/receipts", {
+          params: { page: 1, limit: 50 },
+        });
+        setReceipts(data.items || []);
+      } catch (e) {
+        console.error("Failed to load receipts", e?.message);
+        setReceipts([]);
+      } finally {
+        setReceiptsLoading(false);
+      }
+    };
+    loadReceipts();
+  }, []);
+
   const handleLogout = () => {
     tokenUtils.clearToken();
     navigate("/login");
@@ -85,6 +110,17 @@ function ProfilePage() {
       month: "short",
       day: "numeric",
     });
+  };
+
+  const openReceiptImage = async (receiptId) => {
+    try {
+      const { data } = await axios.get(`/receipts/${receiptId}/image`);
+      if (data?.url) {
+        setReceiptLightbox({ open: true, url: data.url });
+      }
+    } catch (e) {
+      console.error("Could not open receipt", e);
+    }
   };
 
   const getScoreColor = (score) => {
@@ -321,6 +357,138 @@ function ProfilePage() {
             </button>
           )}
         </div>
+
+        {/* Private receipts (tax / records) */}
+        <div
+          style={{
+            marginTop: 32,
+            maxWidth: 720,
+            marginLeft: "auto",
+            marginRight: "auto",
+          }}
+        >
+          <h3 style={{ marginBottom: 12, fontSize: "1.1rem" }}>My receipts</h3>
+          <p
+            className="small text-muted"
+            style={{ color: "#666", fontSize: 13, marginBottom: 12 }}
+          >
+            Private — not shown on your public reviews. Open to view the image.
+          </p>
+          {receiptsLoading ? (
+            <p className="text-muted" style={{ color: "#888" }}>
+              Loading receipts…
+            </p>
+          ) : receipts.length === 0 ? (
+            <p className="text-muted" style={{ color: "#888" }}>
+              No receipts yet. Use Submit → scan a receipt when you write a
+              review.
+            </p>
+          ) : (
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              {receipts.map((rc) => (
+                <li
+                  key={rc._id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 12px",
+                    border: "1px solid #e8e8e8",
+                    borderRadius: 10,
+                    background: "#fafafa",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>
+                      Receipt
+                    </div>
+                    <div style={{ fontSize: 12, color: "#666" }}>
+                      {formatDate(rc.createdAt || rc.updatedAt)} ·{" "}
+                      {rc.status || "—"}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="search-button"
+                    style={{ padding: "6px 14px" }}
+                    onClick={() => openReceiptImage(rc._id)}
+                  >
+                    View
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {receiptLightbox.open && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setReceiptLightbox({ open: false, url: "" })}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.75)",
+              zIndex: 1000,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 16,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "90vh",
+                position: "relative",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setReceiptLightbox({ open: false, url: "" })}
+                style={{
+                  position: "absolute",
+                  top: -8,
+                  right: -8,
+                  borderRadius: "50%",
+                  width: 36,
+                  height: 36,
+                  border: "none",
+                  background: "#fff",
+                  fontSize: 20,
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                }}
+                aria-label="Close"
+              >
+                ×
+              </button>
+              {receiptLightbox.url && (
+                <img
+                  src={receiptLightbox.url}
+                  alt="Receipt"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "90vh",
+                    objectFit: "contain",
+                    borderRadius: 8,
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        )}
 
         <button
           onClick={handleLogout}

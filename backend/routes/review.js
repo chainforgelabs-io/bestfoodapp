@@ -2,8 +2,9 @@ const express = require("express");
 const router = express.Router();
 const Review = require("../models/Review");
 const FoodItem = require("../models/FoodItem");
-const Restaurant = require("../models/Restaurant");
 const User = require("../models/User");
+const Receipt = require("../models/Receipt");
+const mongoose = require("mongoose");
 const { protect } = require("../middleware/authMiddleware");
 const moment = require("moment");
 
@@ -51,6 +52,7 @@ router.post("/", protect, async (req, res) => {
       tags,
       sizeOptions,
       purchaseDate,
+      receiptId,
     } = req.body;
 
     // Ensure the score is between 0 and 100
@@ -70,6 +72,20 @@ router.post("/", protect, async (req, res) => {
         .json({ message: "Purchase date must be in mm-dd-yyyy format" });
     }
 
+    let linkedReceipt = null;
+    if (receiptId) {
+      if (!mongoose.isValidObjectId(receiptId)) {
+        return res.status(400).json({ message: "Invalid receiptId" });
+      }
+      linkedReceipt = await Receipt.findById(receiptId);
+      if (!linkedReceipt) {
+        return res.status(400).json({ message: "Receipt not found" });
+      }
+      if (linkedReceipt.userId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: "Not authorized to use this receipt" });
+      }
+    }
+
     // Create a new review instance
     const review = new Review({
       userId: req.user.id,
@@ -83,10 +99,23 @@ router.post("/", protect, async (req, res) => {
       tags,
       sizeOptions,
       purchaseDate: moment(purchaseDate, "MM-DD-YYYY").toDate(), // Convert to a Date object
+      receiptId: linkedReceipt ? linkedReceipt._id : undefined,
     });
 
     // Save the review to the database
     const savedReview = await review.save();
+
+    if (linkedReceipt) {
+      linkedReceipt.reviewIds = linkedReceipt.reviewIds || [];
+      linkedReceipt.reviewIds.push(savedReview._id);
+      if (!linkedReceipt.restaurantId) {
+        linkedReceipt.restaurantId = restaurantId;
+      }
+      if (linkedReceipt.status === "pending") {
+        linkedReceipt.status = "confirmed";
+      }
+      await linkedReceipt.save();
+    }
 
     // Update the food item scores based on the review
     await updateScores(foodItem);

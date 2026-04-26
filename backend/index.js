@@ -43,7 +43,7 @@ const corsOptions = {
   },
   credentials: true, // Important for authentication
   optionsSuccessStatus: 200,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   exposedHeaders: ["Authorization"],
 };
@@ -88,6 +88,10 @@ app.use("/api/leaderboards", leaderboardRoutes); // New optimized leaderboard en
 // Uploads (S3 presign)
 const uploadsRoutes = require("./routes/uploads");
 app.use("/api/uploads", uploadsRoutes);
+
+// Receipts (private image metadata + signed GET)
+const receiptRoutes = require("./routes/receipts");
+app.use("/api/receipts", receiptRoutes);
 
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;

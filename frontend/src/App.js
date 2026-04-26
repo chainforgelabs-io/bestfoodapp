@@ -14,6 +14,7 @@ import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ReviewSubmissionPage from "./pages/ReviewSubmissionPage";
+import ReceiptScanLanding from "./pages/ReceiptScanLanding";
 import ReviewSuccessPage from "./pages/ReviewSuccessPage";
 import AddRestaurantPage from "./pages/AddRestaurantPage";
 import ScrollToTop from "./components/ScrollToTop";
@@ -79,6 +80,14 @@ function App() {
               />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route
+                path="/submit-review/scan"
+                element={
+                  <ProtectedRoute>
+                    <ReceiptScanLanding />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/submit-review"
                 element={
