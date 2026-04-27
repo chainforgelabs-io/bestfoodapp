@@ -2,10 +2,16 @@
   min-height: 70vh;
   max-width: 480px;
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 2.5rem;
+  padding: 3rem 1.25rem 3rem;
   display: flex;
   flex-direction: column;
   align-items: stretch;
+}
+
+@media (max-width: 768px) {
+  .receipt-scan-page {
+    padding: 2rem 1rem 3rem;
+  }
 }
 
 .receipt-scan-title {
@@ -122,4 +128,23 @@
   color: #555;
   font-size: 0.95rem;
   margin: 0.5rem 0 0;
+}
+
+.receipt-scan-error {
+  background: #fff0f0;
+  border: 1px solid #f5b5b5;
+  border-left: 4px solid #dc3545;
+  color: #8a1a1a;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin: 0 0 1rem;
+  word-break: break-word;
+}
+
+.receipt-scan-error strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #5a1010;
 }

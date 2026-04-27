@@ -78,6 +78,7 @@ function ReceiptScanLanding() {
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [mobile] = useState(() => isMobile());
+  const [errorDetail, setErrorDetail] = useState(null);
   const [notification, setNotification] = useState({
     isVisible: false,
     message: "",
@@ -123,6 +124,28 @@ function ReceiptScanLanding() {
     }
   };
 
+  const recordError = (stage, err) => {
+    const status = err?.response?.status;
+    const body = err?.response?.data;
+    const msg =
+      (body && (body.message || body.error)) ||
+      err?.message ||
+      "Unknown error";
+    const detail = {
+      stage,
+      status: status || null,
+      message: msg,
+      raw: body || null,
+    };
+    console.error("[receipt-upload]", detail, err);
+    setErrorDetail(detail);
+    setNotification({
+      isVisible: true,
+      message: `${stage} failed: ${msg}`,
+      type: "error",
+    });
+  };
+
   const usePhoto = async () => {
     if (!file) return;
     const token = localStorage.getItem("token");
@@ -137,46 +160,83 @@ function ReceiptScanLanding() {
     }
 
     setBusy(true);
+    setErrorDetail(null);
+    let stage = "Preparing image";
     try {
       const compressed = await compressImageFile(file, MAX_EDGE);
       const imageHash = await sha256HexOfFile(compressed);
 
-      const { data: presign } = await axios.post("/uploads/photos/presign", {
-        files: [
-          {
-            fileName: compressed.name,
-            contentType: compressed.type || "image/jpeg",
-          },
-        ],
-        prefix: "receipts",
-      });
+      stage = "Requesting upload URL";
+      let presign;
+      try {
+        const res = await axios.post("/uploads/photos/presign", {
+          files: [
+            {
+              fileName: compressed.name,
+              contentType: compressed.type || "image/jpeg",
+            },
+          ],
+          prefix: "receipts",
+        });
+        presign = res.data;
+      } catch (e) {
+        recordError(stage, e);
+        return;
+      }
 
       const up = presign.uploads && presign.uploads[0];
       if (!up || !up.uploadUrl || !up.key) {
-        throw new Error("Presign response invalid");
+        recordError(stage, new Error("Presign response invalid"));
+        return;
       }
 
-      const putRes = await fetch(up.uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": up.contentType || compressed.type || "image/jpeg",
-        },
-        body: compressed,
-      });
+      stage = "Uploading to storage";
+      let putRes;
+      try {
+        putRes = await fetch(up.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": up.contentType || compressed.type || "image/jpeg",
+          },
+          body: compressed,
+        });
+      } catch (e) {
+        recordError(stage, e);
+        return;
+      }
       if (!putRes.ok) {
-        throw new Error(`Upload failed (${putRes.status})`);
+        let detail = "";
+        try {
+          detail = await putRes.text();
+        } catch (_) {}
+        recordError(
+          stage,
+          new Error(
+            `S3 PUT ${putRes.status} ${putRes.statusText}${detail ? ` — ${detail.slice(0, 300)}` : ""}`
+          )
+        );
+        return;
       }
 
       const imageBucket = up.imageBucket;
       if (!imageBucket) {
-        throw new Error("Missing imageBucket in presign response");
+        recordError(stage, new Error("Missing imageBucket in presign response"));
+        return;
       }
 
-      const { data: receipt } = await axios.post("/receipts", {
-        imageKey: up.key,
-        imageBucket,
-        imageHash,
-      });
+      stage = "Saving receipt record";
+      let receipt;
+      try {
+        const res = await axios.post("/receipts", {
+          imageKey: up.key,
+          imageBucket,
+          imageHash,
+        });
+        receipt = res.data;
+      } catch (e) {
+        recordError(stage, e);
+        return;
+      }
 
       const thumb = URL.createObjectURL(compressed);
       if (previewUrl) {
@@ -190,15 +250,7 @@ function ReceiptScanLanding() {
         },
       });
     } catch (err) {
-      console.error(err);
-      setNotification({
-        isVisible: true,
-        message:
-          err.response?.data?.message ||
-          err.message ||
-          "Upload failed. Try again or enter manually.",
-        type: "error",
-      });
+      recordError(stage, err);
     } finally {
       setBusy(false);
     }
@@ -217,6 +269,33 @@ function ReceiptScanLanding() {
         receipt is stored privately and is not shown on your public review.
         You can skip and enter everything manually.
       </p>
+
+      {errorDetail && (
+        <div className="receipt-scan-error" role="alert">
+          <strong>
+            {errorDetail.stage} failed
+            {errorDetail.status ? ` (HTTP ${errorDetail.status})` : ""}
+          </strong>
+          {errorDetail.message}
+          <div style={{ marginTop: 8 }}>
+            <button
+              type="button"
+              onClick={() => setErrorDetail(null)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#5a1010",
+                textDecoration: "underline",
+                cursor: "pointer",
+                padding: 0,
+                fontSize: "0.85rem",
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       <input
         ref={fileInputRef}
