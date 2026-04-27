@@ -1,7 +1,7 @@
 /* Notification - Modern styling with animations */
 .notification {
   position: fixed;
-  top: 20px;
+  top: calc(70px + env(safe-area-inset-top) + 16px);
   right: 20px;
   z-index: 1100;
   min-width: 300px;
@@ -104,7 +104,7 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .notification {
-    top: 10px;
+    top: calc(60px + env(safe-area-inset-top) + 12px);
     right: 10px;
     left: 10px;
     min-width: auto;
@@ -116,5 +116,11 @@
 
   .notification-message {
     font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .notification {
+    top: calc(55px + env(safe-area-inset-top) + 12px);
   }
 }
