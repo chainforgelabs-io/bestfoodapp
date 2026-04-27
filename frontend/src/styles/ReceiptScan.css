@@ -2,7 +2,7 @@
   min-height: 70vh;
   max-width: 480px;
   margin: 0 auto;
-  padding: 3rem 1.25rem 3rem;
+  padding: 10vh 1.25rem 3rem;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -10,7 +10,7 @@
 
 @media (max-width: 768px) {
   .receipt-scan-page {
-    padding: 2rem 1rem 3rem;
+    padding: 10vh 1rem 3rem;
   }
 }
 
