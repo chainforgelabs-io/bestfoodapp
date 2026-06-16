@@ -9,13 +9,48 @@ if (!MONGODB_URI) {
   console.error("MONGODB_URI is not defined in environment variables");
 }
 
-mongoose
-  .connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+// Cache the connection across serverless invocations. Vercel freezes/thaws and
+// reuses containers, so without this each request can run a query before a live
+// connection exists, causing Mongoose to buffer and time out after 10s.
+let cached = global._mongoose;
+if (!cached) {
+  cached = global._mongoose = { conn: null, promise: null };
+}
+
+async function connectDB() {
+  // readyState 1 === connected
+  if (cached.conn && mongoose.connection.readyState === 1) {
+    return cached.conn;
+  }
+
+  // A previous promise may have settled against a now-dead connection; reset it
+  // if we are no longer connected so we can establish a fresh connection.
+  if (cached.promise && mongoose.connection.readyState === 0) {
+    cached.promise = null;
+  }
+
+  if (!cached.promise) {
+    cached.promise = mongoose
+      .connect(MONGODB_URI, {
+        // Fail fast instead of buffering a query for 10s when disconnected.
+        bufferCommands: false,
+        serverSelectionTimeoutMS: 8000,
+        maxPoolSize: 10,
+      })
+      .then((m) => {
+        console.log("MongoDB connected successfully");
+        return m;
+      })
+      .catch((err) => {
+        // Clear the cached promise so the next invocation can retry.
+        cached.promise = null;
+        throw err;
+      });
+  }
+
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
 
 // Create Express app for Vercel
 const app = express();
@@ -70,6 +105,17 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Ensure a live MongoDB connection before any route touches the database.
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("MongoDB connection error:", err);
+    res.status(503).json({ message: "Database unavailable" });
+  }
+});
 
 // Import routes directly
 const authRoutes = require("../backend/routes/auth");
