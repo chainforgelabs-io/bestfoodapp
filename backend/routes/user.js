@@ -375,7 +375,10 @@ router.get("/:id/reviews-paginated", protect, async (req, res) => {
         : { reviewDate: order };
 
     // Build query
-    const baseMatch = { userId: id };
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+    const baseMatch = { userId: new mongoose.Types.ObjectId(id) };
 
     // Aggregate to include photos count for sorting
     const pipeline = [
