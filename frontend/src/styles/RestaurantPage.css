@@ -236,15 +236,6 @@
   position: relative;
 }
 
-.overall-score::after {
-  content: "/100";
-  position: absolute;
-  bottom: -20px;
-  font-size: 0.7rem;
-  color: #7f8c8d;
-  font-weight: 500;
-}
-
 /* Content section */
 .result-content {
   display: flex;
