@@ -1,0 +1,308 @@
+.review-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.review-detail-modal {
+  background: #fff;
+  border-radius: 16px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.review-detail-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.review-detail-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.review-detail-carousel {
+  position: relative;
+  background: #f5ebe0;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.review-detail-carousel-img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  display: block;
+}
+
+.review-detail-no-photo {
+  background: #f5ebe0;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.review-detail-no-photo-icon {
+  font-size: 48px;
+  opacity: 0.35;
+}
+
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.carousel-prev {
+  left: 8px;
+}
+
+.carousel-next {
+  right: 8px;
+}
+
+.carousel-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 0;
+}
+
+.carousel-dot.active {
+  background: #fff;
+  transform: scale(1.2);
+}
+
+.review-detail-content {
+  padding: 20px 24px 24px;
+}
+
+.review-detail-type-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-bottom: 10px;
+}
+
+.review-detail-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.review-detail-food-name {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  flex: 1;
+}
+
+.review-detail-score-pill {
+  font-weight: 800;
+  font-size: 1rem;
+  padding: 6px 12px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.review-detail-restaurant {
+  margin: 8px 0 4px;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.review-detail-date {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.review-detail-comment {
+  margin: 0 0 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #444;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.review-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.review-detail-link {
+  color: #6b46c1;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.review-detail-link:hover {
+  text-decoration: underline;
+}
+
+.review-detail-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.review-detail-btn.primary {
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  color: #fff;
+  border: none;
+}
+
+.review-detail-btn.secondary {
+  background: #fff;
+  border-color: #ddd;
+  color: #333;
+}
+
+.review-detail-btn.danger {
+  background: #fff;
+  border-color: #f5c6cb;
+  color: #c82333;
+}
+
+.review-detail-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.review-detail-edit-form {
+  margin-top: 12px;
+}
+
+.review-detail-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+  margin-top: 12px;
+}
+
+.review-detail-input,
+.review-detail-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.review-detail-edit-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.edit-photo-thumb-wrap {
+  position: relative;
+}
+
+.edit-photo-thumb {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.edit-photo-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: #dc3545;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.review-detail-uploading {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.review-detail-edit-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+@media (max-width: 480px) {
+  .review-detail-modal {
+    max-height: 95vh;
+  }
+
+  .review-detail-content {
+    padding: 16px;
+  }
+}

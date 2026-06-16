@@ -358,6 +358,12 @@
   color: #b08bd4;
 }
 
+@media (min-width: 769px) {
+  .restaurant-name {
+    font-size: 2rem;
+  }
+}
+
 .overall-score {
   display: flex;
   align-items: center;

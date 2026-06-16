@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const User = require("../models/User");
 const FoodItem = require("../models/FoodItem");
 const Restaurant = require("../models/Restaurant");
 const Review = require("../models/Review");
+const Address = require("../models/Address");
 const { protect } = require("../middleware/authMiddleware"); // Import the protect middleware
 const { sendPasswordResetEmail } = require("../utils/emailService");
 const crypto = require("crypto");
@@ -292,6 +294,62 @@ router.get("/:id/reviews", protect, async (req, res) => {
     res.status(200).json(reviews);
   } catch (err) {
     console.error(err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /users/:id/stats — review aggregates for profile header
+router.get("/:id/stats", protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = new mongoose.Types.ObjectId(id);
+
+    const [agg] = await Review.aggregate([
+      { $match: { userId } },
+      {
+        $lookup: {
+          from: "restaurants",
+          localField: "restaurantId",
+          foreignField: "_id",
+          as: "restaurantDoc",
+        },
+      },
+      { $unwind: { path: "$restaurantDoc", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "addresses",
+          localField: "restaurantDoc.address",
+          foreignField: "_id",
+          as: "addressDoc",
+        },
+      },
+      { $unwind: { path: "$addressDoc", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: null,
+          reviewCount: { $sum: 1 },
+          avgScore: { $avg: "$score" },
+          restaurantIds: { $addToSet: "$restaurantId" },
+          cities: { $addToSet: "$addressDoc.city" },
+        },
+      },
+    ]);
+
+    const reviewCount = agg?.reviewCount || 0;
+    const restaurantCount = agg?.restaurantIds?.length || 0;
+    const cities = (agg?.cities || []).filter(Boolean);
+    const cityCount = cities.length;
+    const avgScore =
+      reviewCount > 0 ? Math.round(agg.avgScore) : 0;
+
+    res.json({
+      reviewCount,
+      restaurantCount,
+      cityCount,
+      avgScore,
+    });
+  } catch (err) {
+    console.error("user stats", err);
     res.status(500).json({ message: "Server error" });
   }
 });

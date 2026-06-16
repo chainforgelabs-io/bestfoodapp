@@ -329,8 +329,7 @@ function ReviewSubmissionPage() {
     await fetch(presigned.uploadUrl, {
       method: "PUT",
       headers: {
-        "Content-Type": presigned.contentType,
-        "x-amz-acl": "public-read",
+        "Content-Type": presigned.contentType || file.type || "image/jpeg",
       },
       body: file,
     });

@@ -426,6 +426,16 @@ export const FOOD_SUBTYPES = {
     "Strawberry Rhubarb Pie",
     "Add +",
   ],
+  "Cocktail": [
+    "Caesar",
+    "Margarita",
+    "Old Fashioned",
+    "Mojito",
+    "Negroni",
+    "Whiskey Sour",
+    "Gin & Tonic",
+    "Add +",
+  ],
   "Tart": [
     "Butter Tart",
     "Pecan Tart",

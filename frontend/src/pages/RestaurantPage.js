@@ -8,6 +8,7 @@ function RestaurantPage() {
   const { restaurantID } = useParams();
   const [restaurant, setRestaurant] = useState(null);
   const [foodItems, setFoodItems] = useState([]);
+  const [restaurantScores, setRestaurantScores] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate(); // To handle navigation back or other actions
 
@@ -26,8 +27,20 @@ function RestaurantPage() {
         const foodItemsResponse = await axios.get(
           `/food-items/restaurant/${restaurantID}`
         );
-        console.log(foodItemsResponse.data);
         setFoodItems(foodItemsResponse.data);
+
+        try {
+          const scoresResponse = await axios.get(
+            `/food-items/restaurant/${restaurantID}/scores`
+          );
+          setRestaurantScores(scoresResponse.data);
+        } catch {
+          setRestaurantScores({
+            adminAverageScore: 0,
+            communityAverageScore: 0,
+            overallAverageScore: 0,
+          });
+        }
       } catch (error) {
         console.error("Error fetching restaurant data:", error);
       } finally {
@@ -135,6 +148,34 @@ function RestaurantPage() {
             </p>
           )}
         </div>
+
+        {restaurantScores &&
+          (restaurantScores.overallAverageScore > 0 ||
+            restaurantScores.adminAverageScore > 0 ||
+            restaurantScores.communityAverageScore > 0) && (
+            <div className="restaurant-scores-banner">
+              <div className="restaurant-overall-score-block">
+                <span className="restaurant-overall-score-value">
+                  {Math.round(restaurantScores.overallAverageScore || 0)}
+                </span>
+                <span className="restaurant-overall-score-label">Overall</span>
+              </div>
+              <div className="restaurant-scores-detail scores-section">
+                <div className="score-item">
+                  <span className="score-label">Admin</span>
+                  <span className="score-value">
+                    {Math.round(restaurantScores.adminAverageScore || 0)}
+                  </span>
+                </div>
+                <div className="score-item">
+                  <span className="score-label">Community</span>
+                  <span className="score-value">
+                    {Math.round(restaurantScores.communityAverageScore || 0)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
       </div>
 
       {/* Food Items Section */}

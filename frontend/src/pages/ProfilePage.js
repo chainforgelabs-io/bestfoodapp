@@ -1,24 +1,33 @@
-import React, { useEffect, useState } from "react";
-import axios from "../api/axios"; // Correct import of axios
+import React, { useEffect, useState, useCallback } from "react";
+import axios from "../api/axios";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import tokenUtils from "../utils/auth";
-import "../styles/ProfilePage.css";
+import ReviewDetailModal from "../components/ReviewDetailModal";
 import SEO from "../components/SEO";
+import "../styles/ProfilePage.css";
 
 function ProfilePage() {
   const [user, setUser] = useState({});
+  const [userId, setUserId] = useState(null);
   const [reviews, setReviews] = useState([]);
-  const [reviewCount, setReviewCount] = useState(0);
+  const [stats, setStats] = useState({
+    reviewCount: 0,
+    restaurantCount: 0,
+    cityCount: 0,
+    avgScore: 0,
+  });
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
-  const [sort, setSort] = useState("date"); // date|score|photos
+  const [sort, setSort] = useState("date");
   const [order, setOrder] = useState("desc");
   const [page, setPage] = useState(1);
   const [limit] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
-  const [view, setView] = useState("grid"); // grid | list
+  const [view, setView] = useState("grid");
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [selectedReview, setSelectedReview] = useState(null);
   const [receipts, setReceipts] = useState([]);
   const [receiptsLoading, setReceiptsLoading] = useState(true);
   const [receiptLightbox, setReceiptLightbox] = useState({
@@ -28,56 +37,76 @@ function ProfilePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!tokenUtils.isAuthenticated()) {
-        navigate("/login");
-        return;
-      }
-      const token = tokenUtils.getToken();
-      try {
-        const decodedToken = jwtDecode(token);
-        const userId = decodedToken.id;
-        const userResponse = await axios.get(`/users/${userId}`);
-        const userData = userResponse.data.user;
-        const userReviews = userResponse.data.reviews || [];
-        setUser(userData);
-        setFollowerCount(userData.followers.length || 0);
-        setFollowingCount(userData.following.length || 0);
-        setReviewCount(userReviews.length);
-        // Seed initial reviews to avoid empty UI if paginated fetch fails
-        setReviews(userReviews);
-        setTotalPages(Math.max(1, Math.ceil(userReviews.length / limit)));
-      } catch (error) {
-        tokenUtils.clearToken();
-        navigate("/login");
-      }
-    };
-    fetchUserData();
+    if (!tokenUtils.isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
+    const token = tokenUtils.getToken();
+    try {
+      const decoded = jwtDecode(token);
+      setUserId(decoded.id);
+    } catch {
+      tokenUtils.clearToken();
+      navigate("/login");
+    }
   }, [navigate]);
 
-  const loadReviews = async (pageToLoad = 1, reset = false) => {
+  const loadUserProfile = useCallback(async (id) => {
     try {
-      setLoading(true);
-      const token = tokenUtils.getToken();
-      const decodedToken = jwtDecode(token);
-      const userId = decodedToken.id;
-      const { data } = await axios.get(`/users/${userId}/reviews-paginated`, {
-        params: { page: pageToLoad, limit, sort, order },
-      });
-      setTotalPages(data.totalPages || 1);
-      setPage(data.page || pageToLoad);
-      setReviews((prev) => (reset ? data.items : [...prev, ...data.items]));
-    } catch (e) {
-      console.error("Failed to load reviews", e?.message);
-    } finally {
-      setLoading(false);
+      const userResponse = await axios.get(`/users/${id}`);
+      const userData = userResponse.data.user;
+      setUser(userData);
+      setFollowerCount(userData.followers?.length || 0);
+      setFollowingCount(userData.following?.length || 0);
+    } catch {
+      tokenUtils.clearToken();
+      navigate("/login");
     }
-  };
+  }, [navigate]);
+
+  const loadStats = useCallback(async (id) => {
+    try {
+      const { data } = await axios.get(`/users/${id}/stats`);
+      setStats(data);
+    } catch (e) {
+      console.error("Failed to load stats", e?.message);
+    }
+  }, []);
+
+  const loadReviews = useCallback(
+    async (pageToLoad = 1, reset = false) => {
+      if (!userId) return;
+      try {
+        setLoading(true);
+        const { data } = await axios.get(`/users/${userId}/reviews-paginated`, {
+          params: { page: pageToLoad, limit, sort, order },
+        });
+        setTotalPages(data.totalPages || 1);
+        setPage(data.page || pageToLoad);
+        setReviews((prev) =>
+          reset ? data.items || [] : [...prev, ...(data.items || [])]
+        );
+      } catch (e) {
+        console.error("Failed to load reviews", e?.message);
+        if (reset) setReviews([]);
+      } finally {
+        setLoading(false);
+        setInitialLoading(false);
+      }
+    },
+    [userId, limit, sort, order]
+  );
 
   useEffect(() => {
-    // reload when sort/order changes
+    if (!userId) return;
+    loadUserProfile(userId);
+    loadStats(userId);
+  }, [userId, loadUserProfile, loadStats]);
+
+  useEffect(() => {
+    if (!userId) return;
     loadReviews(1, true);
-  }, [sort, order]);
+  }, [userId, sort, order, loadReviews]);
 
   useEffect(() => {
     const loadReceipts = async () => {
@@ -125,109 +154,115 @@ function ProfilePage() {
 
   const getScoreColor = (score) => {
     if (score >= 80) return "#28a745";
-    if (score >= 60) return "#ffc107";
+    if (score >= 60) return "#c9a227";
     if (score >= 40) return "#fd7e14";
     return "#dc3545";
   };
 
+  const getScoreBg = (score) => {
+    if (score >= 80) return "#d4edda";
+    if (score >= 60) return "#fff3cd";
+    if (score >= 40) return "#ffe5d0";
+    return "#f8d7da";
+  };
+
   const hasPhotos = (r) => Array.isArray(r.photos) && r.photos.length > 0;
 
-  const ReviewGridCard = ({ r }) => (
-    <div
-      className="review-card clickable"
-      onClick={() =>
-        navigate(`/restaurant/${r.restaurant?._id || r.restaurantId}`)
-      }
-    >
-      {hasPhotos(r) ? (
-        <div
-          className="grid-photo"
-          style={{
-            position: "relative",
-            paddingTop: "100%",
-            borderRadius: 12,
-            overflow: "hidden",
-          }}
-        >
-          <img
-            src={r.photos[0]}
-            alt="post"
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
-          />
-          <div
-            className="grid-overlay"
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: 8,
-              background: "linear-gradient(transparent, rgba(0,0,0,0.5))",
-              color: "#fff",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-            }}
-          >
-            <div
-              style={{
-                fontWeight: 700,
-                textShadow: "0 2px 6px rgba(0,0,0,0.4)",
-              }}
-            >
-              {r.foodItem?.name || "Food Item"}
-            </div>
-            <div
-              className="score-badge"
-              style={{
-                background: "#fff",
-                color: "#333",
-                borderRadius: 999,
-                padding: "4px 8px",
-                fontWeight: 800,
-              }}
-            >
-              {Math.round(r.score)}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="tweet-card" style={{ padding: 16 }}>
-          <div
-            className="tweet-header"
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ fontWeight: 700 }}>
-              {r.foodItem?.name || "Food Item"}
-            </div>
-            <div style={{ color: getScoreColor(r.score), fontWeight: 800 }}>
-              {Math.round(r.score)}
-            </div>
-          </div>
-          {r.comment && (
-            <div style={{ marginTop: 8, color: "#555" }}>{r.comment}</div>
+  const handleReviewUpdated = (updated) => {
+    setReviews((prev) =>
+      prev.map((r) => (r._id === updated._id ? { ...r, ...updated } : r))
+    );
+    setSelectedReview((prev) =>
+      prev && prev._id === updated._id ? { ...prev, ...updated } : prev
+    );
+    if (userId) loadStats(userId);
+  };
+
+  const handleReviewDeleted = (reviewId) => {
+    setReviews((prev) => prev.filter((r) => r._id !== reviewId));
+    setSelectedReview(null);
+    if (userId) {
+      loadStats(userId);
+      loadReviews(1, true);
+    }
+  };
+
+  const toggleOrder = () => {
+    setOrder((o) => (o === "desc" ? "asc" : "desc"));
+  };
+
+  const avatarUrl = user.profilePicture;
+  const locationLine = [
+    user.location?.city,
+    user.bio || (user.role === "admin" ? "comfort-food specialist" : null),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const ReviewTile = ({ r }) => {
+    const foodType = r.foodItem?.type || "";
+    const foodName = r.foodItem?.name || "Food Item";
+    const restaurantName =
+      r.restaurant?.name || r.restaurantId?.name || "Restaurant";
+    const score = Math.round(r.score || 0);
+
+    return (
+      <article
+        className={`profile-review-tile ${view === "list" ? "list-view" : ""}`}
+        onClick={() => setSelectedReview(r)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setSelectedReview(r);
+          }
+        }}
+      >
+        <div className="profile-tile-media">
+          {foodType && (
+            <span className="profile-tile-type-tag">{foodType}</span>
           )}
-          <div
-            className="tweet-meta"
-            style={{ marginTop: 8, fontSize: 12, color: "#888" }}
-          >
-            {r.restaurant?.name || r.restaurantId?.name || "Restaurant"} ·{" "}
-            {formatDate(r.reviewDate)}
-          </div>
+          {hasPhotos(r) ? (
+            <img
+              src={r.photos[0]}
+              alt={foodName}
+              className="profile-tile-img"
+            />
+          ) : (
+            <div className="profile-tile-placeholder">
+              <span aria-hidden="true">🖼</span>
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  );
+        <div className="profile-tile-footer">
+          <div className="profile-tile-title-row">
+            <span className="profile-tile-name">{foodName}</span>
+            <span
+              className="profile-tile-score"
+              style={{
+                backgroundColor: getScoreBg(score),
+                color: getScoreColor(score),
+              }}
+            >
+              {score}
+            </span>
+          </div>
+          <span className="profile-tile-restaurant">{restaurantName}</span>
+          {view === "list" && (
+            <span className="profile-tile-date">
+              {formatDate(r.reviewDate || r.createdAt)}
+            </span>
+          )}
+        </div>
+        {view === "grid" && (
+          <span className="profile-tile-date-grid">
+            {formatDate(r.reviewDate || r.createdAt)}
+          </span>
+        )}
+      </article>
+    );
+  };
 
   return (
     <div className="profile-page">
@@ -236,190 +271,153 @@ function ProfilePage() {
         description="Manage your account and review history."
         noindex={true}
       />
-      <div className="profile-container">
-        {/* Header */}
-        <div className="user-info" style={{ position: "relative" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              justifyContent: "center",
-            }}
-          >
-            <h2 style={{ margin: 0 }}>{user.username}</h2>
-            {user.role === "admin" && (
-              <span title="Verified" style={{ color: "#1d9bf0", fontSize: 18 }}>
-                ✔︎
-              </span>
-            )}
+      <div className="profile-layout">
+        <div className="profile-header-card">
+          <div className="profile-header-top">
+            <div className="profile-avatar-wrap">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="profile-avatar-img"
+                />
+              ) : (
+                <div className="profile-avatar-fallback" aria-hidden="true">
+                  🍴
+                </div>
+              )}
+            </div>
+            <div className="profile-header-text">
+              <div className="profile-name-row">
+                <h1 className="profile-username">{user.username || "…"}</h1>
+                {user.role === "admin" && (
+                  <span className="profile-verified-badge">
+                    <span className="verified-check">✓</span>
+                    Verified critic
+                  </span>
+                )}
+              </div>
+              {locationLine && (
+                <p className="profile-meta-line">{locationLine}</p>
+              )}
+              <p className="profile-social-line">
+                {followerCount} followers · {followingCount} following
+              </p>
+            </div>
           </div>
-          {user.bio && <p style={{ marginTop: 6 }}>{user.bio}</p>}
-          <div
-            style={{
-              display: "flex",
-              gap: 16,
-              justifyContent: "center",
-              marginTop: 8,
-            }}
-          >
-            <span className="semi small">{reviewCount} posts</span>
-            <span className="semi small">{followerCount} followers</span>
-            <span className="semi small">{followingCount} following</span>
+
+          <div className="profile-stats-row">
+            <div className="profile-stat-card">
+              <span className="profile-stat-label">Reviews</span>
+              <span className="profile-stat-value">{stats.reviewCount}</span>
+            </div>
+            <div className="profile-stat-card">
+              <span className="profile-stat-label">Restaurants</span>
+              <span className="profile-stat-value">{stats.restaurantCount}</span>
+            </div>
+            <div className="profile-stat-card">
+              <span className="profile-stat-label">Cities</span>
+              <span className="profile-stat-value">{stats.cityCount}</span>
+            </div>
+            <div className="profile-stat-card">
+              <span className="profile-stat-label">Avg score</span>
+              <span className="profile-stat-value">{stats.avgScore}</span>
+            </div>
           </div>
         </div>
 
-        {/* Controls */}
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 16,
-          }}
-        >
+        <div className="profile-controls">
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            className="filter-select"
+            className="profile-sort-select"
+            aria-label="Sort reviews"
           >
             <option value="date">Newest</option>
             <option value="score">Score</option>
             <option value="photos">With Photos</option>
           </select>
-          <select
-            value={order}
-            onChange={(e) => setOrder(e.target.value)}
-            className="filter-select"
+          <button
+            type="button"
+            className="profile-order-btn"
+            onClick={toggleOrder}
+            aria-label={`Order ${order}`}
           >
-            <option value="desc">Desc</option>
-            <option value="asc">Asc</option>
-          </select>
-          <div className="view-toggle" style={{ display: "flex", gap: 8 }}>
+            {order === "desc" ? "↓ Desc" : "↑ Asc"}
+          </button>
+          <div className="profile-view-toggle">
             <button
-              className="search-button"
-              style={{ padding: "8px 12px" }}
+              type="button"
+              className={`view-toggle-btn ${view === "grid" ? "active" : ""}`}
               onClick={() => setView("grid")}
+              aria-pressed={view === "grid"}
             >
-              Grid
+              ⊞ Grid
             </button>
             <button
-              className="search-button"
-              style={{ padding: "8px 12px" }}
+              type="button"
+              className={`view-toggle-btn ${view === "list" ? "active" : ""}`}
               onClick={() => setView("list")}
+              aria-pressed={view === "list"}
             >
-              List
+              ☰ List
             </button>
           </div>
         </div>
 
-        {/* Reviews */}
-        {view === "grid" ? (
+        {initialLoading ? (
+          <p className="profile-loading">Loading reviews…</p>
+        ) : reviews.length > 0 ? (
           <div
-            className="reviews-grid"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-              gap: 16,
-            }}
+            className={`profile-reviews-grid ${view === "list" ? "is-list" : ""}`}
           >
-            {reviews && reviews.length > 0 ? (
-              reviews.map((r) => <ReviewGridCard key={r._id || r.id} r={r} />)
-            ) : (
-              <div className="text-muted">No posts yet.</div>
-            )}
+            {reviews.map((r) => (
+              <ReviewTile key={r._id || r.id} r={r} />
+            ))}
           </div>
         ) : (
-          <div
-            className="reviews-list"
-            style={{ display: "flex", flexDirection: "column", gap: 12 }}
-          >
-            {reviews && reviews.length > 0 ? (
-              reviews.map((r) => <ReviewGridCard key={r._id || r.id} r={r} />)
-            ) : (
-              <div className="text-muted">No posts yet.</div>
-            )}
+          <p className="profile-empty">No posts yet.</p>
+        )}
+
+        {page < totalPages && (
+          <div className="profile-load-more-wrap">
+            <button
+              type="button"
+              className="profile-load-more-btn"
+              onClick={() => loadReviews(page + 1, false)}
+              disabled={loading}
+            >
+              {loading ? "Loading…" : "Load more"}
+            </button>
           </div>
         )}
 
-        {/* Pagination */}
-        <div
-          style={{ display: "flex", justifyContent: "center", marginTop: 16 }}
-        >
-          {page < totalPages && (
-            <button
-              className="search-button"
-              onClick={() => loadReviews(page + 1)}
-              disabled={loading}
-            >
-              {loading ? "Loading..." : "Load more"}
-            </button>
-          )}
-        </div>
-
-        {/* Private receipts (tax / records) */}
-        <div
-          style={{
-            marginTop: 32,
-            maxWidth: 720,
-            marginLeft: "auto",
-            marginRight: "auto",
-          }}
-        >
-          <h3 style={{ marginBottom: 12, fontSize: "1.1rem" }}>My receipts</h3>
-          <p
-            className="small text-muted"
-            style={{ color: "#666", fontSize: 13, marginBottom: 12 }}
-          >
+        <section className="profile-receipts-section">
+          <h3 className="profile-receipts-title">My receipts</h3>
+          <p className="profile-receipts-hint">
             Private — not shown on your public reviews. Open to view the image.
           </p>
           {receiptsLoading ? (
-            <p className="text-muted" style={{ color: "#888" }}>
-              Loading receipts…
-            </p>
+            <p className="profile-empty">Loading receipts…</p>
           ) : receipts.length === 0 ? (
-            <p className="text-muted" style={{ color: "#888" }}>
+            <p className="profile-empty">
               No receipts yet. Use Submit → scan a receipt when you write a
               review.
             </p>
           ) : (
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}
-            >
+            <ul className="profile-receipts-list">
               {receipts.map((rc) => (
-                <li
-                  key={rc._id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 12px",
-                    border: "1px solid #e8e8e8",
-                    borderRadius: 10,
-                    background: "#fafafa",
-                  }}
-                >
+                <li key={rc._id} className="profile-receipt-item">
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>
-                      Receipt
-                    </div>
-                    <div style={{ fontSize: 12, color: "#666" }}>
+                    <div className="profile-receipt-label">Receipt</div>
+                    <div className="profile-receipt-meta">
                       {formatDate(rc.createdAt || rc.updatedAt)} ·{" "}
                       {rc.status || "—"}
                     </div>
                   </div>
                   <button
                     type="button"
-                    className="search-button"
-                    style={{ padding: "6px 14px" }}
+                    className="profile-receipt-view-btn"
                     onClick={() => openReceiptImage(rc._id)}
                   >
                     View
@@ -428,76 +426,56 @@ function ProfilePage() {
               ))}
             </ul>
           )}
-        </div>
-
-        {receiptLightbox.open && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            onClick={() => setReceiptLightbox({ open: false, url: "" })}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.75)",
-              zIndex: 1000,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 16,
-            }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                maxWidth: "100%",
-                maxHeight: "90vh",
-                position: "relative",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setReceiptLightbox({ open: false, url: "" })}
-                style={{
-                  position: "absolute",
-                  top: -8,
-                  right: -8,
-                  borderRadius: "50%",
-                  width: 36,
-                  height: 36,
-                  border: "none",
-                  background: "#fff",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                }}
-                aria-label="Close"
-              >
-                ×
-              </button>
-              {receiptLightbox.url && (
-                <img
-                  src={receiptLightbox.url}
-                  alt="Receipt"
-                  style={{
-                    maxWidth: "100%",
-                    maxHeight: "90vh",
-                    objectFit: "contain",
-                    borderRadius: 8,
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        )}
+        </section>
 
         <button
+          type="button"
           onClick={handleLogout}
-          className="logout-button"
-          style={{ position: "static", marginTop: 20 }}
+          className="profile-logout-btn"
         >
           Logout
         </button>
       </div>
+
+      <ReviewDetailModal
+        review={selectedReview}
+        isOpen={!!selectedReview}
+        onClose={() => setSelectedReview(null)}
+        currentUserId={userId}
+        currentUserRole={user.role}
+        onUpdated={handleReviewUpdated}
+        onDeleted={handleReviewDeleted}
+      />
+
+      {receiptLightbox.open && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="profile-receipt-lightbox"
+          onClick={() => setReceiptLightbox({ open: false, url: "" })}
+        >
+          <div
+            className="profile-receipt-lightbox-inner"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="profile-receipt-lightbox-close"
+              onClick={() => setReceiptLightbox({ open: false, url: "" })}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            {receiptLightbox.url && (
+              <img
+                src={receiptLightbox.url}
+                alt="Receipt"
+                className="profile-receipt-lightbox-img"
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

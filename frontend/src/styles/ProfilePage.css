@@ -1,356 +1,481 @@
-/* Profile page container */
-.profile-container {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* Profile page — mockup-aligned layout */
+.profile-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f9f9fc 0%, #f0f4ff 100%);
-  padding: 20px;
-  padding-top: 120px;
+  background: #fafafa;
+  padding-top: 100px;
+  padding-bottom: 48px;
 }
 
-.logout-button {
-  position: absolute;
-  top: 90px;
-  right: 20px;
-  padding: 8px 16px;
-  background: linear-gradient(135deg, #ff4757, #ff3838);
-  color: white;
-  border: none;
-  border-radius: 25px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
-  transition: all 0.3s ease;
-  z-index: 100;
+.profile-layout {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
-.logout-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+.profile-header-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
 }
 
-/* User info section - Modern card design */
-.user-info {
-  background: white;
-  padding: 40px 30px;
-  border-radius: 20px;
-  width: 100%;
-  max-width: 500px;
-  margin-bottom: 40px;
-  box-shadow: 0 10px 40px rgba(176, 139, 212, 0.15);
-  border: 1px solid #f0f0f0;
-  transition: all 0.3s ease;
+.profile-header-top {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 20px;
 }
 
-.user-info:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 50px rgba(176, 139, 212, 0.2);
+.profile-avatar-wrap {
+  flex-shrink: 0;
 }
 
-.user-info img.profile-picture {
-  width: 120px;
-  height: 120px;
+.profile-avatar-img,
+.profile-avatar-fallback {
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 20px;
-  border: 4px solid #f8f9fa;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.user-info h2 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: #333;
-  letter-spacing: -0.5px;
-}
-
-.user-info p {
-  font-size: 1rem;
-  color: #666;
-  margin-bottom: 8px;
-  line-height: 1.5;
-}
-
-/* Remove unused sections for cleaner design */
-.user-reviews,
-.followers-section,
-.following-section {
-  display: none;
-}
-
-/* User Reviews Section - Modern grid design */
-.user-reviews-section {
-  margin-top: 20px;
-  width: 100%;
-  max-width: 1000px;
-}
-
-.user-reviews-section h3 {
-  margin-bottom: 30px;
-  color: #333;
-  font-size: 1.8rem;
-  font-weight: 700;
-  text-align: center;
-  letter-spacing: -0.5px;
-}
-
-.reviews-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-  width: 100%;
-}
-
-.review-card {
-  background: white;
-  border-radius: 15px;
-  padding: 24px;
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
-  border: 1px solid #f0f0f0;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.review-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(135deg, #b08bd4, #9562d4);
-}
-
-.review-card.clickable {
-  cursor: pointer;
-}
-
-.review-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 35px rgba(176, 139, 212, 0.15);
-  border-color: #e8e0ff;
-}
-
-.review-card.clickable:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 15px 40px rgba(176, 139, 212, 0.2);
-}
-
-.review-header {
+.profile-avatar-fallback {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #e8e0ff, #f0e8ff);
+  font-size: 28px;
 }
 
-.review-header h4 {
-  margin: 0;
-  color: #333;
-  font-size: 1.2rem;
-  font-weight: 700;
+.profile-header-text {
   flex: 1;
-  line-height: 1.3;
-  letter-spacing: -0.3px;
+  min-width: 0;
 }
 
-.review-score {
-  font-weight: bold;
-  font-size: 1.4rem;
-  margin-left: 15px;
-  background: linear-gradient(135deg, #32cd32, #228b22);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  min-width: 40px;
-  text-align: right;
-}
-
-.restaurant-info {
-  margin-bottom: 16px;
-}
-
-.restaurant-info p {
-  margin: 6px 0;
-  color: #555;
-  font-size: 0.95rem;
-  line-height: 1.4;
-}
-
-.restaurant-info .cuisine {
-  font-size: 0.9rem;
-  color: #777;
-  font-style: italic;
-  background: #f8f9fa;
-  padding: 4px 8px;
-  border-radius: 6px;
-  display: inline-block;
-  margin-top: 4px;
-}
-
-.review-comment {
-  margin: 16px 0;
-  font-style: italic;
-  color: #666;
-  background: linear-gradient(135deg, #f8f9ff, #f0f4ff);
-  padding: 16px;
-  border-radius: 10px;
-  border-left: 4px solid #b08bd4;
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
-
-.review-details {
+.profile-name-row {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
-  margin: 16px 0;
+  margin-bottom: 6px;
+}
+
+.profile-username {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.profile-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1d9bf0;
+  background: #e8f4fd;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.verified-check {
+  font-size: 0.75rem;
+}
+
+.profile-meta-line {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.profile-social-line {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.profile-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.profile-stat-card {
+  background: #f5ebe0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.profile-stat-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.profile-stat-value {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1.1;
+}
+
+.profile-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
-.review-details .category {
-  background: linear-gradient(135deg, #e8e0ff, #f0e8ff);
-  color: #6b46c1;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  border: 1px solid #d8c7ff;
+.profile-sort-select {
+  flex: 1;
+  min-width: 140px;
+  max-width: 220px;
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.95rem;
 }
 
-.review-details .price {
-  background: linear-gradient(135deg, #d4edda, #c3e6cb);
-  color: #155724;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
+.profile-order-btn {
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.9rem;
   font-weight: 600;
-  border: 1px solid #a3d9a5;
+  cursor: pointer;
+  color: #333;
 }
 
-.review-date {
-  margin-top: 16px;
+.profile-view-toggle {
+  display: flex;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.view-toggle-btn {
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
   font-size: 0.85rem;
-  color: #999;
-  border-top: 1px solid #f5f5f5;
-  padding-top: 12px;
-  text-align: right;
+  font-weight: 600;
+  cursor: pointer;
+  color: #666;
 }
 
-/* Responsive design */
+.view-toggle-btn.active {
+  background: #f5f5f5;
+  color: #1a1a1a;
+}
+
+.profile-reviews-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.profile-reviews-grid.is-list {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.profile-review-tile {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-review-tile:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.profile-review-tile.list-view {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.profile-review-tile.list-view .profile-tile-media {
+  width: 120px;
+  min-height: 100px;
+  flex-shrink: 0;
+}
+
+.profile-review-tile.list-view .profile-tile-footer {
+  flex: 1;
+  padding: 12px 16px;
+}
+
+.profile-tile-media {
+  position: relative;
+  background: #f5ebe0;
+  aspect-ratio: 1;
+  min-height: 140px;
+}
+
+.profile-tile-type-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 600;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.profile-tile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  min-height: 140px;
+}
+
+.profile-tile-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  opacity: 0.35;
+}
+
+.profile-tile-footer {
+  padding: 12px 14px 8px;
+}
+
+.profile-tile-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.profile-tile-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1a1a1a;
+  line-height: 1.3;
+}
+
+.profile-tile-score {
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.profile-tile-restaurant {
+  font-size: 0.85rem;
+  color: #666;
+  display: block;
+}
+
+.profile-tile-date,
+.profile-tile-date-grid {
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.profile-tile-date-grid {
+  display: block;
+  padding: 0 14px 12px;
+}
+
+.profile-loading,
+.profile-empty {
+  text-align: center;
+  color: #888;
+  padding: 32px 16px;
+}
+
+.profile-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.profile-load-more-btn {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profile-load-more-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.profile-receipts-section {
+  margin-top: 40px;
+  max-width: 720px;
+}
+
+.profile-receipts-title {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.profile-receipts-hint {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.profile-receipts-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-receipt-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.profile-receipt-label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.profile-receipt-meta {
+  font-size: 12px;
+  color: #666;
+}
+
+.profile-receipt-view-btn {
+  padding: 6px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.profile-logout-btn {
+  margin-top: 24px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ff4757, #ff3838);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profile-receipt-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.profile-receipt-lightbox-inner {
+  position: relative;
+  max-width: 100%;
+  max-height: 90vh;
+}
+
+.profile-receipt-lightbox-close {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.profile-receipt-lightbox-img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* Mobile: 2-column grid per mockup */
 @media (max-width: 768px) {
-  .profile-container {
-    padding: 20px;
-    padding-top: 130px;
+  .profile-page {
+    padding-top: 110px;
   }
 
-  .logout-button {
-    top: 85px;
-    right: 20px;
-    padding: 6px 12px;
-    font-size: 0.8rem;
+  .profile-stats-row {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .user-info {
-    padding: 30px 20px;
-    margin-bottom: 30px;
+  .profile-reviews-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
 
-  .user-info img.profile-picture {
-    width: 100px;
-    height: 100px;
-  }
-
-  .user-info h2 {
-    font-size: 1.5rem;
-  }
-
-  .user-reviews-section h3 {
-    font-size: 1.5rem;
-    margin-bottom: 25px;
-  }
-
-  .reviews-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-
-  .review-card {
-    padding: 20px;
-  }
-
-  .review-header h4 {
-    font-size: 1.1rem;
-  }
-
-  .review-score {
-    font-size: 1.2rem;
-    margin-left: 10px;
-  }
-
-  .review-comment {
-    padding: 12px;
-    font-size: 0.9rem;
-  }
-
-  .review-details {
+  .profile-controls {
     gap: 8px;
   }
 
-  .review-details .category,
-  .review-details .price {
-    padding: 4px 8px;
-    font-size: 0.75rem;
+  .profile-sort-select {
+    flex: 1;
+    max-width: none;
   }
 }
 
 @media (max-width: 480px) {
-  .profile-container {
-    padding: 25px;
-    padding-top: 140px;
-  }
-
-  .logout-button {
-    top: 85px;
-    right: 25px;
-  }
-
-  .user-info {
-    padding: 25px 15px;
-  }
-
-  .user-info img.profile-picture {
-    width: 80px;
-    height: 80px;
-  }
-
-  .user-info h2 {
-    font-size: 1.3rem;
-  }
-
-  .user-info p {
-    font-size: 0.9rem;
-  }
-
-  .reviews-grid {
-    gap: 12px;
-  }
-
-  .review-card {
-    padding: 16px;
-  }
-
-  .review-header {
+  .profile-header-top {
     flex-direction: column;
-    gap: 8px;
+    align-items: center;
+    text-align: center;
   }
 
-  .review-score {
-    margin-left: 0;
-    align-self: flex-end;
+  .profile-name-row {
+    justify-content: center;
   }
+
+  .profile-stat-value {
+    font-size: 1.5rem;
+  }
+}
+
+/* Legacy class cleanup — hide old unused */
+.user-info,
+.logout-button {
+  display: none;
 }

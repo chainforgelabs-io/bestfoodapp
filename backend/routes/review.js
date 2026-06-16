@@ -12,7 +12,13 @@ const moment = require("moment");
 async function updateScores(foodItemId) {
   const reviews = await Review.find({ foodItem: foodItemId });
 
-  if (reviews.length === 0) return;
+  if (reviews.length === 0) {
+    await FoodItem.findByIdAndUpdate(foodItemId, {
+      adminScore: 0,
+      communityScore: 0,
+    });
+    return;
+  }
 
   // Separate reviews into admin and community reviews
   const adminReviews = reviews.filter((review) => review.userRole === "admin");
@@ -137,6 +143,97 @@ router.post("/", protect, async (req, res) => {
     res.status(201).json(savedReview);
   } catch (err) {
     console.error(err); // Log the error for debugging
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+const canModifyReview = (review, user) => {
+  if (!review || !user) return false;
+  if (review.userId.toString() === user._id.toString()) return true;
+  if (user.role === "admin") return true;
+  return false;
+};
+
+// PATCH /api/reviews/:id — owner or admin
+router.patch("/:id", protect, async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+    if (!canModifyReview(review, req.user)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const { score, comment, tags, photos, sizeOptions } = req.body;
+
+    if (score !== undefined) {
+      const num = Number(score);
+      if (num < 0 || num > 100) {
+        return res
+          .status(400)
+          .json({ message: "Score must be between 0 and 100" });
+      }
+      review.score = num;
+    }
+    if (comment !== undefined) review.comment = comment;
+    if (tags !== undefined) review.tags = tags;
+    if (photos !== undefined) {
+      if (!Array.isArray(photos)) {
+        return res.status(400).json({ message: "photos must be an array" });
+      }
+      review.photos = photos;
+    }
+    if (sizeOptions !== undefined) {
+      if (
+        sizeOptions &&
+        !["small", "medium", "large", "extra large"].includes(sizeOptions)
+      ) {
+        return res.status(400).json({ message: "Invalid sizeOptions" });
+      }
+      review.sizeOptions = sizeOptions || undefined;
+    }
+
+    await review.save();
+    await updateScores(review.foodItem);
+
+    res.json(review);
+  } catch (err) {
+    console.error("review patch", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/reviews/:id — owner or admin
+router.delete("/:id", protect, async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+    if (!canModifyReview(review, req.user)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const foodItemId = review.foodItem;
+    const reviewId = review._id;
+
+    await User.updateMany(
+      { reviews: reviewId },
+      { $pull: { reviews: reviewId } }
+    );
+
+    await Receipt.updateMany(
+      { reviewIds: reviewId },
+      { $pull: { reviewIds: reviewId } }
+    );
+
+    await review.deleteOne();
+    await updateScores(foodItemId);
+
+    res.json({ message: "Review deleted" });
+  } catch (err) {
+    console.error("review delete", err);
     res.status(500).json({ message: "Server error" });
   }
 });

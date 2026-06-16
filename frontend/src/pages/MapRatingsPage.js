@@ -162,6 +162,13 @@ function MapRatingsPage() {
 
   const handleSelectCity = (city) => setSelectedCity(city);
 
+  const scoreLegendItems = [
+    { label: "0–50", color: "#FFD700" },
+    { label: "51–75", color: "#32CD32" },
+    { label: "76–95", color: "#228B22" },
+    { label: "96+", color: "#d4af37" },
+  ];
+
   const mapContainerStyle = useMemo(
     () => ({
       width: "100%",
@@ -176,14 +183,13 @@ function MapRatingsPage() {
   const scoreMarkerLabel = (score) => ({
     text: String(score),
     color: "#ffffff",
-    fontSize: "12px",
-    fontWeight: "700",
+    fontSize: "15px",
+    fontWeight: "800",
   });
 
   const scoreMarkerIcon = (score) => {
     if (!window.google || !window.google.maps) return undefined;
-    // Color buckets roughly aligned with RatingScale
-    let color = "#32CD32"; // default mid green
+    let color = "#32CD32";
     if (score <= 10) color = "#FF0000";
     else if (score <= 30) color = "#FF8C00";
     else if (score <= 50) color = "#FFD700";
@@ -193,18 +199,16 @@ function MapRatingsPage() {
     else if (score <= 95) color = "#00FF7F";
     else color = "#d4af37";
 
-    // Simple circle SVG icon with color
-    const svg = {
+    return {
       path: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z",
       fillColor: color,
-      fillOpacity: 0.9,
+      fillOpacity: 0.95,
       strokeColor: "#ffffff",
-      strokeWeight: 2,
-      scale: 1,
+      strokeWeight: 3,
+      scale: 1.45,
       anchor: new window.google.maps.Point(12, 12),
-      labelOrigin: new window.google.maps.Point(12, 13),
+      labelOrigin: new window.google.maps.Point(12, 12),
     };
-    return svg;
   };
 
   return (
@@ -260,9 +264,32 @@ function MapRatingsPage() {
                     position={m.point}
                     onCloseClick={() => setActiveMarkerId(null)}
                   >
-                    <div style={{ maxWidth: 240 }}>
-                      <div style={{ fontWeight: 800, marginBottom: 4 }}>
+                    <div style={{ maxWidth: 260 }}>
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          marginBottom: 6,
+                          fontSize: "1.05rem",
+                        }}
+                      >
                         {m.name}
+                      </div>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: 48,
+                          padding: "6px 14px",
+                          borderRadius: 999,
+                          background: scoreMarkerIcon(m.overall)?.fillColor || "#32CD32",
+                          color: "#fff",
+                          fontWeight: 800,
+                          fontSize: "1.1rem",
+                          marginBottom: 8,
+                        }}
+                      >
+                        Score: {m.overall}
                       </div>
                       <div
                         className="text-muted small"
@@ -289,6 +316,36 @@ function MapRatingsPage() {
             {loading
               ? "Loading markers…"
               : `${markers.length} rated restaurants shown`}
+          </div>
+          <div
+            style={{
+              marginTop: 16,
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 12,
+              justifyContent: "center",
+              fontSize: "0.85rem",
+              color: "#555",
+            }}
+          >
+            {scoreLegendItems.map((item) => (
+              <span
+                key={item.label}
+                style={{ display: "flex", alignItems: "center", gap: 6 }}
+              >
+                <span
+                  style={{
+                    width: 14,
+                    height: 14,
+                    borderRadius: "50%",
+                    background: item.color,
+                    border: "2px solid #fff",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  }}
+                />
+                {item.label}
+              </span>
+            ))}
           </div>
         </div>
       ) : (
