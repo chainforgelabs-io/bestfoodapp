@@ -166,6 +166,7 @@ button[type="submit"]:active {
   min-width: 40px;
   text-align: center;
   box-shadow: var(--shadow-sm);
+  color: #2c3e50;
 }
 
 /* Subtle animation tuning */

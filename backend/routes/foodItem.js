@@ -732,7 +732,9 @@ router.get("/rank/category/:category/country/:country", async (req, res) => {
         : 0;
 
       const overallAverageScore =
-        (adminAverageScore + communityAverageScore) / 2;
+        adminAverageScore && communityAverageScore
+          ? (adminAverageScore + communityAverageScore) / 2
+          : adminAverageScore || communityAverageScore;
 
       return {
         foodItem: item,
