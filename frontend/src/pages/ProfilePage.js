@@ -3,6 +3,7 @@ import axios from "../api/axios";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import tokenUtils from "../utils/auth";
+import { getFoodEmoji } from "../utils/foodEmoji";
 import ReviewDetailModal from "../components/ReviewDetailModal";
 import SEO from "../components/SEO";
 import "../styles/ProfilePage.css";
@@ -201,6 +202,7 @@ function ProfilePage() {
 
   const ReviewTile = ({ r }) => {
     const foodType = r.foodItem?.type || "";
+    const foodCategory = r.foodItem?.category || "";
     const foodName = r.foodItem?.name || "Food Item";
     const restaurantName =
       r.restaurant?.name || r.restaurantId?.name || "Restaurant";
@@ -231,7 +233,7 @@ function ProfilePage() {
             />
           ) : (
             <div className="profile-tile-placeholder">
-              <span aria-hidden="true">🖼</span>
+              <span aria-hidden="true">{getFoodEmoji(foodType, foodCategory)}</span>
             </div>
           )}
         </div>

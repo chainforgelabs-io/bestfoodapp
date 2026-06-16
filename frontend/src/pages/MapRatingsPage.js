@@ -12,6 +12,25 @@ import axios from "../api/axios";
 
 const libraries = ["places"]; // kept for reference; loading handled by CitySearch
 
+const SCORE_BANDS = [
+  { min: 0, max: 10, color: "#FF0000", textColor: "#ffffff", label: "0–10" },
+  { min: 11, max: 30, color: "#FF8C00", textColor: "#ffffff", label: "11–30" },
+  { min: 31, max: 50, color: "#FFD700", textColor: "#1a1a1a", label: "31–50" },
+  { min: 51, max: 65, color: "#90EE90", textColor: "#1a1a1a", label: "51–65" },
+  { min: 66, max: 75, color: "#32CD32", textColor: "#ffffff", label: "66–75" },
+  { min: 76, max: 85, color: "#228B22", textColor: "#ffffff", label: "76–85" },
+  { min: 86, max: 95, color: "#00FF7F", textColor: "#1a1a1a", label: "86–95" },
+  { min: 96, max: 100, color: "#d4af37", textColor: "#ffffff", label: "96–100" },
+];
+
+function getScoreBand(score) {
+  const num = Number(score) || 0;
+  return (
+    SCORE_BANDS.find((band) => num >= band.min && num <= band.max) ||
+    SCORE_BANDS[0]
+  );
+}
+
 // Simple in-memory + localStorage geocode cache
 const getCachedGeocode = (key) => {
   try {
@@ -162,13 +181,6 @@ function MapRatingsPage() {
 
   const handleSelectCity = (city) => setSelectedCity(city);
 
-  const scoreLegendItems = [
-    { label: "0–50", color: "#FFD700" },
-    { label: "51–75", color: "#32CD32" },
-    { label: "76–95", color: "#228B22" },
-    { label: "96+", color: "#d4af37" },
-  ];
-
   const mapContainerStyle = useMemo(
     () => ({
       width: "100%",
@@ -180,32 +192,27 @@ function MapRatingsPage() {
     []
   );
 
-  const scoreMarkerLabel = (score) => ({
-    text: String(score),
-    color: "#ffffff",
-    fontSize: "15px",
-    fontWeight: "800",
-  });
+  const scoreMarkerLabel = (score) => {
+    const band = getScoreBand(score);
+    return {
+      text: String(score),
+      color: band.textColor,
+      fontSize: "16px",
+      fontWeight: "800",
+    };
+  };
 
   const scoreMarkerIcon = (score) => {
     if (!window.google || !window.google.maps) return undefined;
-    let color = "#32CD32";
-    if (score <= 10) color = "#FF0000";
-    else if (score <= 30) color = "#FF8C00";
-    else if (score <= 50) color = "#FFD700";
-    else if (score <= 65) color = "#90EE90";
-    else if (score <= 75) color = "#32CD32";
-    else if (score <= 85) color = "#228B22";
-    else if (score <= 95) color = "#00FF7F";
-    else color = "#d4af37";
+    const band = getScoreBand(score);
 
     return {
       path: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z",
-      fillColor: color,
+      fillColor: band.color,
       fillOpacity: 0.95,
       strokeColor: "#ffffff",
       strokeWeight: 3,
-      scale: 1.45,
+      scale: 2.0,
       anchor: new window.google.maps.Point(12, 12),
       labelOrigin: new window.google.maps.Point(12, 12),
     };
@@ -256,9 +263,10 @@ function MapRatingsPage() {
               />
             ))}
 
-            {markers.map(
-              (m) =>
-                activeMarkerId === m.id && (
+            {markers.map((m) => {
+              if (activeMarkerId !== m.id) return null;
+              const band = getScoreBand(m.overall);
+              return (
                   <InfoWindowF
                     key={`info-${m.id}`}
                     position={m.point}
@@ -282,8 +290,8 @@ function MapRatingsPage() {
                           minWidth: 48,
                           padding: "6px 14px",
                           borderRadius: 999,
-                          background: scoreMarkerIcon(m.overall)?.fillColor || "#32CD32",
-                          color: "#fff",
+                          background: band.color,
+                          color: band.textColor,
                           fontWeight: 800,
                           fontSize: "1.1rem",
                           marginBottom: 8,
@@ -308,8 +316,8 @@ function MapRatingsPage() {
                       </a>
                     </div>
                   </InfoWindowF>
-                )
-            )}
+              );
+            })}
           </GoogleMap>
 
           <div style={{ marginTop: 12 }} className="text-muted small">
@@ -328,9 +336,9 @@ function MapRatingsPage() {
               color: "#555",
             }}
           >
-            {scoreLegendItems.map((item) => (
+            {SCORE_BANDS.map((band) => (
               <span
-                key={item.label}
+                key={band.label}
                 style={{ display: "flex", alignItems: "center", gap: 6 }}
               >
                 <span
@@ -338,12 +346,12 @@ function MapRatingsPage() {
                     width: 14,
                     height: 14,
                     borderRadius: "50%",
-                    background: item.color,
+                    background: band.color,
                     border: "2px solid #fff",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                   }}
                 />
-                {item.label}
+                {band.label}
               </span>
             ))}
           </div>

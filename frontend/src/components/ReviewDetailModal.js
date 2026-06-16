@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { Link } from "react-router-dom";
 import axios from "../api/axios";
 import Notification from "./Notification";
+import { getFoodEmoji } from "../utils/foodEmoji";
 import "../styles/ReviewDetailModal.css";
 
 function getScoreColor(score) {
@@ -68,6 +69,7 @@ function ReviewDetailModal({
     review?.restaurant?.name || review?.restaurantId?.name || "Restaurant";
   const foodName = review?.foodItem?.name || "Food Item";
   const foodType = review?.foodItem?.type || "";
+  const foodCategory = review?.foodItem?.category || "";
   const score = Math.round(review?.score || 0);
 
   const canModify =
@@ -252,7 +254,9 @@ function ReviewDetailModal({
             </div>
           ) : (
             <div className="review-detail-no-photo">
-              <span className="review-detail-no-photo-icon">🍽</span>
+              <span className="review-detail-no-photo-icon">
+                {getFoodEmoji(foodType, foodCategory)}
+              </span>
             </div>
           )}
 
