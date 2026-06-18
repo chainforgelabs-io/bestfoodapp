@@ -5,6 +5,7 @@ import RatingScale from "../components/RatingScale";
 import RestaurantModal from "../components/RestaurantModal";
 import Notification from "../components/Notification";
 import SuccessOverlay from "../components/SuccessOverlay";
+import ImageCropModal from "../components/ImageCropModal";
 import axios from "../api/axios";
 import "../styles/ReviewSubmissionPage.css";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -104,6 +105,10 @@ function ReviewSubmissionPage() {
   const [uploading, setUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadedPhotos, setUploadedPhotos] = useState([]); // [{url, key}]
+  const [cropQueue, setCropQueue] = useState([]); // files awaiting crop
+  const [cropIndex, setCropIndex] = useState(0);
+  const [croppedBatch, setCroppedBatch] = useState([]); // confirmed crops this batch
+  const [recropIndex, setRecropIndex] = useState(null); // index in selectedFiles being re-adjusted
 
   // Load signed receipt preview if we have receiptId but no blob URL (e.g. refresh)
   useEffect(() => {
@@ -442,9 +447,72 @@ function ReviewSubmissionPage() {
   };
 
   const handleFilesSelected = async (e) => {
-    const files = Array.from(e.target.files || []);
-    setSelectedFiles(files);
+    const files = Array.from(e.target.files || []).filter((f) =>
+      f.type.startsWith("image/")
+    );
+    // Reset the input so re-selecting the same file still triggers onChange.
+    e.target.value = "";
+    if (files.length === 0) return;
+    // Send each photo through the crop/position step before it can be uploaded.
+    setCroppedBatch([]);
+    setCropIndex(0);
+    setCropQueue(files);
   };
+
+  // Advance the crop queue, optionally adding a confirmed cropped file. When the
+  // queue is exhausted, append everything confirmed to the selection.
+  const advanceCropQueue = (confirmedFile) => {
+    const nextBatch = confirmedFile
+      ? [...croppedBatch, confirmedFile]
+      : croppedBatch;
+    if (cropIndex + 1 >= cropQueue.length) {
+      if (nextBatch.length > 0) {
+        setSelectedFiles((prev) => [...prev, ...nextBatch]);
+      }
+      setCropQueue([]);
+      setCropIndex(0);
+      setCroppedBatch([]);
+    } else {
+      setCroppedBatch(nextBatch);
+      setCropIndex((i) => i + 1);
+    }
+  };
+
+  // Re-open the cropper for an already-selected photo to reframe it.
+  const handleRecrop = (idx) => setRecropIndex(idx);
+
+  const handleCropConfirm = (croppedFile) => {
+    if (recropIndex !== null) {
+      setSelectedFiles((prev) =>
+        prev.map((f, i) => (i === recropIndex ? croppedFile : f))
+      );
+      setRecropIndex(null);
+      return;
+    }
+    advanceCropQueue(croppedFile);
+  };
+
+  const handleCropSkip = () => advanceCropQueue(null);
+
+  // Cancel the rest of the queue but keep any photos already confirmed.
+  const handleCropClose = () => {
+    if (recropIndex !== null) {
+      setRecropIndex(null);
+      return;
+    }
+    if (croppedBatch.length > 0) {
+      setSelectedFiles((prev) => [...prev, ...croppedBatch]);
+    }
+    setCropQueue([]);
+    setCropIndex(0);
+    setCroppedBatch([]);
+  };
+
+  const isRecropping = recropIndex !== null && !!selectedFiles[recropIndex];
+  const isQueueActive = cropQueue.length > 0 && cropIndex < cropQueue.length;
+  const cropModalFile = isRecropping
+    ? selectedFiles[recropIndex]
+    : cropQueue[cropIndex] || null;
 
   const handleUploadPhotos = async () => {
     if (!selectedFiles.length) return;
@@ -1026,6 +1094,17 @@ function ReviewSubmissionPage() {
             <div className="form-step active">
               <div className="form-group">
                 <label className="form-label">Upload Photos (Optional)</label>
+                <p
+                  className="form-hint"
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "#666",
+                    margin: "0 0 10px",
+                  }}
+                >
+                  After choosing a photo, drag to move and pinch or scroll to
+                  zoom so it's framed just how you want.
+                </p>
                 <div className="photo-upload-container">
                   <input
                     type="file"
@@ -1054,18 +1133,46 @@ function ReviewSubmissionPage() {
                     }}
                   >
                     {selectedFiles.map((f, i) => (
-                      <img
+                      <div
                         key={i}
-                        src={URL.createObjectURL(f)}
-                        alt="preview"
                         style={{
+                          position: "relative",
                           width: 80,
                           height: 80,
-                          objectFit: "cover",
-                          borderRadius: 8,
-                          border: "1px solid #eee",
                         }}
-                      />
+                      >
+                        <img
+                          src={URL.createObjectURL(f)}
+                          alt="preview"
+                          style={{
+                            width: 80,
+                            height: 80,
+                            objectFit: "cover",
+                            borderRadius: 8,
+                            border: "1px solid #eee",
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRecrop(i)}
+                          title="Reframe this photo"
+                          style={{
+                            position: "absolute",
+                            bottom: 4,
+                            right: 4,
+                            background: "rgba(0,0,0,0.6)",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "2px 6px",
+                            fontSize: "0.7rem",
+                            cursor: "pointer",
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          Adjust
+                        </button>
+                      </div>
                     ))}
                     {uploadedPhotos.map((p, i) => (
                       <img
@@ -1173,6 +1280,16 @@ function ReviewSubmissionPage() {
         locationData={formData.location}
         onRestaurantAdded={handleRestaurantAdded}
         initialName={receiptParsed?.vendorName || ""}
+      />
+
+      <ImageCropModal
+        isOpen={isRecropping || isQueueActive}
+        file={cropModalFile}
+        index={isRecropping ? 0 : cropIndex}
+        total={isRecropping ? 1 : cropQueue.length}
+        onConfirm={handleCropConfirm}
+        onSkip={handleCropSkip}
+        onClose={handleCropClose}
       />
 
       {/* Success Overlay */}

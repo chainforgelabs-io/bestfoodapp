@@ -11,7 +11,6 @@ import "../styles/ProfilePage.css";
 function ProfilePage() {
   const { id: routeId } = useParams();
   const [selfId, setSelfId] = useState(null);
-  const [selfRole, setSelfRole] = useState(null);
   const profileId = routeId || selfId;
   const isOwnProfile = !routeId || (selfId && routeId === selfId);
 
@@ -74,14 +73,6 @@ function ProfilePage() {
       navigate("/login");
     }
   }, [navigate]);
-
-  useEffect(() => {
-    if (!selfId) return;
-    axios
-      .get("/users/profile")
-      .then((res) => setSelfRole(res.data.role))
-      .catch(() => setSelfRole("user"));
-  }, [selfId]);
 
   const loadUserProfile = useCallback(
     async (id) => {
@@ -598,7 +589,7 @@ function ProfilePage() {
         isOpen={!!selectedReview}
         onClose={() => setSelectedReview(null)}
         currentUserId={selfId}
-        currentUserRole={selfRole || user.role}
+        allowModify={isOwnProfile}
         onUpdated={handleReviewUpdated}
         onDeleted={handleReviewDeleted}
       />

@@ -45,9 +45,9 @@ function ReviewDetailModal({
   isOpen,
   onClose,
   currentUserId,
-  currentUserRole,
   onUpdated,
   onDeleted,
+  allowModify = true,
 }) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
@@ -72,11 +72,13 @@ function ReviewDetailModal({
   const foodCategory = review?.foodItem?.category || "";
   const score = Math.round(review?.score || 0);
 
-  const canModify =
+  // Only the review's author may edit/delete it. `allowModify` lets the host
+  // page further restrict this (e.g. disable editing on someone else's profile).
+  const isAuthor =
     review &&
     currentUserId &&
-    (String(review.userId) === String(currentUserId) ||
-      currentUserRole === "admin");
+    String(review.userId?._id || review.userId) === String(currentUserId);
+  const canModify = allowModify && isAuthor;
 
   useEffect(() => {
     if (!isOpen || !review) return;
