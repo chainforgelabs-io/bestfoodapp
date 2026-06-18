@@ -185,11 +185,13 @@ router.get("/feed", protect, async (req, res) => {
       const likedByMe = (review.likes || []).some(
         (uid) => uid.toString() === req.user._id.toString()
       );
+      const isOwnPost = authorId === req.user._id.toString();
       return {
         ...review,
         author: review.userId,
         likeCount: (review.likes || []).length,
         likedByMe,
+        isOwnPost,
         authorFollowedByMe: authorId
           ? followingIds.includes(authorId)
           : false,
@@ -214,6 +216,9 @@ router.post("/:id/like", protect, async (req, res) => {
     const review = await Review.findById(req.params.id);
     if (!review) {
       return res.status(404).json({ message: "Review not found" });
+    }
+    if (review.userId.toString() === req.user._id.toString()) {
+      return res.status(403).json({ message: "You can't like your own post" });
     }
     const userId = req.user._id;
     const alreadyLiked = (review.likes || []).some(

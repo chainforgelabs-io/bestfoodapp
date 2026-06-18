@@ -171,6 +171,13 @@
   color: #c0396b;
 }
 
+.feed-like-count {
+  cursor: default;
+  color: #9b8bb0;
+  display: inline-flex;
+  align-items: center;
+}
+
 .feed-follow-btn.following {
   background: #f3edfa;
 }

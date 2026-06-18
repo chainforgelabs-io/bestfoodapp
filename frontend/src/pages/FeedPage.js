@@ -203,13 +203,22 @@ function FeedPage() {
                     )}
 
                     <div className="feed-card-actions">
-                      <button
-                        type="button"
-                        className={`feed-like-btn ${review.likedByMe ? "liked" : ""}`}
-                        onClick={() => handleLike(review)}
-                      >
-                        {review.likedByMe ? "♥" : "♡"} {review.likeCount || 0}
-                      </button>
+                      {isOwn ? (
+                        <span
+                          className="feed-like-btn feed-like-count"
+                          title="You can't like your own post"
+                        >
+                          ♥ {review.likeCount || 0}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className={`feed-like-btn ${review.likedByMe ? "liked" : ""}`}
+                          onClick={() => handleLike(review)}
+                        >
+                          {review.likedByMe ? "♥" : "♡"} {review.likeCount || 0}
+                        </button>
+                      )}
                       {authorId && !isOwn && (
                         <button
                           type="button"
