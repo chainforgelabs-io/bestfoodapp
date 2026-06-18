@@ -100,12 +100,12 @@
   right: 0;
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .carousel-dot {
-  width: 8px;
-  height: 8px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.6);
@@ -115,7 +115,7 @@
 
 .carousel-dot.active {
   background: #fff;
-  transform: scale(1.2);
+  transform: scale(1.1);
 }
 
 .review-detail-content {

@@ -1,164 +1,248 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import "../styles/FeedPage.css"; // Create this file for styling
+import React, { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import axios from "../api/axios";
+import tokenUtils from "../utils/auth";
+import { getFoodEmoji } from "../utils/foodEmoji";
 import SEO from "../components/SEO";
+import "../styles/FeedPage.css";
+
+const PAGE_SIZE = 50;
 
 function FeedPage() {
-  const [localReviews, setLocalReviews] = useState([]);
-  const [followedReviews, setFollowedReviews] = useState([]);
+  const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [sortOption, setSortOption] = useState("date"); // Sorting option
-
-  const userId = "loggedInUserId"; // Replace with actual logged-in user ID
-  const userLocation = "userLocation"; // Replace with actual user location (e.g., city, region)
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [selfId, setSelfId] = useState(null);
 
   useEffect(() => {
-    const fetchFeedData = async () => {
-      try {
-        // Fetch local reviews
-        const localReviewsResponse = await axios.get(
-          `/reviews/local?location=${userLocation}`
-        );
-        setLocalReviews(localReviewsResponse.data);
+    if (!tokenUtils.isAuthenticated()) return;
+    try {
+      const token = tokenUtils.getToken();
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setSelfId(payload.id);
+    } catch {
+      setSelfId(null);
+    }
+  }, []);
 
-        // Fetch reviews from followed users
-        const followedReviewsResponse = await axios.get(
-          `/reviews/followed?userId=${userId}`
-        );
-        setFollowedReviews(followedReviewsResponse.data);
+  const loadFeed = useCallback(async (pageToLoad = 1, reset = false) => {
+    try {
+      if (reset) setLoading(true);
+      else setLoadingMore(true);
 
-        setLoading(false); // Set loading to false once data is fetched
-      } catch (error) {
-        console.error("Error fetching feed data", error);
-        setLoading(false);
-      }
-    };
+      const { data } = await axios.get("/reviews/feed", {
+        params: { page: pageToLoad, limit: PAGE_SIZE },
+      });
 
-    fetchFeedData();
-  }, [userLocation, userId]);
-
-  // Handle sorting change
-  const handleSortChange = (option) => {
-    setSortOption(option);
-    // Sorting logic (example: sort by date)
-    if (option === "rating") {
-      setLocalReviews([...localReviews].sort((a, b) => b.score - a.score));
-      setFollowedReviews(
-        [...followedReviews].sort((a, b) => b.score - a.score)
+      setPage(data.page || pageToLoad);
+      setTotalPages(data.totalPages || 1);
+      setItems((prev) =>
+        reset ? data.items || [] : [...prev, ...(data.items || [])]
       );
-    } else if (option === "date") {
-      setLocalReviews(
-        [...localReviews].sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    } catch (err) {
+      console.error("Failed to load feed", err);
+      if (reset) setItems([]);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!tokenUtils.isAuthenticated()) return;
+    loadFeed(1, true);
+  }, [loadFeed]);
+
+  const handleLike = async (review) => {
+    const liked = review.likedByMe;
+    const endpoint = liked ? `/reviews/${review._id}/unlike` : `/reviews/${review._id}/like`;
+    try {
+      const { data } = await axios.post(endpoint);
+      setItems((prev) =>
+        prev.map((r) =>
+          r._id === review._id
+            ? {
+                ...r,
+                likedByMe: data.liked,
+                likeCount: data.likeCount,
+              }
+            : r
         )
       );
-      setFollowedReviews(
-        [...followedReviews].sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        )
-      );
+    } catch (err) {
+      console.error("Like failed", err);
     }
   };
 
-  // Handle like action
-  const handleLike = (reviewId) => {
-    console.log(`Liked review with ID: ${reviewId}`);
-    // Implement backend call to register like
+  const handleFollow = async (authorId, currentlyFollowing) => {
+    const endpoint = currentlyFollowing
+      ? `/users/${authorId}/unfollow`
+      : `/users/${authorId}/follow`;
+    try {
+      await axios.post(endpoint);
+      setItems((prev) =>
+        prev.map((r) => {
+          const aid = r.author?._id || r.userId?._id;
+          if (aid !== authorId) return r;
+          return { ...r, authorFollowedByMe: !currentlyFollowing };
+        })
+      );
+    } catch (err) {
+      console.error("Follow failed", err);
+    }
   };
 
-  // Handle comment action
-  const handleComment = (reviewId, comment) => {
-    console.log(`Commented on review with ID: ${reviewId}: ${comment}`);
-    // Implement backend call to register comment
+  const getScoreColor = (score) => {
+    if (score >= 80) return "#28a745";
+    if (score >= 60) return "#c9a227";
+    if (score >= 40) return "#fd7e14";
+    return "#dc3545";
   };
+
+  const formatDate = (value) => {
+    if (!value) return "";
+    return new Date(value).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  if (!tokenUtils.isAuthenticated()) {
+    return (
+      <div className="feed-page">
+        <SEO title="Feed | Best Food App" description="Community food reviews" />
+        <p className="feed-login-prompt">
+          Please <Link to="/login">log in</Link> to see the community feed.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="feed-page">
       <SEO
-        title="Food Feed | Best Food App"
-        description="Explore recent reviews and top-rated dishes from the community."
+        title="Feed | Best Food App"
+        description="Explore recent reviews from the community."
       />
-      {/* Loading State */}
+      <header className="feed-header">
+        <h1>Community Feed</h1>
+        <p>Recent reviews from everyone on Best Food App</p>
+      </header>
+
       {loading ? (
-        <p>Loading reviews...</p>
+        <p className="feed-loading">Loading reviews…</p>
+      ) : items.length === 0 ? (
+        <p className="feed-empty">No reviews yet. Be the first to submit one!</p>
       ) : (
-        <>
-          {/* Sorting Options */}
-          <div className="sort-options">
-            <label>Sort by: </label>
-            <select
-              value={sortOption}
-              onChange={(e) => handleSortChange(e.target.value)}
-            >
-              <option value="date">Most Recent</option>
-              <option value="rating">Highest Rated</option>
-            </select>
-          </div>
+        <div className="feed-list">
+          {items.map((review) => {
+            const author = review.author || review.userId;
+            const authorId = author?._id;
+            const foodName = review.foodItem?.name || "Food item";
+            const restaurantName = review.restaurantId?.name || "Restaurant";
+            const score = Math.round(review.score || 0);
+            const photo = review.photos?.[0];
+            const isOwn = authorId && selfId && authorId === selfId;
 
-          {/* Local Reviews Section */}
-          <div className="local-reviews">
-            <h3>Local Reviews</h3>
-            {localReviews.length > 0 ? (
-              localReviews.map((review) => (
-                <div key={review._id} className="review-item">
-                  <h4>{review.restaurant.name}</h4>
-                  <p>
-                    <strong>Comment:</strong> {review.comment}
-                  </p>
-                  <p>
-                    <strong>Score:</strong> {review.score}/10
-                  </p>
-                  <p>
-                    <small>
-                      Reviewed on:{" "}
-                      {new Date(review.createdAt).toLocaleDateString()}
-                    </small>
-                  </p>
-                  <button onClick={() => handleLike(review._id)}>Like</button>
-                  <button
-                    onClick={() => handleComment(review._id, "Great review!")}
+            return (
+              <article key={review._id} className="feed-card">
+                <div className="feed-card-media">
+                  {photo ? (
+                    <img src={photo} alt={foodName} className="feed-card-img" />
+                  ) : (
+                    <div className="feed-card-placeholder">
+                      <span aria-hidden="true">
+                        {getFoodEmoji(
+                          review.foodItem?.type,
+                          review.foodItem?.category
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  <span
+                    className="feed-card-score"
+                    style={{ color: getScoreColor(score) }}
                   >
-                    Comment
-                  </button>
+                    {score}
+                  </span>
                 </div>
-              ))
-            ) : (
-              <p>No local reviews available.</p>
-            )}
-          </div>
 
-          {/* Followed Users' Reviews Section */}
-          <div className="followed-reviews">
-            <h3>Reviews from People You Follow</h3>
-            {followedReviews.length > 0 ? (
-              followedReviews.map((review) => (
-                <div key={review._id} className="review-item">
-                  <h4>{review.restaurant.name}</h4>
-                  <p>
-                    <strong>Comment:</strong> {review.comment}
-                  </p>
-                  <p>
-                    <strong>Score:</strong> {review.score}/10
-                  </p>
-                  <p>
-                    <small>
-                      Reviewed by: {review.user.username} on{" "}
-                      {new Date(review.createdAt).toLocaleDateString()}
-                    </small>
-                  </p>
-                  <button onClick={() => handleLike(review._id)}>Like</button>
-                  <button
-                    onClick={() => handleComment(review._id, "Nice review!")}
-                  >
-                    Comment
-                  </button>
+                <div className="feed-card-body">
+                  <div className="feed-card-titles">
+                    <h2>{foodName}</h2>
+                    <p className="feed-card-restaurant">{restaurantName}</p>
+                    <p className="feed-card-date">
+                      {formatDate(review.reviewDate)}
+                    </p>
+                  </div>
+
+                  <div className="feed-card-author-row">
+                    {author && (
+                      <Link
+                        to={`/users/${authorId}`}
+                        className="feed-author-link"
+                      >
+                        {author.profilePicture ? (
+                          <img
+                            src={author.profilePicture}
+                            alt=""
+                            className="feed-author-avatar"
+                          />
+                        ) : (
+                          <span className="feed-author-avatar-fallback">
+                            {author.username?.[0]?.toUpperCase() || "?"}
+                          </span>
+                        )}
+                        <span className="feed-author-name">
+                          {author.username}
+                        </span>
+                      </Link>
+                    )}
+
+                    <div className="feed-card-actions">
+                      <button
+                        type="button"
+                        className={`feed-like-btn ${review.likedByMe ? "liked" : ""}`}
+                        onClick={() => handleLike(review)}
+                      >
+                        {review.likedByMe ? "♥" : "♡"} {review.likeCount || 0}
+                      </button>
+                      {authorId && !isOwn && (
+                        <button
+                          type="button"
+                          className={`feed-follow-btn ${
+                            review.authorFollowedByMe ? "following" : ""
+                          }`}
+                          onClick={() =>
+                            handleFollow(authorId, review.authorFollowedByMe)
+                          }
+                        >
+                          {review.authorFollowedByMe ? "Following" : "Follow"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              ))
-            ) : (
-              <p>No reviews from followed users available.</p>
-            )}
-          </div>
-        </>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {page < totalPages && (
+        <div className="feed-load-more-wrap">
+          <button
+            type="button"
+            className="feed-load-more-btn"
+            onClick={() => loadFeed(page + 1, false)}
+            disabled={loadingMore}
+          >
+            {loadingMore ? "Loading…" : "Load more"}
+          </button>
+        </div>
       )}
     </div>
   );

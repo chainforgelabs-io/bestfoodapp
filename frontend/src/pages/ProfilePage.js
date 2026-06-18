@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "../api/axios";
 import { jwtDecode } from "jwt-decode";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import tokenUtils from "../utils/auth";
 import { getFoodEmoji } from "../utils/foodEmoji";
 import ReviewDetailModal from "../components/ReviewDetailModal";
@@ -9,8 +9,13 @@ import SEO from "../components/SEO";
 import "../styles/ProfilePage.css";
 
 function ProfilePage() {
+  const { id: routeId } = useParams();
+  const [selfId, setSelfId] = useState(null);
+  const [selfRole, setSelfRole] = useState(null);
+  const profileId = routeId || selfId;
+  const isOwnProfile = !routeId || (selfId && routeId === selfId);
+
   const [user, setUser] = useState({});
-  const [userId, setUserId] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [stats, setStats] = useState({
     reviewCount: 0,
@@ -20,6 +25,7 @@ function ProfilePage() {
   });
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [sort, setSort] = useState("date");
   const [order, setOrder] = useState("desc");
   const [page, setPage] = useState(1);
@@ -35,6 +41,23 @@ function ProfilePage() {
     open: false,
     url: "",
   });
+  const [socialList, setSocialList] = useState({
+    open: false,
+    type: "",
+    users: [],
+    loading: false,
+  });
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    bio: "",
+    firstName: "",
+    lastName: "",
+    profilePicture: "",
+    city: "",
+    province: "",
+    country: "",
+  });
+  const [editSaving, setEditSaving] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,27 +68,50 @@ function ProfilePage() {
     const token = tokenUtils.getToken();
     try {
       const decoded = jwtDecode(token);
-      setUserId(decoded.id);
+      setSelfId(decoded.id);
     } catch {
       tokenUtils.clearToken();
       navigate("/login");
     }
   }, [navigate]);
 
-  const loadUserProfile = useCallback(async (id) => {
-    try {
-      const userResponse = await axios.get(`/users/${id}`);
-      const userData = userResponse.data.user;
-      setUser(userData);
-      setFollowerCount(userData.followers?.length || 0);
-      setFollowingCount(userData.following?.length || 0);
-    } catch {
-      tokenUtils.clearToken();
-      navigate("/login");
-    }
-  }, [navigate]);
+  useEffect(() => {
+    if (!selfId) return;
+    axios
+      .get("/users/profile")
+      .then((res) => setSelfRole(res.data.role))
+      .catch(() => setSelfRole("user"));
+  }, [selfId]);
+
+  const loadUserProfile = useCallback(
+    async (id) => {
+      if (!id) return;
+      try {
+        const userResponse = await axios.get(`/users/${id}`);
+        const userData = userResponse.data.user;
+        setUser(userData);
+        setFollowerCount(userData.followers?.length || 0);
+        setFollowingCount(userData.following?.length || 0);
+
+        if (selfId && id !== selfId) {
+          const meResponse = await axios.get(`/users/${selfId}`);
+          const myFollowing = meResponse.data.user?.following || [];
+          setIsFollowing(
+            myFollowing.some((f) => (f._id || f).toString() === id)
+          );
+        }
+      } catch {
+        if (!routeId) {
+          tokenUtils.clearToken();
+          navigate("/login");
+        }
+      }
+    },
+    [navigate, routeId, selfId]
+  );
 
   const loadStats = useCallback(async (id) => {
+    if (!id) return;
     try {
       const { data } = await axios.get(`/users/${id}/stats`);
       setStats(data);
@@ -75,11 +121,11 @@ function ProfilePage() {
   }, []);
 
   const loadReviews = useCallback(
-    async (pageToLoad = 1, reset = false) => {
-      if (!userId) return;
+    async (id, pageToLoad = 1, reset = false) => {
+      if (!id) return;
       try {
         setLoading(true);
-        const { data } = await axios.get(`/users/${userId}/reviews-paginated`, {
+        const { data } = await axios.get(`/users/${id}/reviews-paginated`, {
           params: { page: pageToLoad, limit, sort, order },
         });
         setTotalPages(data.totalPages || 1);
@@ -95,21 +141,22 @@ function ProfilePage() {
         setInitialLoading(false);
       }
     },
-    [userId, limit, sort, order]
+    [limit, sort, order]
   );
 
   useEffect(() => {
-    if (!userId) return;
-    loadUserProfile(userId);
-    loadStats(userId);
-  }, [userId, loadUserProfile, loadStats]);
+    if (!profileId) return;
+    loadUserProfile(profileId);
+    loadStats(profileId);
+  }, [profileId, loadUserProfile, loadStats]);
 
   useEffect(() => {
-    if (!userId) return;
-    loadReviews(1, true);
-  }, [userId, sort, order, loadReviews]);
+    if (!profileId) return;
+    loadReviews(profileId, 1, true);
+  }, [profileId, sort, order, loadReviews]);
 
   useEffect(() => {
+    if (!isOwnProfile) return;
     const loadReceipts = async () => {
       if (!tokenUtils.isAuthenticated()) return;
       try {
@@ -126,11 +173,81 @@ function ProfilePage() {
       }
     };
     loadReceipts();
-  }, []);
+  }, [isOwnProfile]);
 
   const handleLogout = () => {
     tokenUtils.clearToken();
     navigate("/login");
+  };
+
+  const handleFollowToggle = async () => {
+    if (!profileId || isOwnProfile) return;
+    try {
+      if (isFollowing) {
+        await axios.post(`/users/${profileId}/unfollow`);
+        setIsFollowing(false);
+        setFollowerCount((c) => Math.max(0, c - 1));
+      } else {
+        await axios.post(`/users/${profileId}/follow`);
+        setIsFollowing(true);
+        setFollowerCount((c) => c + 1);
+      }
+    } catch (e) {
+      console.error("Follow toggle failed", e);
+    }
+  };
+
+  const openSocialList = async (type) => {
+    if (!profileId) return;
+    setSocialList({ open: true, type, users: [], loading: true });
+    try {
+      const endpoint =
+        type === "followers"
+          ? `/users/${profileId}/followers`
+          : `/users/${profileId}/following`;
+      const { data } = await axios.get(endpoint);
+      setSocialList({ open: true, type, users: data || [], loading: false });
+    } catch (e) {
+      console.error("Failed to load social list", e);
+      setSocialList((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  const openEditProfile = () => {
+    setEditForm({
+      bio: user.bio || "",
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      profilePicture: user.profilePicture || "",
+      city: user.location?.city || "",
+      province: user.location?.province || "",
+      country: user.location?.country || "",
+    });
+    setEditOpen(true);
+  };
+
+  const saveProfile = async () => {
+    setEditSaving(true);
+    try {
+      const payload = {
+        bio: editForm.bio,
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        profilePicture: editForm.profilePicture,
+        location: {
+          city: editForm.city,
+          province: editForm.province,
+          country: editForm.country,
+        },
+      };
+      const { data } = await axios.put("/users/profile", payload);
+      setUser(data);
+      setEditOpen(false);
+    } catch (e) {
+      console.error("Profile save failed", e);
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -176,15 +293,15 @@ function ProfilePage() {
     setSelectedReview((prev) =>
       prev && prev._id === updated._id ? { ...prev, ...updated } : prev
     );
-    if (userId) loadStats(userId);
+    if (profileId) loadStats(profileId);
   };
 
   const handleReviewDeleted = (reviewId) => {
     setReviews((prev) => prev.filter((r) => r._id !== reviewId));
     setSelectedReview(null);
-    if (userId) {
-      loadStats(userId);
-      loadReviews(1, true);
+    if (profileId) {
+      loadStats(profileId);
+      loadReviews(profileId, 1, true);
     }
   };
 
@@ -233,7 +350,9 @@ function ProfilePage() {
             />
           ) : (
             <div className="profile-tile-placeholder">
-              <span aria-hidden="true">{getFoodEmoji(foodType, foodCategory)}</span>
+              <span aria-hidden="true">
+                {getFoodEmoji(foodType, foodCategory)}
+              </span>
             </div>
           )}
         </div>
@@ -269,8 +388,12 @@ function ProfilePage() {
   return (
     <div className="profile-page">
       <SEO
-        title="Your Profile | Best Food App"
-        description="Manage your account and review history."
+        title={
+          isOwnProfile
+            ? "Your Profile | Best Food App"
+            : `${user.username || "User"} | Best Food App`
+        }
+        description="View profile and review history."
         noindex={true}
       />
       <div className="profile-layout">
@@ -278,11 +401,7 @@ function ProfilePage() {
           <div className="profile-header-top">
             <div className="profile-avatar-wrap">
               {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt=""
-                  className="profile-avatar-img"
-                />
+                <img src={avatarUrl} alt="" className="profile-avatar-img" />
               ) : (
                 <div className="profile-avatar-fallback" aria-hidden="true">
                   🍴
@@ -303,8 +422,39 @@ function ProfilePage() {
                 <p className="profile-meta-line">{locationLine}</p>
               )}
               <p className="profile-social-line">
-                {followerCount} followers · {followingCount} following
+                <button
+                  type="button"
+                  className="profile-social-link"
+                  onClick={() => openSocialList("followers")}
+                >
+                  {followerCount} followers
+                </button>
+                {" · "}
+                <button
+                  type="button"
+                  className="profile-social-link"
+                  onClick={() => openSocialList("following")}
+                >
+                  {followingCount} following
+                </button>
               </p>
+              {isOwnProfile ? (
+                <button
+                  type="button"
+                  className="profile-edit-btn"
+                  onClick={openEditProfile}
+                >
+                  Edit profile
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={`profile-follow-btn ${isFollowing ? "following" : ""}`}
+                  onClick={handleFollowToggle}
+                >
+                  {isFollowing ? "Following" : "Follow"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -386,7 +536,7 @@ function ProfilePage() {
             <button
               type="button"
               className="profile-load-more-btn"
-              onClick={() => loadReviews(page + 1, false)}
+              onClick={() => loadReviews(profileId, page + 1, false)}
               disabled={loading}
             >
               {loading ? "Loading…" : "Load more"}
@@ -394,60 +544,232 @@ function ProfilePage() {
           </div>
         )}
 
-        <section className="profile-receipts-section">
-          <h3 className="profile-receipts-title">My receipts</h3>
-          <p className="profile-receipts-hint">
-            Private — not shown on your public reviews. Open to view the image.
-          </p>
-          {receiptsLoading ? (
-            <p className="profile-empty">Loading receipts…</p>
-          ) : receipts.length === 0 ? (
-            <p className="profile-empty">
-              No receipts yet. Use Submit → scan a receipt when you write a
-              review.
+        {isOwnProfile && (
+          <section className="profile-receipts-section">
+            <h3 className="profile-receipts-title">My receipts</h3>
+            <p className="profile-receipts-hint">
+              Private — not shown on your public reviews. Open to view the image.
             </p>
-          ) : (
-            <ul className="profile-receipts-list">
-              {receipts.map((rc) => (
-                <li key={rc._id} className="profile-receipt-item">
-                  <div>
-                    <div className="profile-receipt-label">Receipt</div>
-                    <div className="profile-receipt-meta">
-                      {formatDate(rc.createdAt || rc.updatedAt)} ·{" "}
-                      {rc.status || "—"}
+            {receiptsLoading ? (
+              <p className="profile-empty">Loading receipts…</p>
+            ) : receipts.length === 0 ? (
+              <p className="profile-empty">
+                No receipts yet. Use Submit → scan a receipt when you write a
+                review.
+              </p>
+            ) : (
+              <ul className="profile-receipts-list">
+                {receipts.map((rc) => (
+                  <li key={rc._id} className="profile-receipt-item">
+                    <div>
+                      <div className="profile-receipt-label">Receipt</div>
+                      <div className="profile-receipt-meta">
+                        {formatDate(rc.createdAt || rc.updatedAt)} ·{" "}
+                        {rc.status || "—"}
+                      </div>
                     </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="profile-receipt-view-btn"
-                    onClick={() => openReceiptImage(rc._id)}
-                  >
-                    View
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                    <button
+                      type="button"
+                      className="profile-receipt-view-btn"
+                      onClick={() => openReceiptImage(rc._id)}
+                    >
+                      View
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
 
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="profile-logout-btn"
-        >
-          Logout
-        </button>
+        {isOwnProfile && (
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="profile-logout-btn"
+          >
+            Logout
+          </button>
+        )}
       </div>
 
       <ReviewDetailModal
         review={selectedReview}
         isOpen={!!selectedReview}
         onClose={() => setSelectedReview(null)}
-        currentUserId={userId}
-        currentUserRole={user.role}
+        currentUserId={selfId}
+        currentUserRole={selfRole || user.role}
         onUpdated={handleReviewUpdated}
         onDeleted={handleReviewDeleted}
       />
+
+      {socialList.open && (
+        <div
+          className="profile-social-modal-overlay"
+          onClick={() =>
+            setSocialList({ open: false, type: "", users: [], loading: false })
+          }
+        >
+          <div
+            className="profile-social-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="profile-social-modal-header">
+              <h3>
+                {socialList.type === "followers" ? "Followers" : "Following"}
+              </h3>
+              <button
+                type="button"
+                className="profile-social-modal-close"
+                onClick={() =>
+                  setSocialList({
+                    open: false,
+                    type: "",
+                    users: [],
+                    loading: false,
+                  })
+                }
+              >
+                ×
+              </button>
+            </div>
+            {socialList.loading ? (
+              <p className="profile-empty">Loading…</p>
+            ) : socialList.users.length === 0 ? (
+              <p className="profile-empty">No users yet.</p>
+            ) : (
+              <ul className="profile-social-list">
+                {socialList.users.map((u) => (
+                  <li key={u._id}>
+                    <Link
+                      to={`/users/${u._id}`}
+                      className="profile-social-list-item"
+                      onClick={() =>
+                        setSocialList({
+                          open: false,
+                          type: "",
+                          users: [],
+                          loading: false,
+                        })
+                      }
+                    >
+                      {u.username}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {editOpen && (
+        <div
+          className="profile-social-modal-overlay"
+          onClick={() => setEditOpen(false)}
+        >
+          <div
+            className="profile-edit-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="profile-social-modal-header">
+              <h3>Edit profile</h3>
+              <button
+                type="button"
+                className="profile-social-modal-close"
+                onClick={() => setEditOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="profile-edit-form">
+              <label>
+                Bio
+                <textarea
+                  value={editForm.bio}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, bio: e.target.value })
+                  }
+                  rows={3}
+                  placeholder="Tell people about your food journey…"
+                />
+              </label>
+              <label>
+                First name
+                <input
+                  type="text"
+                  value={editForm.firstName}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, firstName: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Last name
+                <input
+                  type="text"
+                  value={editForm.lastName}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, lastName: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Profile picture URL
+                <input
+                  type="url"
+                  value={editForm.profilePicture}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      profilePicture: e.target.value,
+                    })
+                  }
+                  placeholder="https://…"
+                />
+              </label>
+              <label>
+                City
+                <input
+                  type="text"
+                  value={editForm.city}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, city: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Province
+                <input
+                  type="text"
+                  value={editForm.province}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, province: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Country
+                <input
+                  type="text"
+                  value={editForm.country}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, country: e.target.value })
+                  }
+                />
+              </label>
+              <button
+                type="button"
+                className="profile-edit-save-btn"
+                onClick={saveProfile}
+                disabled={editSaving}
+              >
+                {editSaving ? "Saving…" : "Save changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {receiptLightbox.open && (
         <div

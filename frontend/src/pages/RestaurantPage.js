@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import "../styles/RestaurantPage.css";
 import axios from "../api/axios";
 import SEO from "../components/SEO";
+import { getFoodEmoji } from "../utils/foodEmoji";
 
 function RestaurantPage() {
   const { restaurantID } = useParams();
@@ -191,6 +192,21 @@ function RestaurantPage() {
               )
               .map((item, index) => (
                 <div key={item._id} className="result-item">
+                  <div className="food-item-thumb-wrap">
+                    {item.topPhoto ? (
+                      <img
+                        src={item.topPhoto}
+                        alt={item.name || "Food item"}
+                        className="food-item-thumb"
+                      />
+                    ) : (
+                      <div className="food-item-thumb-placeholder">
+                        <span aria-hidden="true">
+                          {getFoodEmoji(item.type, item.category)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <div className="result-header">
                     <div className="rank-number">#{index + 1}</div>
                     <h3 className="food-name">

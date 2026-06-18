@@ -1,51 +1,200 @@
-/* src/pages/FeedPage.css */
-.feed-container {
-  max-width: 800px;
+.feed-page {
+  max-width: 720px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 100px 16px 40px;
 }
 
-.sort-options {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 20px;
+.feed-header {
+  margin-bottom: 24px;
 }
 
-.sort-options select {
-  padding: 5px;
-  font-size: 14px;
+.feed-header h1 {
+  margin: 0 0 6px;
+  font-size: 1.75rem;
+  color: #333;
 }
 
-.local-reviews,
-.followed-reviews {
-  margin-top: 20px;
-}
-
-.local-reviews h3,
-.followed-reviews h3 {
-  margin-bottom: 15px;
-}
-
-.review-item {
-  border-bottom: 1px solid #ddd;
-  padding: 15px 0;
-}
-
-.review-item h4 {
-  margin-bottom: 10px;
-}
-
-.review-item p {
-  margin: 5px 0;
-}
-
-.review-item small {
+.feed-header p {
+  margin: 0;
   color: #666;
+  font-size: 0.95rem;
 }
 
-.review-item button {
-  margin-right: 10px;
-  padding: 5px 10px;
-  font-size: 14px;
+.feed-loading,
+.feed-empty,
+.feed-login-prompt {
+  text-align: center;
+  color: #666;
+  padding: 32px 0;
+}
+
+.feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feed-card {
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e8e0f0;
+  box-shadow: 0 2px 12px rgba(107, 74, 153, 0.08);
+}
+
+.feed-card-media {
+  position: relative;
+  height: 200px;
+  background: #f5ebe0;
+  overflow: hidden;
+}
+
+.feed-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.feed-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+
+.feed-card-score {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.feed-card-body {
+  padding: 14px 16px 16px;
+}
+
+.feed-card-titles h2 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+  color: #222;
+}
+
+.feed-card-restaurant {
+  margin: 0 0 4px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.feed-card-date {
+  margin: 0 0 12px;
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.feed-card-author-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.feed-author-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #6b4a99;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.feed-author-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.feed-author-avatar-fallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e8dff5;
+  color: #6b4a99;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.feed-card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.feed-like-btn,
+.feed-follow-btn {
+  border: 1px solid #d4c4e8;
+  background: #fff;
+  color: #6b4a99;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
   cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.feed-like-btn.liked {
+  background: #fdf0f5;
+  border-color: #e8a0b8;
+  color: #c0396b;
+}
+
+.feed-follow-btn.following {
+  background: #f3edfa;
+}
+
+.feed-load-more-wrap {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.feed-load-more-btn {
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  padding: 10px 28px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.feed-load-more-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .feed-page {
+    padding-top: 88px;
+  }
+
+  .feed-card-media {
+    height: 180px;
+  }
 }

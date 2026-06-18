@@ -160,7 +160,7 @@
 .result-item {
   background: white;
   border-radius: 16px;
-  padding: 20px;
+  padding: 0;
   margin-bottom: 20px;
   box-shadow: 0 4px 20px rgba(176, 139, 212, 0.12);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -171,6 +171,43 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.food-item-thumb-wrap {
+  width: 100%;
+  height: 160px;
+  background: #f5ebe0;
+  overflow: hidden;
+}
+
+.food-item-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.food-item-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+}
+
+.result-item .result-header,
+.result-item .result-content {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.result-item .result-header {
+  padding-top: 16px;
+}
+
+.result-item .result-content {
+  padding-bottom: 20px;
 }
 
 .result-item:hover {

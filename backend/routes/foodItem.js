@@ -16,6 +16,27 @@ function categorizePrices(prices) {
   return { lowPrice, highPrice };
 }
 
+/** Map each food-item id to the photo from its highest-scored review. */
+async function getTopPhotoMap(foodItemIds) {
+  if (!foodItemIds?.length) return {};
+  const reviews = await Review.find({
+    foodItem: { $in: foodItemIds },
+    photos: { $exists: true, $not: { $size: 0 } },
+  })
+    .sort({ score: -1 })
+    .select("foodItem photos")
+    .lean();
+
+  const map = {};
+  for (const r of reviews) {
+    const key = r.foodItem.toString();
+    if (!map[key] && r.photos?.length) {
+      map[key] = r.photos[0];
+    }
+  }
+  return map;
+}
+
 // Create a new food item (Protected: Only authenticated users can create food items)
 router.post("/", protect, async (req, res) => {
   try {
@@ -191,8 +212,14 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
     // Sort the scored items by overall score (highest to lowest)
     scoredItems.sort((a, b) => b.overallAverageScore - a.overallAverageScore);
 
+    const photoMap = await getTopPhotoMap(scoredItems.map((i) => i._id));
+    const withPhotos = scoredItems.map((item) => ({
+      ...item,
+      topPhoto: photoMap[item._id.toString()] || null,
+    }));
+
     // Return the ranked list of food items
-    res.status(200).json(scoredItems);
+    res.status(200).json(withPhotos);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -398,7 +425,15 @@ router.get("/rank/city/:city", async (req, res) => {
 
     const rankedItems = await rankByScore(foodItems);
 
-    res.json(rankedItems);
+    const photoMap = await getTopPhotoMap(
+      rankedItems.map((entry) => entry.foodItem?._id).filter(Boolean)
+    );
+    const withPhotos = rankedItems.map((entry) => ({
+      ...entry,
+      topPhoto: photoMap[entry.foodItem._id.toString()] || null,
+    }));
+
+    res.json(withPhotos);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

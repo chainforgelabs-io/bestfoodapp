@@ -51,9 +51,18 @@ function Navbar() {
               Home
             </NavLink>
           </li>
-          {/* <li>
-            <NavLink to="/feed">Feed</NavLink>
-          </li> */}
+          <li className="nav-item">
+            <NavLink
+              to="/feed"
+              className={({ isActive }) =>
+                isActive ? "nav-link active" : "nav-link"
+              }
+              onClick={closeMenu}
+            >
+              <span className="nav-icon">📰</span>
+              Feed
+            </NavLink>
+          </li>
           <li className="nav-item">
             <NavLink
               to="/submit-review/scan"

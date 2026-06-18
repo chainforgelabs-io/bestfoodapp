@@ -72,6 +72,14 @@ function App() {
                 }
               />
               <Route path="/feed" element={<FeedPage />} />
+              <Route
+                path="/users/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/leaderboards" element={<LeaderboardsPage />} />
               <Route path="/map" element={<MapRatingsPage />} />
               <Route

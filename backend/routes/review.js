@@ -154,6 +154,107 @@ const canModifyReview = (review, user) => {
   return false;
 };
 
+// GET /api/reviews/feed — paginated platform-wide feed (most recent first)
+router.get("/feed", protect, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const skip = (page - 1) * limit;
+
+    const currentUser = await User.findById(req.user._id)
+      .select("following")
+      .lean();
+    const followingIds = (currentUser?.following || []).map((id) =>
+      id.toString()
+    );
+
+    const [items, total] = await Promise.all([
+      Review.find()
+        .sort({ reviewDate: -1, _id: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate("userId", "username profilePicture")
+        .populate("foodItem", "name category type")
+        .populate("restaurantId", "name")
+        .lean(),
+      Review.countDocuments(),
+    ]);
+
+    const enriched = items.map((review) => {
+      const authorId = review.userId?._id?.toString() || review.userId?.toString();
+      const likedByMe = (review.likes || []).some(
+        (uid) => uid.toString() === req.user._id.toString()
+      );
+      return {
+        ...review,
+        author: review.userId,
+        likeCount: (review.likes || []).length,
+        likedByMe,
+        authorFollowedByMe: authorId
+          ? followingIds.includes(authorId)
+          : false,
+      };
+    });
+
+    res.json({
+      items: enriched,
+      page,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+      total,
+    });
+  } catch (err) {
+    console.error("reviews feed", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/reviews/:id/like
+router.post("/:id/like", protect, async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+    const userId = req.user._id;
+    const alreadyLiked = (review.likes || []).some(
+      (uid) => uid.toString() === userId.toString()
+    );
+    if (!alreadyLiked) {
+      review.likes = review.likes || [];
+      review.likes.push(userId);
+      await review.save();
+    }
+    res.json({
+      likeCount: review.likes.length,
+      liked: true,
+    });
+  } catch (err) {
+    console.error("review like", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/reviews/:id/unlike
+router.post("/:id/unlike", protect, async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+    review.likes = (review.likes || []).filter(
+      (uid) => uid.toString() !== req.user._id.toString()
+    );
+    await review.save();
+    res.json({
+      likeCount: review.likes.length,
+      liked: false,
+    });
+  } catch (err) {
+    console.error("review unlike", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // PATCH /api/reviews/:id — owner or admin
 router.patch("/:id", protect, async (req, res) => {
   try {

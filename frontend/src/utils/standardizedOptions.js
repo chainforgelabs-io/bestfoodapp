@@ -241,6 +241,7 @@ export const FOOD_TYPES = {
     "Beer",
     "Wine",
     "Cocktail",
+    "Caesar",
     "Whiskey",
     "Vodka",
     "Rum",
