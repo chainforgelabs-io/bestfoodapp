@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import axios from "../api/axios";
 import StandardizedDropdown from "./StandardizedDropdown";
@@ -9,7 +9,13 @@ import {
 } from "../utils/standardizedOptions";
 import "../styles/RestaurantModal.css";
 
-function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
+function RestaurantModal({
+  isOpen,
+  onClose,
+  locationData,
+  onRestaurantAdded,
+  initialName = "",
+}) {
   const [restaurantData, setRestaurantData] = useState({
     name: "",
     type: "",
@@ -20,6 +26,16 @@ function RestaurantModal({ isOpen, onClose, locationData, onRestaurantAdded }) {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // When the modal opens from a scanned receipt, pre-fill the name field with
+  // the detected vendor name (only if the user hasn't typed anything yet).
+  useEffect(() => {
+    if (isOpen && initialName) {
+      setRestaurantData((prev) =>
+        prev.name ? prev : { ...prev, name: initialName }
+      );
+    }
+  }, [isOpen, initialName]);
 
   const handleChange = (e) => {
     setRestaurantData({ ...restaurantData, [e.target.name]: e.target.value });

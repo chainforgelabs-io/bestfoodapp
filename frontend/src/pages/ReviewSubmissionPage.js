@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import CitySearch from "../components/CitySearch";
 import FoodItemForm from "../components/FoodItemForm";
 import RatingScale from "../components/RatingScale";
@@ -9,21 +9,65 @@ import axios from "../api/axios";
 import "../styles/ReviewSubmissionPage.css";
 import { useNavigate, useLocation } from "react-router-dom";
 import SEO from "../components/SEO";
+import { matchRestaurant } from "../utils/receiptAutofill";
+
+// Convert an OCR'd date (ISO string or Date) into the yyyy-mm-dd value the
+// native date input expects. Returns "" when the date is missing/invalid.
+const receiptDateToInput = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+};
+
+// Build an initial location from a scanned receipt's vendor address. Receipt
+// addresses are inconsistent, so this is only a starting point — the user can
+// re-pick the location via CitySearch on Step 1.
+const receiptAddressToLocation = (parsed) => {
+  const addr = parsed?.vendorAddress;
+  if (!addr) return null;
+  const city = (addr.city || "").trim();
+  const province = (addr.state || "").trim();
+  const country = (addr.country || "").trim();
+  if (!city && !province && !country) return null;
+  return { city, province, country };
+};
 
 function ReviewSubmissionPage() {
   const location = useLocation();
   const [step, setStep] = useState(location.state?.step || 1); // Retain the current step
+
+  // Structured data read from the user's receipt (if they scanned one). Used
+  // to autofill the restaurant, food items, and purchase date below.
+  const [receiptParsed] = useState(
+    location.state?.receiptParsed ||
+      location.state?.formData?.receiptParsed ||
+      null
+  );
+  // Guards so autofill only runs once and never overrides the user's edits.
+  const restaurantAutofilledRef = useRef(false);
+
   const [formData, setFormData] = useState({
-    location: location.state?.formData?.location || {
-      city: "",
-      province: "",
-      country: "",
-    },
+    location:
+      location.state?.formData?.location ||
+      receiptAddressToLocation(
+        location.state?.receiptParsed ||
+          location.state?.formData?.receiptParsed
+      ) || {
+        city: "",
+        province: "",
+        country: "",
+      },
     restaurant: "",
     foodItems: [],
     ratings: [],
     photos: [],
-    purchaseDate: "",
+    purchaseDate: receiptDateToInput(
+      location.state?.receiptParsed?.purchaseDate ||
+        location.state?.formData?.receiptParsed?.purchaseDate
+    ),
     receiptId:
       location.state?.receiptId ||
       location.state?.formData?.receiptId ||
@@ -31,6 +75,10 @@ function ReviewSubmissionPage() {
     receiptThumbUrl:
       location.state?.receiptThumbUrl ||
       location.state?.formData?.receiptThumbUrl ||
+      null,
+    receiptParsed:
+      location.state?.receiptParsed ||
+      location.state?.formData?.receiptParsed ||
       null,
   });
   const [receiptDisplayUrl, setReceiptDisplayUrl] = useState(
@@ -76,6 +124,54 @@ function ReviewSubmissionPage() {
       cancelled = true;
     };
   }, [formData.receiptId, receiptDisplayUrl]);
+
+  // Autofill the restaurant on Step 2 from the scanned receipt's vendor name.
+  // If a confident match already exists we select it; otherwise we pre-fill the
+  // search box with the vendor name so the user can pick it or add it as new.
+  useEffect(() => {
+    if (step !== 2 || restaurantAutofilledRef.current) return;
+    const vendor = receiptParsed?.vendorName;
+    if (!vendor) return;
+    const { city, province, country } = formData.location;
+    if (!city || !province || !country) return;
+
+    restaurantAutofilledRef.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await axios.get(`/restaurants/search`, {
+          params: { city, province, country },
+        });
+        if (cancelled) return;
+        const match = matchRestaurant(vendor, response.data);
+        if (match) {
+          setFormData((prev) => ({
+            ...prev,
+            restaurant: match.restaurant.name,
+            restaurantId: match.restaurant._id,
+            address: match.restaurant.address?.street,
+          }));
+          setNotification({
+            isVisible: true,
+            message: `Matched "${match.restaurant.name}" from your receipt`,
+            type: "success",
+          });
+          return;
+        }
+        // No confident match: seed the search box with the receipt vendor name.
+        setFormData((prev) => ({ ...prev, restaurant: vendor }));
+      } catch (err) {
+        // 404 (no restaurants in this city yet) or other error: still seed the
+        // name so the user can quickly add it via the modal.
+        if (!cancelled) {
+          setFormData((prev) => ({ ...prev, restaurant: vendor }));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, receiptParsed, formData.location]);
 
   // Handle clicking outside the suggestions dropdown to close it
   useEffect(() => {
@@ -288,6 +384,15 @@ function ReviewSubmissionPage() {
     // Show success overlay
     setAddedRestaurantName(newRestaurant.name);
     setShowSuccessOverlay(true);
+
+    // Auto-select the newly created restaurant so the user can continue without
+    // re-finding it in the list (important for the receipt autofill flow).
+    setFormData((prev) => ({
+      ...prev,
+      restaurant: newRestaurant.name,
+      restaurantId: newRestaurant._id,
+      address: newRestaurant.address?.street,
+    }));
 
     // Refresh the restaurant search to include the new restaurant
     if (formData.restaurant) {
@@ -692,8 +797,9 @@ function ReviewSubmissionPage() {
                 <strong style={{ display: "block", marginBottom: 4 }}>
                   Receipt attached
                 </strong>
-                Stored privately for your records — not shown on your public
-                review.
+                {receiptParsed
+                  ? "We pre-filled what we could read from your receipt. Please review each field — everything is editable."
+                  : "Stored privately for your records — not shown on your public review."}
               </div>
             </div>
           )}
@@ -862,6 +968,7 @@ function ReviewSubmissionPage() {
                     handleUpdate({ foodItems })
                   }
                   existingFoodItems={existingFoodItems}
+                  receiptItems={receiptParsed?.lineItems || []}
                 />
               </div>
 
@@ -1065,6 +1172,7 @@ function ReviewSubmissionPage() {
         onClose={() => setShowRestaurantModal(false)}
         locationData={formData.location}
         onRestaurantAdded={handleRestaurantAdded}
+        initialName={receiptParsed?.vendorName || ""}
       />
 
       {/* Success Overlay */}

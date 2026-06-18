@@ -238,6 +238,21 @@ function ReceiptScanLanding() {
         return;
       }
 
+      // Read the receipt with OCR so we can autofill the review. This is a
+      // best-effort step: if it fails or isn't configured, the user simply
+      // fills the wizard manually, so we never block navigation on it.
+      let receiptParsed = null;
+      stage = "Reading your receipt";
+      try {
+        const res = await axios.post(`/receipts/${receipt._id}/analyze`);
+        receiptParsed = res.data?.parsed || null;
+      } catch (e) {
+        console.warn(
+          "Receipt OCR unavailable:",
+          e?.response?.data?.message || e?.message
+        );
+      }
+
       const thumb = URL.createObjectURL(compressed);
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
@@ -247,6 +262,7 @@ function ReceiptScanLanding() {
         state: {
           receiptId: receipt._id,
           receiptThumbUrl: thumb,
+          receiptParsed,
         },
       });
     } catch (err) {
@@ -358,7 +374,11 @@ function ReceiptScanLanding() {
         </button>
       </div>
 
-      {busy && <p className="receipt-scan-loading">Preparing your receipt…</p>}
+      {busy && (
+        <p className="receipt-scan-loading">
+          Uploading and reading your receipt…
+        </p>
+      )}
 
       <Notification
         message={notification.message}

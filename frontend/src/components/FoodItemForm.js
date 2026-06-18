@@ -12,12 +12,17 @@ import {
   DIETARY_TAGS,
   SIZE_OPTIONS,
 } from "../utils/standardizedOptions";
+import {
+  matchFoodItem,
+  guessFoodClassification,
+} from "../utils/receiptAutofill";
 import "../styles/FoodItemForm.css";
 
 function FoodItemForm({
   restaurantId,
   onFoodItemsUpdated,
   existingFoodItems = [],
+  receiptItems = [],
 }) {
   const [foodItem, setFoodItem] = useState({
     name: "",
@@ -39,6 +44,7 @@ function FoodItemForm({
   const [editingFoodItem, setEditingFoodItem] = useState(null); // Store the food item being edited
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false); // Track success overlay visibility
   const [createdFoodItemName, setCreatedFoodItemName] = useState(""); // Store created food item name
+  const [usedReceiptItems, setUsedReceiptItems] = useState([]); // Indices of receipt items already handled
   const [notification, setNotification] = useState({
     isVisible: false,
     message: "",
@@ -156,6 +162,35 @@ function FoodItemForm({
     });
     setSearchTerm(""); // Clear the search
     setShowFoodSuggestions(false);
+  };
+
+  // Handle tapping a line item detected on the user's receipt. If it matches an
+  // existing menu item we add it instantly; otherwise we pre-fill the "create
+  // new" form with the name and price so the user just picks category/type.
+  const handleReceiptItemClick = (lineItem, index) => {
+    const match = matchFoodItem(lineItem.name, existingFoodItems);
+    if (match) {
+      handleSelectExistingFoodItem(match.item);
+    } else {
+      // Best-effort guess of category/type/sub-type so most dropdowns are
+      // pre-selected; the user still confirms required fields before saving.
+      const guess = guessFoodClassification(lineItem.name);
+      setFoodItem((prev) => ({
+        ...prev,
+        name: lineItem.name,
+        category: guess.category || prev.category,
+        type: guess.type || prev.type,
+        subType: guess.subType || prev.subType,
+        price:
+          lineItem.price != null && lineItem.price !== ""
+            ? String(lineItem.price)
+            : "",
+      }));
+      setIsCreateSectionExpanded(true);
+    }
+    setUsedReceiptItems((prev) =>
+      prev.includes(index) ? prev : [...prev, index]
+    );
   };
 
   // Autofill the form when a food item is selected (for editing/creating new)
@@ -306,6 +341,52 @@ function FoodItemForm({
         <p className="form-subtitle">
           Search for existing items or create new ones
         </p>
+
+        {receiptItems.length > usedReceiptItems.length && (
+          <div
+            className="receipt-suggestions"
+            style={{
+              marginBottom: 16,
+              padding: "12px 14px",
+              borderRadius: 10,
+              border: "1px solid #d4c4e8",
+              background: "linear-gradient(135deg, #faf7ff 0%, #f3edfa 100%)",
+            }}
+          >
+            <strong style={{ display: "block", marginBottom: 4, color: "#6b4a99" }}>
+              From your receipt
+            </strong>
+            <p style={{ fontSize: 12, color: "#666", margin: "0 0 10px" }}>
+              Tap an item to add it. Recognized items are added instantly; new
+              ones open the form below so you can pick a category.
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {receiptItems.map((li, i) =>
+                usedReceiptItems.includes(i) ? null : (
+                  <button
+                    key={`${li.name}-${i}`}
+                    type="button"
+                    onClick={() => handleReceiptItemClick(li, i)}
+                    style={{
+                      border: "1px solid #b08bd4",
+                      background: "#fff",
+                      color: "#6b4a99",
+                      borderRadius: 16,
+                      padding: "6px 12px",
+                      fontSize: 13,
+                      cursor: "pointer",
+                    }}
+                  >
+                    + {li.name}
+                    {li.price != null && li.price !== ""
+                      ? ` ($${li.price})`
+                      : ""}
+                  </button>
+                )
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="food-search-input-container">
           <input
