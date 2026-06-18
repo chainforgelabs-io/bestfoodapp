@@ -192,22 +192,22 @@ function RestaurantPage() {
               )
               .map((item, index) => (
                 <div key={item._id} className="result-item">
-                  <div className="food-item-thumb-wrap">
-                    {item.topPhoto ? (
-                      <img
-                        src={item.topPhoto}
-                        alt={item.name || "Food item"}
-                        className="food-item-thumb"
-                      />
-                    ) : (
-                      <div className="food-item-thumb-placeholder">
-                        <span aria-hidden="true">
-                          {getFoodEmoji(item.type, item.category)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
                   <div className="result-header">
+                    <div className="food-item-thumb-wrap">
+                      {item.topPhoto ? (
+                        <img
+                          src={item.topPhoto}
+                          alt={item.name || "Food item"}
+                          className="food-item-thumb"
+                        />
+                      ) : (
+                        <div className="food-item-thumb-placeholder">
+                          <span aria-hidden="true">
+                            {getFoodEmoji(item.type, item.category)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <div className="rank-number">#{index + 1}</div>
                     <h3 className="food-name">
                       {item.name || "Unnamed Food Item"}
