@@ -44,19 +44,25 @@
 
 .feed-card-media {
   position: relative;
-  height: 200px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   background: #f5ebe0;
   overflow: hidden;
 }
 
 .feed-card-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
 }
 
 .feed-card-placeholder {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: flex;
@@ -192,9 +198,5 @@
 @media (max-width: 480px) {
   .feed-page {
     padding-top: 88px;
-  }
-
-  .feed-card-media {
-    height: 180px;
   }
 }
