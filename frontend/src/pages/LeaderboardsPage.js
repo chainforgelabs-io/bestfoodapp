@@ -7,7 +7,7 @@ import SEO from "../components/SEO";
 import CitySearch from "../components/CitySearch";
 import { useCityFromUrl } from "../hooks/useCityFromUrl";
 import { generateSeoMeta, generateCityUrl } from "../utils/cityUtils";
-import { Compass, Building2, Store, Crown, Banknote } from "lucide-react";
+import { Compass, Building2, Store, Crown } from "lucide-react";
 import { getCategoryIcon } from "../utils/categoryIcon";
 import "../styles/LeaderboardsPage.css"; // Import your CSS file for styling
 
@@ -845,15 +845,6 @@ function LeaderboardsPage() {
                                   )}
                                   {(item.foodItem?.price || item.price) && (
                                     <span className="global-price">
-                                      <Banknote
-                                        size={14}
-                                        strokeWidth={2}
-                                        aria-hidden
-                                        style={{
-                                          verticalAlign: "-0.15em",
-                                          marginRight: 4,
-                                        }}
-                                      />
                                       ${item.foodItem?.price || item.price}
                                     </span>
                                   )}
@@ -901,15 +892,6 @@ function LeaderboardsPage() {
                                   )}
                                   {item.price && (
                                     <span className="global-price">
-                                      <Banknote
-                                        size={14}
-                                        strokeWidth={2}
-                                        aria-hidden
-                                        style={{
-                                          verticalAlign: "-0.15em",
-                                          marginRight: 4,
-                                        }}
-                                      />
                                       ${item.price}
                                     </span>
                                   )}
