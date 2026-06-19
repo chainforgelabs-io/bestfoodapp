@@ -7,7 +7,16 @@ import SEO from "../components/SEO";
 import CitySearch from "../components/CitySearch";
 import { useCityFromUrl } from "../hooks/useCityFromUrl";
 import { generateSeoMeta, generateCityUrl } from "../utils/cityUtils";
+import { Compass, Building2, Store, Crown } from "lucide-react";
+import { getCategoryIcon } from "../utils/categoryIcon";
 import "../styles/LeaderboardsPage.css"; // Import your CSS file for styling
+
+// Fixed lucide icons for the non-category section headers.
+const FIXED_HEADER_ICONS = {
+  bestCities: Building2,
+  bestRestaurants: Store,
+  bestOverallFood: Crown,
+};
 
 // API base URL is now handled by the configured axios instance
 
@@ -112,7 +121,7 @@ function LeaderboardsPage() {
     // Location categories
     {
       key: "bestCities",
-      title: "🏙️ Best Cities",
+      title: "Best Cities",
       category: null,
       type: "cities",
     },
@@ -120,13 +129,13 @@ function LeaderboardsPage() {
     // Restaurant categories
     {
       key: "bestRestaurants",
-      title: "🏪 Best Restaurants",
+      title: "Best Restaurants",
       category: null,
       type: "restaurants",
     },
     {
       key: "bestOverallFood",
-      title: "🌟 Best Overall Food",
+      title: "Best Overall Food",
       category: null,
       type: "overall",
     },
@@ -134,43 +143,43 @@ function LeaderboardsPage() {
     // Food item categories
     {
       key: "bestBurgers",
-      title: "🍔 Best Burgers",
+      title: "Best Burgers",
       category: "Burger",
       type: "food-items",
     },
     {
       key: "bestPizza",
-      title: "🍕 Best Pizza",
+      title: "Best Pizza",
       category: "Pizza",
       type: "food-items",
     },
     {
       key: "bestTacos",
-      title: "🌮 Best Tacos",
+      title: "Best Tacos",
       category: "Tacos",
       type: "food-items",
     },
     {
       key: "bestBurritos",
-      title: "🌯 Best Burritos",
+      title: "Best Burritos",
       category: "Burrito",
       type: "food-items",
     },
     {
       key: "bestHotDogs",
-      title: "🌭 Best Hot Dogs",
+      title: "Best Hot Dogs",
       category: "Hot Dog",
       type: "food-items",
     },
     {
       key: "bestFries",
-      title: "🍟 Best Fries",
+      title: "Best Fries",
       category: "Fries",
       type: "food-items",
     },
     {
       key: "bestDesserts",
-      title: "🍰 Best Desserts",
+      title: "Best Desserts",
       category: "Churro",
       type: "food-items",
     },
@@ -178,37 +187,37 @@ function LeaderboardsPage() {
     // Cuisine categories
     {
       key: "bestAmerican",
-      title: "🇺🇸 Best American",
+      title: "Best American",
       category: "American",
       type: "cuisine",
     },
     {
       key: "bestItalian",
-      title: "🇮🇹 Best Italian",
+      title: "Best Italian",
       category: "Italian",
       type: "cuisine",
     },
     {
       key: "bestVietnamese",
-      title: "🇻🇳 Best Vietnamese",
+      title: "Best Vietnamese",
       category: "Vietnamese",
       type: "cuisine",
     },
     {
       key: "bestMexican",
-      title: "🇲🇽 Best Mexican",
+      title: "Best Mexican",
       category: "Mexican",
       type: "cuisine",
     },
     {
       key: "bestBreakfastFood",
-      title: "🍳 Best Breakfast Food",
+      title: "Best Breakfast Food",
       category: "Breakfast Food",
       type: "cuisine",
     },
     {
       key: "bestAsian",
-      title: "🥢 Best Asian",
+      title: "Best Asian",
       category: "Asian",
       type: "cuisine",
     },
@@ -725,7 +734,9 @@ function LeaderboardsPage() {
           // Global leaderboards when no city selected
           <div className="global-leaderboards">
             <div className="global-intro">
-              <div className="prompt-icon">🌟</div>
+              <div className="prompt-icon">
+                <Compass size={20} strokeWidth={2} aria-hidden />
+              </div>
               <h3>Ready to explore?</h3>
               <p>
                 Check out our global top food rankings, or select a city above
@@ -734,9 +745,23 @@ function LeaderboardsPage() {
             </div>
 
             <div className="global-grid">
-              {globalCategories.map((category) => (
-                <div key={category.key} className="global-category-card">
-                  <h4 className="global-category-title">{category.title}</h4>
+              {globalCategories.map((category) => {
+                const HeaderIcon =
+                  FIXED_HEADER_ICONS[category.key] ||
+                  getCategoryIcon(category.category);
+                return (
+                  <div key={category.key} className="global-category-card">
+                    <h4
+                      className="global-category-title"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <HeaderIcon size={20} strokeWidth={2} aria-hidden />
+                      <span>{category.title}</span>
+                    </h4>
                   <div className="global-items-list">
                     {categoryLoading[category.key] ? (
                       <div className="category-loading">
@@ -889,8 +914,9 @@ function LeaderboardsPage() {
                       <p className="no-global-items">No items yet</p>
                     )}
                   </div>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

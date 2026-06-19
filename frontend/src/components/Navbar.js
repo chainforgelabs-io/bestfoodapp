@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
+import {
+  Home,
+  Flame,
+  CirclePlus,
+  Trophy,
+  Map as MapIcon,
+  Star,
+  User,
+} from "lucide-react";
 import Logo from "../assets/logo.png";
 import "../styles/Navbar.css";
 
@@ -47,7 +56,9 @@ function Navbar() {
               }
               onClick={closeMenu}
             >
-              <span className="nav-icon">🏠</span>
+              <span className="nav-icon">
+                <Home size={22} strokeWidth={2} aria-hidden />
+              </span>
               Home
             </NavLink>
           </li>
@@ -59,7 +70,9 @@ function Navbar() {
               }
               onClick={closeMenu}
             >
-              <span className="nav-icon">📰</span>
+              <span className="nav-icon">
+                <Flame size={22} strokeWidth={2} aria-hidden />
+              </span>
               Feed
             </NavLink>
           </li>
@@ -71,7 +84,9 @@ function Navbar() {
               }
               onClick={closeMenu}
             >
-              <span className="nav-icon">✍️</span>
+              <span className="nav-icon">
+                <CirclePlus size={22} strokeWidth={2} aria-hidden />
+              </span>
               Submit
             </NavLink>
           </li>
@@ -83,7 +98,9 @@ function Navbar() {
               }
               onClick={closeMenu}
             >
-              <span className="nav-icon">🏆</span>
+              <span className="nav-icon">
+                <Trophy size={22} strokeWidth={2} aria-hidden />
+              </span>
               Leaderboards
             </NavLink>
           </li>
@@ -95,7 +112,9 @@ function Navbar() {
               }
               onClick={closeMenu}
             >
-              <span className="nav-icon">🧭</span>
+              <span className="nav-icon">
+                <MapIcon size={22} strokeWidth={2} aria-hidden />
+              </span>
               Map
             </NavLink>
           </li>
@@ -107,7 +126,9 @@ function Navbar() {
               }
               onClick={closeMenu}
             >
-              <span className="nav-icon">⭐</span>
+              <span className="nav-icon">
+                <Star size={22} strokeWidth={2} aria-hidden />
+              </span>
               Scoring
             </NavLink>
           </li>
@@ -119,7 +140,9 @@ function Navbar() {
               }
               onClick={closeMenu}
             >
-              <span className="nav-icon">👤</span>
+              <span className="nav-icon">
+                <User size={22} strokeWidth={2} aria-hidden />
+              </span>
               Profile
             </NavLink>
           </li>

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "../api/axios";
 import tokenUtils from "../utils/auth";
-import { getFoodEmoji } from "../utils/foodEmoji";
+import PhotoPlaceholder from "../components/PhotoPlaceholder";
 import SEO from "../components/SEO";
 import "../styles/FeedPage.css";
 
@@ -154,12 +154,7 @@ function FeedPage() {
                     <img src={photo} alt={foodName} className="feed-card-img" />
                   ) : (
                     <div className="feed-card-placeholder">
-                      <span aria-hidden="true">
-                        {getFoodEmoji(
-                          review.foodItem?.type,
-                          review.foodItem?.category
-                        )}
-                      </span>
+                      <PhotoPlaceholder />
                     </div>
                   )}
                   <span
