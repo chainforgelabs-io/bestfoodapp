@@ -3,6 +3,7 @@ import axios from "../api/axios";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import tokenUtils from "../utils/auth";
+import { User } from "lucide-react";
 import PhotoPlaceholder from "../components/PhotoPlaceholder";
 import ReviewDetailModal from "../components/ReviewDetailModal";
 import SEO from "../components/SEO";
@@ -392,7 +393,7 @@ function ProfilePage() {
                 <img src={avatarUrl} alt="" className="profile-avatar-img" />
               ) : (
                 <div className="profile-avatar-fallback" aria-hidden="true">
-                  🍴
+                  <User size={32} strokeWidth={2} />
                 </div>
               )}
             </div>

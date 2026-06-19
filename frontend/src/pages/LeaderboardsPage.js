@@ -7,7 +7,7 @@ import SEO from "../components/SEO";
 import CitySearch from "../components/CitySearch";
 import { useCityFromUrl } from "../hooks/useCityFromUrl";
 import { generateSeoMeta, generateCityUrl } from "../utils/cityUtils";
-import { Compass, Building2, Store, Crown } from "lucide-react";
+import { Compass, Building2, Store, Crown, Banknote } from "lucide-react";
 import { getCategoryIcon } from "../utils/categoryIcon";
 import "../styles/LeaderboardsPage.css"; // Import your CSS file for styling
 
@@ -830,14 +830,31 @@ function LeaderboardsPage() {
                                   {(item.foodItem?.restaurant?.name ||
                                     item.restaurant?.name) && (
                                     <span className="global-restaurant">
-                                      🏪{" "}
+                                      <Store
+                                        size={14}
+                                        strokeWidth={2}
+                                        aria-hidden
+                                        style={{
+                                          verticalAlign: "-0.15em",
+                                          marginRight: 4,
+                                        }}
+                                      />
                                       {item.foodItem?.restaurant?.name ||
                                         item.restaurant?.name}
                                     </span>
                                   )}
                                   {(item.foodItem?.price || item.price) && (
                                     <span className="global-price">
-                                      💰 ${item.foodItem?.price || item.price}
+                                      <Banknote
+                                        size={14}
+                                        strokeWidth={2}
+                                        aria-hidden
+                                        style={{
+                                          verticalAlign: "-0.15em",
+                                          marginRight: 4,
+                                        }}
+                                      />
+                                      ${item.foodItem?.price || item.price}
                                     </span>
                                   )}
                                 </div>
@@ -870,12 +887,30 @@ function LeaderboardsPage() {
                                 <div className="global-extra-info">
                                   {item.restaurant?.name && (
                                     <span className="global-restaurant">
-                                      🏪 {item.restaurant.name}
+                                      <Store
+                                        size={14}
+                                        strokeWidth={2}
+                                        aria-hidden
+                                        style={{
+                                          verticalAlign: "-0.15em",
+                                          marginRight: 4,
+                                        }}
+                                      />
+                                      {item.restaurant.name}
                                     </span>
                                   )}
                                   {item.price && (
                                     <span className="global-price">
-                                      💰 ${item.price}
+                                      <Banknote
+                                        size={14}
+                                        strokeWidth={2}
+                                        aria-hidden
+                                        style={{
+                                          verticalAlign: "-0.15em",
+                                          marginRight: 4,
+                                        }}
+                                      />
+                                      ${item.price}
                                     </span>
                                   )}
                                 </div>

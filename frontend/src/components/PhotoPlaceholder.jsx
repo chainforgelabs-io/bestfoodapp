@@ -18,9 +18,15 @@ export default function PhotoPlaceholder() {
       aria-hidden
     >
       <UtensilsCrossed
-        size={40}
         strokeWidth={1.5}
-        style={{ color: "#b4b2a9", opacity: 0.6 }}
+        style={{
+          color: "#b4b2a9",
+          opacity: 0.6,
+          width: "34%",
+          height: "auto",
+          minWidth: 56,
+          maxWidth: 120,
+        }}
       />
     </div>
   );
