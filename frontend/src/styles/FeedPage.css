@@ -20,6 +20,32 @@
   font-size: 0.95rem;
 }
 
+.feed-filter-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 24px;
+  background: #f3eefa;
+  border-radius: 24px;
+}
+
+.feed-filter-btn {
+  border: none;
+  background: transparent;
+  color: #6b4a99;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.feed-filter-btn.active {
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  color: #fff;
+}
+
 .feed-loading,
 .feed-empty,
 .feed-login-prompt {

@@ -161,6 +161,13 @@ router.get("/feed", protect, async (req, res) => {
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 50));
     const skip = (page - 1) * limit;
 
+    // Optional filter: "photos" restricts the feed to reviews that have at
+    // least one photo. Anything else (default) returns all reviews.
+    const filterQuery =
+      req.query.filter === "photos"
+        ? { "photos.0": { $exists: true } }
+        : {};
+
     const currentUser = await User.findById(req.user._id)
       .select("following")
       .lean();
@@ -169,7 +176,7 @@ router.get("/feed", protect, async (req, res) => {
     );
 
     const [items, total] = await Promise.all([
-      Review.find()
+      Review.find(filterQuery)
         .sort({ reviewDate: -1, _id: -1 })
         .skip(skip)
         .limit(limit)
@@ -177,7 +184,7 @@ router.get("/feed", protect, async (req, res) => {
         .populate("foodItem", "name category type")
         .populate("restaurantId", "name")
         .lean(),
-      Review.countDocuments(),
+      Review.countDocuments(filterQuery),
     ]);
 
     const enriched = items.map((review) => {

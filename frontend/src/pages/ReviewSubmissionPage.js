@@ -514,17 +514,25 @@ function ReviewSubmissionPage() {
     ? selectedFiles[recropIndex]
     : cropQueue[cropIndex] || null;
 
+  // Upload a list of files to S3 and return the resulting [{url, key}] objects.
+  const uploadFiles = async (files) => {
+    const presigned = await requestPresignedUrls(files);
+    const results = [];
+    for (let i = 0; i < files.length; i++) {
+      const res = await uploadToS3(presigned[i], files[i]);
+      results.push(res);
+    }
+    return results;
+  };
+
   const handleUploadPhotos = async () => {
     if (!selectedFiles.length) return;
     try {
       setUploading(true);
-      const presigned = await requestPresignedUrls(selectedFiles);
-      const results = [];
-      for (let i = 0; i < selectedFiles.length; i++) {
-        const res = await uploadToS3(presigned[i], selectedFiles[i]);
-        results.push(res);
-      }
+      const results = await uploadFiles(selectedFiles);
       setUploadedPhotos((prev) => [...prev, ...results]);
+      // Move them out of the pending selection so they aren't uploaded twice.
+      setSelectedFiles([]);
       setNotification({
         isVisible: true,
         message: "Photos uploaded",
@@ -597,6 +605,28 @@ function ReviewSubmissionPage() {
 
       const formattedPurchaseDate = formatDate(formData.purchaseDate);
 
+      // Make sure any photos that were selected/cropped but not yet uploaded
+      // (the user may have skipped the "Upload Selected" button) get uploaded
+      // now, so they actually attach to the review.
+      let photoUrls = uploadedPhotos.map((p) => p.url);
+      if (selectedFiles.length > 0) {
+        try {
+          const freshlyUploaded = await uploadFiles(selectedFiles);
+          photoUrls = [...photoUrls, ...freshlyUploaded.map((p) => p.url)];
+          setUploadedPhotos((prev) => [...prev, ...freshlyUploaded]);
+          setSelectedFiles([]);
+        } catch (uploadErr) {
+          console.error("Photo upload during submit failed", uploadErr);
+          setNotification({
+            isVisible: true,
+            message:
+              "We couldn't upload your photos. Please try the photo step again.",
+            type: "error",
+          });
+          return;
+        }
+      }
+
       console.log("DEBUG: formData.foodItems:", formData.foodItems);
 
       const reviewPromises = formData.foodItems.map(async (foodItem, index) => {
@@ -619,7 +649,7 @@ function ReviewSubmissionPage() {
           foodItem: foodItem._id,
           score: parseInt(rating),
           comment: "",
-          photos: uploadedPhotos.map((p) => p.url),
+          photos: photoUrls,
           tags: formData.tags || [],
           purchaseDate: formattedPurchaseDate,
         };

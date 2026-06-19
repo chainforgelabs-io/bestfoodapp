@@ -15,6 +15,7 @@ function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selfId, setSelfId] = useState(null);
+  const [filterMode, setFilterMode] = useState("photos"); // "photos" | "all"
 
   useEffect(() => {
     if (!tokenUtils.isAuthenticated()) return;
@@ -33,7 +34,7 @@ function FeedPage() {
       else setLoadingMore(true);
 
       const { data } = await axios.get("/reviews/feed", {
-        params: { page: pageToLoad, limit: PAGE_SIZE },
+        params: { page: pageToLoad, limit: PAGE_SIZE, filter: filterMode },
       });
 
       setPage(data.page || pageToLoad);
@@ -48,7 +49,7 @@ function FeedPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [filterMode]);
 
   useEffect(() => {
     if (!tokenUtils.isAuthenticated()) return;
@@ -131,6 +132,29 @@ function FeedPage() {
         <h1>Community Feed</h1>
         <p>Recent reviews from everyone on Best Food App</p>
       </header>
+
+      <div className="feed-filter-toggle" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={filterMode === "photos"}
+          className={`feed-filter-btn ${
+            filterMode === "photos" ? "active" : ""
+          }`}
+          onClick={() => filterMode !== "photos" && setFilterMode("photos")}
+        >
+          With photos
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={filterMode === "all"}
+          className={`feed-filter-btn ${filterMode === "all" ? "active" : ""}`}
+          onClick={() => filterMode !== "all" && setFilterMode("all")}
+        >
+          All reviews
+        </button>
+      </div>
 
       {loading ? (
         <p className="feed-loading">Loading reviews…</p>
