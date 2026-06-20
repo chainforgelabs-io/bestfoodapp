@@ -3,7 +3,15 @@ const fs = require("fs");
 const cardLayout = require("./cardLayout");
 const { assertRequiredAssets, getAssetPath, hasOptionalBorder } = require("./assets");
 
-function buildScoreSvg({ width, height, cx, cy, scoreText, scoreCfg, fontBase64 }) {
+function buildScoreSvg({ badgeSize, scoreText, scoreCfg, fontBase64 }) {
+  const cx = badgeSize / 2;
+  const cy = badgeSize / 2;
+  const fontSize =
+    scoreText.length >= 3
+      ? Math.round(badgeSize * scoreCfg.fontSizeRatioThreeDigit)
+      : Math.round(badgeSize * scoreCfg.fontSizeRatio);
+  const offset = Math.max(2, Math.round(fontSize * scoreCfg.aberrationRatio));
+
   const fontFace = fontBase64
     ? `@font-face {
         font-family: '${scoreCfg.fontFamily}';
@@ -16,43 +24,56 @@ function buildScoreSvg({ width, height, cx, cy, scoreText, scoreCfg, fontBase64 
     ? scoreCfg.fontFamily
     : "Impact, Haettenschweiler, 'Arial Narrow Bold', Arial Black, sans-serif";
 
-  // Chromatic-aberration score styling (cyan left, red right, black center).
+  // Render at badge dimensions — librsvg draws tiny text on full-canvas SVGs.
   return `
-<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+<svg width="${badgeSize}" height="${badgeSize}" xmlns="http://www.w3.org/2000/svg">
   <defs><style>${fontFace}</style></defs>
   <text
-    x="${cx - scoreCfg.aberrationOffset}"
+    x="${cx - offset}"
     y="${cy}"
     font-family="${fontFamily}"
-    font-size="${scoreCfg.fontSize}"
+    font-size="${fontSize}"
     font-weight="${scoreCfg.fontWeight || "900"}"
     fill="${scoreCfg.aberrationCyan}"
     text-anchor="middle"
-    dominant-baseline="central"
+    dominant-baseline="middle"
     opacity="0.9"
   >${scoreText}</text>
   <text
-    x="${cx + scoreCfg.aberrationOffset}"
+    x="${cx + offset}"
     y="${cy}"
     font-family="${fontFamily}"
-    font-size="${scoreCfg.fontSize}"
+    font-size="${fontSize}"
     font-weight="${scoreCfg.fontWeight || "900"}"
     fill="${scoreCfg.aberrationRed}"
     text-anchor="middle"
-    dominant-baseline="central"
+    dominant-baseline="middle"
     opacity="0.9"
   >${scoreText}</text>
   <text
     x="${cx}"
     y="${cy}"
     font-family="${fontFamily}"
-    font-size="${scoreCfg.fontSize}"
+    font-size="${fontSize}"
     font-weight="${scoreCfg.fontWeight || "900"}"
     fill="${scoreCfg.color}"
     text-anchor="middle"
-    dominant-baseline="central"
+    dominant-baseline="middle"
   >${scoreText}</text>
 </svg>`;
+}
+
+async function renderScoreOverlay({ badgeSize, scoreText, scoreCfg, fontPath }) {
+  const fontBase64 = fontPath
+    ? fs.readFileSync(fontPath).toString("base64")
+    : null;
+  const scoreSvg = buildScoreSvg({
+    badgeSize,
+    scoreText,
+    scoreCfg,
+    fontBase64,
+  });
+  return sharp(Buffer.from(scoreSvg)).png().toBuffer();
 }
 
 /** Strip the Canva black matte while preserving inner black ring strokes. */
@@ -139,27 +160,18 @@ async function renderCard({ photoUrl, score }) {
 
   const badgeLeft = width - badge.marginRight - badgeSize;
   const badgeTop = badge.marginTop;
-  const cx = badgeLeft + badgeSize / 2;
-  const cy = badgeTop + badgeSize / 2;
-
-  const fontBase64 = fontPath
-    ? fs.readFileSync(fontPath).toString("base64")
-    : null;
   const scoreText = String(Math.round(score));
 
-  const scoreSvg = buildScoreSvg({
-    width,
-    height,
-    cx,
-    cy,
+  const scoreOverlay = await renderScoreOverlay({
+    badgeSize,
     scoreText,
     scoreCfg,
-    fontBase64,
+    fontPath,
   });
 
   const composites = [
     { input: badgeResized, left: badgeLeft, top: badgeTop },
-    { input: Buffer.from(scoreSvg), left: 0, top: 0 },
+    { input: scoreOverlay, left: badgeLeft, top: badgeTop },
   ];
 
   if (hasOptionalBorder()) {

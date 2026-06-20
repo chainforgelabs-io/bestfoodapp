@@ -12,10 +12,11 @@ module.exports = {
   },
   score: {
     fontFamily: "Pacifico",
-    fontSize: 108,
+    fontSizeRatio: 0.44,
+    fontSizeRatioThreeDigit: 0.34,
     fontWeight: "normal",
     color: "#000000",
-    aberrationOffset: 4,
+    aberrationRatio: 0.035,
     aberrationCyan: "#00e5ff",
     aberrationRed: "#ff1744",
   },
