@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import axios from "../api/axios";
 import SEO from "../components/SEO";
 import PhotoPlaceholder from "../components/PhotoPlaceholder";
@@ -117,6 +118,15 @@ function SocialUploadPage() {
     );
     if (prefilled) setDetailCaption(prefilled);
   }, [settings, selected]);
+
+  useEffect(() => {
+    if (!selected) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [selected]);
 
   const openDetail = (item) => {
     setSelected(item);
@@ -496,7 +506,8 @@ function SocialUploadPage() {
         </div>
       )}
 
-      {selected && (
+      {selected &&
+        createPortal(
         <div
           className="social-detail-overlay"
           onClick={closeDetail}
@@ -707,7 +718,8 @@ function SocialUploadPage() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

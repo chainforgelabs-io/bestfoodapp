@@ -23,7 +23,9 @@ function getS3Client() {
 async function uploadCard(reviewId, pngBuffer) {
   if (!BUCKET) throw new Error("S3_BUCKET_NAME is not configured");
 
-  const key = `social-cards/${reviewId}.png`;
+  // Version the key per render so regenerated cards get a fresh URL and are
+  // never masked by a stale browser/CDN cache of the previous render.
+  const key = `social-cards/${reviewId}-${Date.now()}.png`;
   const s3 = getS3Client();
 
   await s3.send(
@@ -32,6 +34,7 @@ async function uploadCard(reviewId, pngBuffer) {
       Key: key,
       Body: pngBuffer,
       ContentType: "image/png",
+      CacheControl: "public, max-age=31536000, immutable",
       ACL: "public-read",
     })
   );

@@ -1,7 +1,13 @@
 const mongoose = require("mongoose");
 
 const DEFAULT_CAPTION_TEMPLATE =
-  "{itemName} from {restaurantName} — scored {score}/100. Reviewed {date}.\nMore reviews + your favorites at bestfoodapp.com";
+  "{itemName} from {restaurantName} — scored {score}. Reviewed {date}.\nMore reviews + your favorites at bestfoodapp.com";
+
+// Prior seeded defaults that should be auto-upgraded to the current default if
+// the admin never customized them (preserves real customizations).
+const LEGACY_DEFAULT_TEMPLATES = [
+  "{itemName} from {restaurantName} — scored {score}/100. Reviewed {date}.\nMore reviews + your favorites at bestfoodapp.com",
+];
 
 const socialSettingsSchema = new mongoose.Schema({
   singletonKey: {
@@ -39,6 +45,9 @@ socialSettingsSchema.statics.getOrCreate = async function getOrCreate() {
       stagingThreshold: 70,
       defaultPlatforms: ["instagram"],
     });
+  } else if (LEGACY_DEFAULT_TEMPLATES.includes(doc.captionTemplate)) {
+    doc.captionTemplate = DEFAULT_CAPTION_TEMPLATE;
+    await doc.save();
   }
   return doc;
 };

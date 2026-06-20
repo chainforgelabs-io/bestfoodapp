@@ -12,11 +12,13 @@ module.exports = {
   },
   score: {
     fontFamily: "Pacifico",
-    fontSizeRatio: 0.44,
-    fontSizeRatioThreeDigit: 0.34,
+    // Ratio of badge diameter. Pacifico has large side bearings, so it renders
+    // smaller than its em — keep these high so the score fills the circle.
+    fontSizeRatio: 0.62,
+    fontSizeRatioThreeDigit: 0.46,
     fontWeight: "normal",
     color: "#000000",
-    aberrationRatio: 0.035,
+    aberrationRatio: 0.04,
     aberrationCyan: "#00e5ff",
     aberrationRed: "#ff1744",
   },
