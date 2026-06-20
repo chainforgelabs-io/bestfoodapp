@@ -23,6 +23,8 @@ function formatReviewDate(value) {
   });
 }
 
+const DEFAULT_TRANSFORM = { rotation: 0, scale: 1, offsetX: 0, offsetY: 0 };
+
 function renderCaptionFromTemplate(template, item) {
   if (!template || !item) return "";
   return template
@@ -55,6 +57,8 @@ function SocialUploadPage() {
   const [detailCaption, setDetailCaption] = useState("");
   const [detailPlatforms, setDetailPlatforms] = useState(["instagram"]);
   const [detailPhoto, setDetailPhoto] = useState(null);
+  const [detailTransform, setDetailTransform] = useState(DEFAULT_TRANSFORM);
+  const [transformDirty, setTransformDirty] = useState(false);
   const [detailBusy, setDetailBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -138,6 +142,11 @@ function SocialUploadPage() {
     setDetailPhoto(
       item.socialPost?.sourcePhotoUrl || item.photos?.[0] || null
     );
+    setDetailTransform({
+      ...DEFAULT_TRANSFORM,
+      ...(item.socialPost?.sourceTransform || {}),
+    });
+    setTransformDirty(false);
     setDetailPlatforms(
       settings?.defaultPlatforms?.length
         ? [...settings.defaultPlatforms]
@@ -161,15 +170,36 @@ function SocialUploadPage() {
       setSelected((s) => ({ ...s, socialPost }));
       if (socialPost?.caption != null) setDetailCaption(socialPost.caption);
       if (socialPost?.sourcePhotoUrl) setDetailPhoto(socialPost.sourcePhotoUrl);
+      if (socialPost?.sourceTransform) {
+        setDetailTransform({
+          ...DEFAULT_TRANSFORM,
+          ...socialPost.sourceTransform,
+        });
+      }
+      setTransformDirty(false);
     }
   };
+
+  const updateTransform = (patch) => {
+    setTransformDirty(true);
+    setDetailTransform((t) => ({ ...t, ...patch }));
+  };
+
+  const rotateBy = (deg) =>
+    updateTransform({
+      rotation: ((detailTransform.rotation + deg) % 360 + 360) % 360,
+    });
 
   const handleGenerate = async (item, e) => {
     e?.stopPropagation();
     try {
       setDetailBusy(true);
+      const isSelected = selected?.reviewId === item.reviewId;
       const { data } = await axios.post("/social/generate", {
         reviewId: item.reviewId,
+        ...(isSelected
+          ? { transform: detailTransform, sourcePhotoUrl: detailPhoto }
+          : {}),
       });
       refreshItemInList(data.socialPost, item.reviewId);
       setMessage("Card generated");
@@ -244,6 +274,16 @@ function SocialUploadPage() {
       .replace(/{score}/g, "91")
       .replace(/{date}/g, "Jun 18, 2026")
       .replace(/{city}/g, "Saskatoon") || "";
+
+  // When the user is mid-adjustment, preview the source photo with the
+  // transform applied live (the baked card only updates on regenerate).
+  const showLivePreview = transformDirty;
+  const coverBoost = detailTransform.rotation % 180 === 90 ? 1.3 : 1;
+  const livePreviewStyle = {
+    transform: `rotate(${detailTransform.rotation}deg) scale(${
+      detailTransform.scale * coverBoost
+    })`,
+  };
 
   const canGenerate = (item) => item.hasRealPhoto;
   const canPublish =
@@ -526,7 +566,14 @@ function SocialUploadPage() {
               </p>
 
               <div className="social-card-preview-wrap">
-                {selected.socialPost?.cardImageUrl ? (
+                {showLivePreview && detailPhoto ? (
+                  <img
+                    src={detailPhoto}
+                    alt="Source photo preview"
+                    className="social-card-preview"
+                    style={livePreviewStyle}
+                  />
+                ) : selected.socialPost?.cardImageUrl ? (
                   <img
                     src={selected.socialPost.cardImageUrl}
                     alt="Rendered social card"
@@ -537,11 +584,71 @@ function SocialUploadPage() {
                     src={detailPhoto}
                     alt="Source photo preview"
                     className="social-card-preview"
+                    style={livePreviewStyle}
                   />
                 ) : (
                   <div className="social-card-preview-placeholder">
                     <PhotoPlaceholder />
                   </div>
+                )}
+              </div>
+
+              <div className="social-transform-controls">
+                <div className="social-transform-row">
+                  <span className="social-section-label">Adjust photo</span>
+                  <div className="social-transform-buttons">
+                    <button
+                      type="button"
+                      className="social-icon-btn"
+                      title="Rotate left"
+                      onClick={() => rotateBy(-90)}
+                    >
+                      ⟲
+                    </button>
+                    <button
+                      type="button"
+                      className="social-icon-btn"
+                      title="Rotate right"
+                      onClick={() => rotateBy(90)}
+                    >
+                      ⟳
+                    </button>
+                    <button
+                      type="button"
+                      className="social-icon-btn"
+                      title="Reset"
+                      disabled={
+                        !transformDirty &&
+                        detailTransform.rotation === 0 &&
+                        detailTransform.scale === 1
+                      }
+                      onClick={() => {
+                        setDetailTransform(DEFAULT_TRANSFORM);
+                        setTransformDirty(true);
+                      }}
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+                <label className="social-zoom-label">
+                  Zoom
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="0.05"
+                    value={detailTransform.scale}
+                    onChange={(e) =>
+                      updateTransform({ scale: Number(e.target.value) })
+                    }
+                  />
+                  <span>{detailTransform.scale.toFixed(2)}×</span>
+                </label>
+                {transformDirty && selected.socialPost?.cardImageUrl && (
+                  <p className="social-transform-hint">
+                    Adjustments preview only — click Regenerate to bake them in.
+                  </p>
                 )}
               </div>
 
@@ -557,7 +664,10 @@ function SocialUploadPage() {
                         className={
                           detailPhoto === url ? "selected" : undefined
                         }
-                        onClick={() => setDetailPhoto(url)}
+                        onClick={() => {
+                          setDetailPhoto(url);
+                          setTransformDirty(true);
+                        }}
                       />
                     ))}
                   </div>
@@ -654,26 +764,12 @@ function SocialUploadPage() {
                       disabled={detailBusy}
                       onClick={() => handleGenerate(selected)}
                     >
-                      {selected.socialPost?.cardImageUrl
+                      {detailBusy
+                        ? "Working…"
+                        : selected.socialPost?.cardImageUrl
                         ? "Regenerate"
                         : "Generate"}
                     </button>
-                    {selected.socialPost?.cardImageUrl &&
-                      detailPhoto &&
-                      detailPhoto !== selected.socialPost.sourcePhotoUrl && (
-                        <button
-                          type="button"
-                          className="social-btn secondary"
-                          disabled={detailBusy}
-                          onClick={() =>
-                            handlePatch({
-                              regenerate: { sourcePhotoUrl: detailPhoto },
-                            })
-                          }
-                        >
-                          Regenerate with selected photo
-                        </button>
-                      )}
                   </>
                 )}
                 <button

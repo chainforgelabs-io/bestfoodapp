@@ -132,12 +132,54 @@ async function loadBadgeWithTransparentBackground(badgePath, badgeSize) {
     .toBuffer();
 }
 
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+/**
+ * Orient and frame the source photo for the 4:5 card.
+ * - Honors EXIF orientation (phones store rotated pixels + an orientation tag;
+ *   browsers respect it but sharp does not unless we call .rotate()).
+ * - Applies an optional manual transform (rotation in 90° steps, zoom, pan).
+ */
+async function prepareBackground(photoBuffer, width, height, transform) {
+  const rotation = ((Math.round((transform?.rotation || 0) / 90) * 90) % 360 + 360) % 360;
+  const scale = clamp(Number(transform?.scale) || 1, 1, 4);
+  const offsetX = clamp(Number(transform?.offsetX) || 0, -1, 1);
+  const offsetY = clamp(Number(transform?.offsetY) || 0, -1, 1);
+
+  // 1. Auto-orient from EXIF and bake it into the pixels.
+  let oriented = await sharp(photoBuffer).rotate().png().toBuffer();
+
+  // 2. Apply manual 90° rotation if requested.
+  if (rotation) {
+    oriented = await sharp(oriented).rotate(rotation).png().toBuffer();
+  }
+
+  // 3. Scale (zoom) then crop the 4:5 window, positioned by the pan offset.
+  const targetW = Math.round(width * scale);
+  const targetH = Math.round(height * scale);
+  const resized = await sharp(oriented)
+    .resize(targetW, targetH, { fit: "cover", position: "centre" })
+    .toBuffer();
+
+  const maxLeft = targetW - width;
+  const maxTop = targetH - height;
+  const left = clamp(Math.round((maxLeft / 2) * (1 + offsetX)), 0, maxLeft);
+  const top = clamp(Math.round((maxTop / 2) * (1 + offsetY)), 0, maxTop);
+
+  return sharp(resized)
+    .extract({ left, top, width, height })
+    .png()
+    .toBuffer();
+}
+
 /**
  * Composite a branded social card PNG (1080×1350, 4:5).
- * @param {{ photoUrl: string, score: number }} input
+ * @param {{ photoUrl: string, score: number, transform?: object }} input
  * @returns {Promise<Buffer>}
  */
-async function renderCard({ photoUrl, score }) {
+async function renderCard({ photoUrl, score, transform }) {
   const { badgePath, fontPath } = assertRequiredAssets();
   const { width, height, badge, score: scoreCfg } = cardLayout;
 
@@ -147,10 +189,7 @@ async function renderCard({ photoUrl, score }) {
   }
   const photoBuffer = Buffer.from(await photoRes.arrayBuffer());
 
-  const bg = await sharp(photoBuffer)
-    .resize(width, height, { fit: "cover", position: "centre" })
-    .png()
-    .toBuffer();
+  const bg = await prepareBackground(photoBuffer, width, height, transform);
 
   const badgeSize = badge.size;
   const badgeResized = await loadBadgeWithTransparentBackground(

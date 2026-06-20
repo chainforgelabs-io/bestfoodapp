@@ -74,6 +74,12 @@ const reviewSchema = new mongoose.Schema({
     cardImageUrl: { type: String, default: null },
     cardGeneratedAt: { type: Date, default: null },
     sourcePhotoUrl: { type: String, default: null },
+    sourceTransform: {
+      rotation: { type: Number, default: 0 },
+      scale: { type: Number, default: 1 },
+      offsetX: { type: Number, default: 0 },
+      offsetY: { type: Number, default: 0 },
+    },
     targets: {
       instagram: {
         postId: { type: String, default: null },

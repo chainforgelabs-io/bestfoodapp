@@ -20,7 +20,42 @@ const { getPublisher } = require("../lib/social/publishers");
 
 const router = express.Router();
 
+const SERVER_STARTED_AT = new Date().toISOString();
+// Bump this list whenever the renderer/feature surface changes so a quick hit
+// to /api/social/version confirms which code a given deploy is actually running.
+const RENDERER_FEATURES = [
+  "badge-overlay-score",
+  "exif-autorotate",
+  "versioned-card-url",
+  "manual-transform",
+  "caption-no-denominator",
+];
+
+// Public (no auth) so deploy state can be verified from a browser instantly.
+router.get("/version", (req, res) => {
+  res.json({
+    commit: process.env.VERCEL_GIT_COMMIT_SHA || "local",
+    commitMessage: process.env.VERCEL_GIT_COMMIT_MESSAGE || null,
+    branch: process.env.VERCEL_GIT_COMMIT_REF || null,
+    deploymentId: process.env.VERCEL_DEPLOYMENT_ID || null,
+    serverStartedAt: SERVER_STARTED_AT,
+    rendererFeatures: RENDERER_FEATURES,
+  });
+});
+
 router.use(protect, admin);
+
+function sanitizeTransform(input) {
+  if (!input || typeof input !== "object") return null;
+  const num = (v, def) => (Number.isFinite(Number(v)) ? Number(v) : def);
+  const rotation = ((Math.round(num(input.rotation, 0) / 90) * 90) % 360 + 360) % 360;
+  return {
+    rotation,
+    scale: Math.min(Math.max(num(input.scale, 1), 1), 4),
+    offsetX: Math.min(Math.max(num(input.offsetX, 0), -1), 1),
+    offsetY: Math.min(Math.max(num(input.offsetY, 0), -1), 1),
+  };
+}
 
 function serializeSocialPost(sp) {
   if (!sp) return null;
@@ -30,6 +65,14 @@ function serializeSocialPost(sp) {
     cardImageUrl: sp.cardImageUrl ?? null,
     cardGeneratedAt: sp.cardGeneratedAt ?? null,
     sourcePhotoUrl: sp.sourcePhotoUrl ?? null,
+    sourceTransform: sp.sourceTransform
+      ? {
+          rotation: sp.sourceTransform.rotation ?? 0,
+          scale: sp.sourceTransform.scale ?? 1,
+          offsetX: sp.sourceTransform.offsetX ?? 0,
+          offsetY: sp.sourceTransform.offsetY ?? 0,
+        }
+      : { rotation: 0, scale: 1, offsetX: 0, offsetY: 0 },
     targets: {
       instagram: sp.targets?.instagram || null,
       x: sp.targets?.x || null,
@@ -220,7 +263,8 @@ router.get("/queue", async (req, res) => {
 // POST /generate
 router.post("/generate", async (req, res) => {
   try {
-    const { reviewId } = req.body || {};
+    const { reviewId, transform, sourcePhotoUrl: preferredPhoto } =
+      req.body || {};
     if (!reviewId) {
       return res.status(400).json({ message: "reviewId is required" });
     }
@@ -234,10 +278,12 @@ router.post("/generate", async (req, res) => {
       return res.status(422).json({ error: "no_eligible_photo" });
     }
 
-    const sourcePhotoUrl = pickSourcePhoto(review);
+    const sourcePhotoUrl = pickSourcePhoto(review, preferredPhoto);
+    const sourceTransform = sanitizeTransform(transform);
     const pngBuffer = await renderCard({
       photoUrl: sourcePhotoUrl,
       score: review.score,
+      transform: sourceTransform,
     });
     const cardImageUrl = await uploadCard(review._id.toString(), pngBuffer);
 
@@ -257,6 +303,7 @@ router.post("/generate", async (req, res) => {
     sp.cardImageUrl = cardImageUrl;
     sp.cardGeneratedAt = new Date();
     sp.sourcePhotoUrl = sourcePhotoUrl;
+    if (sourceTransform) sp.sourceTransform = sourceTransform;
     sp.updatedAt = new Date();
 
     review.markModified("socialPost");
@@ -301,14 +348,20 @@ router.patch("/:reviewId", async (req, res) => {
         review,
         regenerate.sourcePhotoUrl
       );
+      // Use the provided transform, else fall back to the last saved one.
+      const sourceTransform =
+        sanitizeTransform(regenerate.transform) ||
+        sanitizeTransform(sp.sourceTransform);
       const pngBuffer = await renderCard({
         photoUrl: sourcePhotoUrl,
         score: review.score,
+        transform: sourceTransform,
       });
       const cardImageUrl = await uploadCard(review._id.toString(), pngBuffer);
       sp.cardImageUrl = cardImageUrl;
       sp.cardGeneratedAt = new Date();
       sp.sourcePhotoUrl = sourcePhotoUrl;
+      if (sourceTransform) sp.sourceTransform = sourceTransform;
       if (sp.status === "none") sp.status = "draft";
       sp.updatedAt = new Date();
       // Caption edits are preserved — do not overwrite sp.caption here.
