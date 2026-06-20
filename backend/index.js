@@ -93,6 +93,9 @@ app.use("/api/uploads", uploadsRoutes);
 const receiptRoutes = require("./routes/receipts");
 app.use("/api/receipts", receiptRoutes);
 
+const socialRoutes = require("./routes/social");
+app.use("/api/social", socialRoutes);
+
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;
 mongoose

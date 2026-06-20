@@ -2,6 +2,17 @@
   "version": 2,
   "buildCommand": "ls -la && pwd && npm run build",
   "outputDirectory": "frontend/build",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "backend/assets/social/**"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/refresh-meta-token",
+      "schedule": "0 0 1 * *"
+    }
+  ],
   "routes": [
     {
       "src": "/static/(.*)",
@@ -20,6 +31,10 @@
     {
       "src": "/(manifest\\.json|sw\\.js|favicon\\.ico|robots\\.txt)$",
       "dest": "/$1"
+    },
+    {
+      "src": "/api/cron/(.*)",
+      "dest": "/api/cron/$1"
     },
     {
       "src": "/api/(.*)",

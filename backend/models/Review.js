@@ -64,6 +64,34 @@ const reviewSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
+  socialPost: {
+    status: {
+      type: String,
+      enum: ["none", "draft", "approved", "published", "failed", "skipped"],
+      default: "none",
+    },
+    caption: { type: String, default: null },
+    cardImageUrl: { type: String, default: null },
+    cardGeneratedAt: { type: Date, default: null },
+    sourcePhotoUrl: { type: String, default: null },
+    targets: {
+      instagram: {
+        postId: { type: String, default: null },
+        permalink: { type: String, default: null },
+        publishedAt: { type: Date, default: null },
+        error: { type: String, default: null },
+      },
+      x: {
+        postId: { type: String, default: null },
+        permalink: { type: String, default: null },
+        publishedAt: { type: Date, default: null },
+        error: { type: String, default: null },
+      },
+    },
+    approvedBy: { type: String, default: null },
+    approvedAt: { type: Date, default: null },
+    updatedAt: { type: Date, default: null },
+  },
 });
 
 module.exports = mongoose.model("Review", reviewSchema);

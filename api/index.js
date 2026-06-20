@@ -127,6 +127,8 @@ const foodItemRoutes = require("../backend/routes/foodItem");
 const addressRoutes = require("../backend/routes/address");
 const uploadsRoutes = require("../backend/routes/uploads");
 const receiptRoutes = require("../backend/routes/receipts");
+const adminRoutes = require("../backend/routes/admin");
+const socialRoutes = require("../backend/routes/social");
 
 // Use routes (MODIFIED - removed /api prefix; Vercel rewrites /api/* to ?path=*)
 app.use("/auth", authRoutes);
@@ -138,6 +140,8 @@ app.use("/food-items", foodItemRoutes);
 app.use("/addresses", addressRoutes);
 app.use("/uploads", uploadsRoutes);
 app.use("/receipts", receiptRoutes);
+app.use("/admin", adminRoutes);
+app.use("/social", socialRoutes);
 
 // Basic route for testing (MODIFIED - now accessible at /api/)
 app.get("/", (req, res) => {

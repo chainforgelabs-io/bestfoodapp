@@ -21,6 +21,8 @@ import ScrollToTop from "./components/ScrollToTop";
 import SEO from "./components/SEO";
 import ScoringCriteriaPage from "./pages/ScoringCriteriaPage";
 import MapRatingsPage from "./pages/MapRatingsPage";
+import SocialUploadPage from "./pages/SocialUploadPage";
+import AdminRoute from "./components/AdminRoute";
 import "./styles/MobileEnhancements.css"; // Import mobile enhancements
 import "./styles/EnterpriseOverrides.css";
 
@@ -115,6 +117,14 @@ function App() {
                   <ProtectedRoute>
                     <AddRestaurantPage />
                   </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/social"
+                element={
+                  <AdminRoute>
+                    <SocialUploadPage />
+                  </AdminRoute>
                 }
               />
             </Routes>

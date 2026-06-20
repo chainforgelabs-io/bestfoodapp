@@ -8,13 +8,17 @@ import {
   Map as MapIcon,
   Star,
   User,
+  Share2,
 } from "lucide-react";
 import Logo from "../assets/logo.png";
 import "../styles/Navbar.css";
+import axios from "../api/axios";
+import tokenUtils from "../utils/auth";
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Handle scroll effect for navbar background
   useEffect(() => {
@@ -24,6 +28,17 @@ function Navbar() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!tokenUtils.isAuthenticated()) {
+      setIsAdmin(false);
+      return;
+    }
+    axios
+      .get("/users/profile")
+      .then((res) => setIsAdmin(res.data?.role === "admin"))
+      .catch(() => setIsAdmin(false));
   }, []);
 
   const toggleMenu = () => {
@@ -146,6 +161,22 @@ function Navbar() {
               Profile
             </NavLink>
           </li>
+          {isAdmin && (
+            <li className="nav-item">
+              <NavLink
+                to="/admin/social"
+                className={({ isActive }) =>
+                  isActive ? "nav-link active" : "nav-link"
+                }
+                onClick={closeMenu}
+              >
+                <span className="nav-icon">
+                  <Share2 size={22} strokeWidth={2} aria-hidden />
+                </span>
+                Social
+              </NavLink>
+            </li>
+          )}
         </ul>
 
         {/* Mobile Hamburger Menu */}
