@@ -304,11 +304,51 @@
   font-size: 1.2rem;
 }
 
+.social-detail-sub {
+  margin: 0 0 12px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.social-detail-preview-col {
+  min-width: 0;
+}
+
+.social-detail-form-col {
+  min-width: 0;
+}
+
+.social-section-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: #555;
+}
+
+.social-card-preview-wrap {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f1efe8;
+  margin-bottom: 12px;
+}
+
 .social-card-preview {
   width: 100%;
-  border-radius: 12px;
-  margin: 16px 0;
+  height: 100%;
+  object-fit: cover;
   display: block;
+  border-radius: 0;
+  margin: 0;
+}
+
+.social-card-preview-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .social-char-count {
@@ -372,6 +412,30 @@
 .social-load-more {
   text-align: center;
   margin-top: 20px;
+}
+
+@media (min-width: 768px) {
+  .social-detail-modal {
+    max-width: 900px;
+    display: grid;
+    grid-template-columns: minmax(280px, 380px) 1fr;
+    gap: 28px;
+    align-items: start;
+    padding: 28px;
+  }
+
+  .social-detail-preview-col {
+    position: sticky;
+    top: 0;
+  }
+
+  .social-card-preview-wrap {
+    max-width: 380px;
+  }
+
+  .social-detail-form-col .social-form-group textarea {
+    min-height: 140px;
+  }
 }
 
 @media (max-width: 640px) {

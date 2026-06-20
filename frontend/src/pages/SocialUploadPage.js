@@ -13,6 +13,25 @@ const STATUS_LABELS = {
   skipped: "Skipped",
 };
 
+function formatReviewDate(value) {
+  if (!value) return "";
+  return new Date(value).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function renderCaptionFromTemplate(template, item) {
+  if (!template || !item) return "";
+  return template
+    .replace(/{itemName}/g, item.itemName || "")
+    .replace(/{restaurantName}/g, item.restaurantName || "")
+    .replace(/{score}/g, String(item.score ?? 0))
+    .replace(/{date}/g, formatReviewDate(item.reviewDate))
+    .replace(/{city}/g, item.city || "");
+}
+
 function SocialUploadPage() {
   const [tab, setTab] = useState("queue");
   const [items, setItems] = useState([]);
@@ -90,10 +109,25 @@ function SocialUploadPage() {
     if (tab === "queue") loadQueue(true);
   }, [tab, filters, loadQueue]);
 
+  useEffect(() => {
+    if (!selected || selected.socialPost?.caption) return;
+    const prefilled = renderCaptionFromTemplate(
+      settings?.captionTemplate,
+      selected
+    );
+    if (prefilled) setDetailCaption(prefilled);
+  }, [settings, selected]);
+
   const openDetail = (item) => {
     setSelected(item);
-    setDetailCaption(item.socialPost?.caption || "");
-    setDetailPhoto(item.socialPost?.sourcePhotoUrl || item.photos?.[0] || null);
+    const savedCaption = item.socialPost?.caption;
+    const prefilled =
+      savedCaption ||
+      renderCaptionFromTemplate(settings?.captionTemplate, item);
+    setDetailCaption(prefilled);
+    setDetailPhoto(
+      item.socialPost?.sourcePhotoUrl || item.photos?.[0] || null
+    );
     setDetailPlatforms(
       settings?.defaultPlatforms?.length
         ? [...settings.defaultPlatforms]
@@ -116,6 +150,7 @@ function SocialUploadPage() {
     if (selected?.reviewId === reviewId) {
       setSelected((s) => ({ ...s, socialPost }));
       if (socialPost?.caption != null) setDetailCaption(socialPost.caption);
+      if (socialPost?.sourcePhotoUrl) setDetailPhoto(socialPost.sourcePhotoUrl);
     }
   };
 
@@ -131,7 +166,7 @@ function SocialUploadPage() {
     } catch (err) {
       const msg =
         err.response?.data?.error === "missing_social_asset"
-          ? "Missing badge.png or score-font.ttf in backend/assets/social/"
+          ? "Missing badge.svg in backend/assets/social/"
           : err.response?.data?.message || "Generate failed";
       setMessage(msg);
     } finally {
@@ -473,201 +508,203 @@ function SocialUploadPage() {
             role="dialog"
             aria-modal="true"
           >
-            <h2>{selected.itemName}</h2>
-            <p style={{ margin: 0, color: "#666", fontSize: "0.9rem" }}>
-              {selected.restaurantName} · Score {selected.score}
-            </p>
-
-            {selected.socialPost?.cardImageUrl ? (
-              <img
-                src={selected.socialPost.cardImageUrl}
-                alt="Rendered social card"
-                className="social-card-preview"
-              />
-            ) : (
-              <div
-                style={{
-                  aspectRatio: "4/5",
-                  maxHeight: 320,
-                  margin: "16px 0",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                }}
-              >
-                <PhotoPlaceholder />
-              </div>
-            )}
-
-            {selected.photos?.length > 0 && (
-              <>
-                <p style={{ fontSize: "0.85rem", fontWeight: 600 }}>
-                  Source photo
-                </p>
-                <div className="social-photo-pick">
-                  {selected.photos.map((url) => (
-                    <img
-                      key={url}
-                      src={url}
-                      alt=""
-                      className={
-                        detailPhoto === url ? "selected" : undefined
-                      }
-                      onClick={() => setDetailPhoto(url)}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-
-            <div className="social-form-group">
-              <label htmlFor="detailCaption">Caption</label>
-              <textarea
-                id="detailCaption"
-                value={detailCaption}
-                onChange={(e) => setDetailCaption(e.target.value)}
-              />
-              <p className="social-char-count">
-                {detailCaption.length} characters
-                {detailCaption.length > 2200 && " — may truncate on Instagram"}
+            <div className="social-detail-preview-col">
+              <h2>{selected.itemName}</h2>
+              <p className="social-detail-sub">
+                {selected.restaurantName} · Score {selected.score}
               </p>
-            </div>
 
-            <div className="social-form-group">
-              <label>Publish to</label>
-              <div className="social-platform-toggles">
-                {["instagram", "x"].map((p) => (
-                  <label key={p}>
-                    <input
-                      type="checkbox"
-                      checked={detailPlatforms.includes(p)}
-                      onChange={(e) => {
-                        setDetailPlatforms((prev) =>
-                          e.target.checked
-                            ? [...prev, p]
-                            : prev.filter((x) => x !== p)
-                        );
-                      }}
-                    />{" "}
-                    {p === "instagram" ? "Instagram" : "X"}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {(selected.socialPost?.targets?.instagram?.error ||
-              selected.socialPost?.targets?.x?.error) && (
-              <div className="social-error-box">
-                {selected.socialPost.targets.instagram?.error && (
-                  <p>Instagram: {selected.socialPost.targets.instagram.error}</p>
-                )}
-                {selected.socialPost.targets.x?.error && (
-                  <p>X: {selected.socialPost.targets.x.error}</p>
+              <div className="social-card-preview-wrap">
+                {selected.socialPost?.cardImageUrl ? (
+                  <img
+                    src={selected.socialPost.cardImageUrl}
+                    alt="Rendered social card"
+                    className="social-card-preview"
+                  />
+                ) : detailPhoto ? (
+                  <img
+                    src={detailPhoto}
+                    alt="Source photo preview"
+                    className="social-card-preview"
+                  />
+                ) : (
+                  <div className="social-card-preview-placeholder">
+                    <PhotoPlaceholder />
+                  </div>
                 )}
               </div>
-            )}
 
-            {(selected.socialPost?.targets?.instagram?.permalink ||
-              selected.socialPost?.targets?.x?.permalink) && (
-              <div className="social-permalink">
-                {selected.socialPost.targets.instagram?.permalink && (
-                  <p>
-                    <a
-                      href={selected.socialPost.targets.instagram.permalink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      View on Instagram
-                    </a>
-                  </p>
-                )}
-                {selected.socialPost.targets.x?.permalink && (
-                  <p>
-                    <a
-                      href={selected.socialPost.targets.x.permalink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      View on X
-                    </a>
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="social-detail-actions">
-              {!selected.hasRealPhoto ? (
-                <span className="social-hint" style={{ textAlign: "left" }}>
-                  Needs a real photo before generating
-                </span>
-              ) : (
+              {selected.photos?.length > 0 && (
                 <>
-                  <button
-                    type="button"
-                    className="social-btn primary"
-                    disabled={detailBusy}
-                    onClick={() => handleGenerate(selected)}
-                  >
-                    {selected.socialPost?.cardImageUrl
-                      ? "Regenerate"
-                      : "Generate"}
-                  </button>
-                  {selected.socialPost?.cardImageUrl &&
-                    detailPhoto &&
-                    detailPhoto !== selected.socialPost.sourcePhotoUrl && (
-                      <button
-                        type="button"
-                        className="social-btn secondary"
-                        disabled={detailBusy}
-                        onClick={() =>
-                          handlePatch({
-                            regenerate: { sourcePhotoUrl: detailPhoto },
-                          })
+                  <p className="social-section-label">Source photo</p>
+                  <div className="social-photo-pick">
+                    {selected.photos.map((url) => (
+                      <img
+                        key={url}
+                        src={url}
+                        alt=""
+                        className={
+                          detailPhoto === url ? "selected" : undefined
                         }
-                      >
-                        Regenerate with selected photo
-                      </button>
-                    )}
+                        onClick={() => setDetailPhoto(url)}
+                      />
+                    ))}
+                  </div>
                 </>
               )}
-              <button
-                type="button"
-                className="social-btn secondary"
-                disabled={detailBusy || !detailCaption}
-                onClick={() => handlePatch({ caption: detailCaption })}
-              >
-                Save caption
-              </button>
-              <button
-                type="button"
-                className="social-btn secondary"
-                disabled={detailBusy || !selected.socialPost?.cardImageUrl}
-                onClick={() => handlePatch({ action: "approve" })}
-              >
-                Approve
-              </button>
-              <button
-                type="button"
-                className="social-btn secondary"
-                disabled={detailBusy}
-                onClick={() => handlePatch({ action: "skip" })}
-              >
-                Skip
-              </button>
-              <button
-                type="button"
-                className="social-btn primary"
-                disabled={detailBusy || !canPublish}
-                onClick={handlePublish}
-              >
-                Publish
-              </button>
-              <button
-                type="button"
-                className="social-btn secondary"
-                onClick={closeDetail}
-              >
-                Close
-              </button>
+            </div>
+
+            <div className="social-detail-form-col">
+              <div className="social-form-group">
+                <label htmlFor="detailCaption">Caption</label>
+                <textarea
+                  id="detailCaption"
+                  value={detailCaption}
+                  onChange={(e) => setDetailCaption(e.target.value)}
+                />
+                <p className="social-char-count">
+                  {detailCaption.length} characters
+                  {detailCaption.length > 2200 && " — may truncate on Instagram"}
+                </p>
+              </div>
+
+              <div className="social-form-group">
+                <label>Publish to</label>
+                <div className="social-platform-toggles">
+                  {["instagram", "x"].map((p) => (
+                    <label key={p}>
+                      <input
+                        type="checkbox"
+                        checked={detailPlatforms.includes(p)}
+                        onChange={(e) => {
+                          setDetailPlatforms((prev) =>
+                            e.target.checked
+                              ? [...prev, p]
+                              : prev.filter((x) => x !== p)
+                          );
+                        }}
+                      />{" "}
+                      {p === "instagram" ? "Instagram" : "X"}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {(selected.socialPost?.targets?.instagram?.error ||
+                selected.socialPost?.targets?.x?.error) && (
+                <div className="social-error-box">
+                  {selected.socialPost.targets.instagram?.error && (
+                    <p>Instagram: {selected.socialPost.targets.instagram.error}</p>
+                  )}
+                  {selected.socialPost.targets.x?.error && (
+                    <p>X: {selected.socialPost.targets.x.error}</p>
+                  )}
+                </div>
+              )}
+
+              {(selected.socialPost?.targets?.instagram?.permalink ||
+                selected.socialPost?.targets?.x?.permalink) && (
+                <div className="social-permalink">
+                  {selected.socialPost.targets.instagram?.permalink && (
+                    <p>
+                      <a
+                        href={selected.socialPost.targets.instagram.permalink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View on Instagram
+                      </a>
+                    </p>
+                  )}
+                  {selected.socialPost.targets.x?.permalink && (
+                    <p>
+                      <a
+                        href={selected.socialPost.targets.x.permalink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View on X
+                      </a>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="social-detail-actions">
+                {!selected.hasRealPhoto ? (
+                  <span className="social-hint" style={{ textAlign: "left" }}>
+                    Needs a real photo before generating
+                  </span>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="social-btn primary"
+                      disabled={detailBusy}
+                      onClick={() => handleGenerate(selected)}
+                    >
+                      {selected.socialPost?.cardImageUrl
+                        ? "Regenerate"
+                        : "Generate"}
+                    </button>
+                    {selected.socialPost?.cardImageUrl &&
+                      detailPhoto &&
+                      detailPhoto !== selected.socialPost.sourcePhotoUrl && (
+                        <button
+                          type="button"
+                          className="social-btn secondary"
+                          disabled={detailBusy}
+                          onClick={() =>
+                            handlePatch({
+                              regenerate: { sourcePhotoUrl: detailPhoto },
+                            })
+                          }
+                        >
+                          Regenerate with selected photo
+                        </button>
+                      )}
+                  </>
+                )}
+                <button
+                  type="button"
+                  className="social-btn secondary"
+                  disabled={detailBusy || !detailCaption}
+                  onClick={() => handlePatch({ caption: detailCaption })}
+                >
+                  Save caption
+                </button>
+                <button
+                  type="button"
+                  className="social-btn secondary"
+                  disabled={detailBusy || !selected.socialPost?.cardImageUrl}
+                  onClick={() => handlePatch({ action: "approve" })}
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  className="social-btn secondary"
+                  disabled={detailBusy}
+                  onClick={() => handlePatch({ action: "skip" })}
+                >
+                  Skip
+                </button>
+                <button
+                  type="button"
+                  className="social-btn primary"
+                  disabled={detailBusy || !canPublish}
+                  onClick={handlePublish}
+                >
+                  Publish
+                </button>
+                <button
+                  type="button"
+                  className="social-btn secondary"
+                  onClick={closeDetail}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

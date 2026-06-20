@@ -182,7 +182,11 @@ router.get("/queue", async (req, res) => {
       .sort({ reviewDate: -1, _id: -1 })
       .limit(limit + 1)
       .populate("foodItem", "name category type")
-      .populate("restaurantId", "name")
+      .populate({
+        path: "restaurantId",
+        select: "name address",
+        populate: { path: "address", select: "city" },
+      })
       .lean();
 
     const hasMore = reviews.length > limit;
@@ -192,6 +196,7 @@ router.get("/queue", async (req, res) => {
       reviewId: review._id,
       itemName: review.foodItem?.name || "Unknown item",
       restaurantName: review.restaurantId?.name || "Unknown restaurant",
+      city: review.restaurantId?.address?.city || "",
       score: Math.round(review.score || 0),
       reviewDate: review.reviewDate,
       photos: review.photos || [],

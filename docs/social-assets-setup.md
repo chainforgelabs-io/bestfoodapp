@@ -6,15 +6,15 @@ This guide is for Carson. The coding agent builds the portal infrastructure; the
 
 **Provide before testing card generation (Milestone 2 visuals).**
 
-### 1. `badge.png` (required)
-- The circular score badge from your Canva design
-- **Remove** any placeholder text ("Rating get generated here") — the app draws the score
-- Transparent background, high resolution (>=640px square recommended)
-- Save to: `backend/assets/social/badge.png`
+### 1. `badge.svg` (required)
+- The circular score badge (`whatsthebest.svg`)
+- **Remove** any placeholder text — the app draws the score with chromatic aberration styling
+- Transparent background (black in the source file is treated as transparent when compositing)
+- Save to: `backend/assets/social/badge.svg`
 
-### 2. `score-font.ttf` (required)
-- The stylized font used for the score number in the final design (the `81` look)
-- **Not** the Canva placeholder font
+### 2. `score-font.ttf` (optional)
+- **Pacifico Regular** — stylized score number font
+- If omitted, the app uses Impact with cyan/red chromatic aberration shadows
 - Save to: `backend/assets/social/score-font.ttf`
 
 ### 3. `border.png` (optional)

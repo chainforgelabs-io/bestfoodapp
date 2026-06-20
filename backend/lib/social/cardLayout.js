@@ -11,8 +11,12 @@ module.exports = {
     marginTop: 48,
   },
   score: {
-    fontFamily: "ScoreFont",
-    fontSize: 130,
+    fontFamily: "Pacifico",
+    fontSize: 108,
+    fontWeight: "normal",
     color: "#000000",
+    aberrationOffset: 4,
+    aberrationCyan: "#00e5ff",
+    aberrationRed: "#ff1744",
   },
 };

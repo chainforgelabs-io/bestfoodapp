@@ -1,11 +1,9 @@
-# Social card assets (required for card generation)
-
-Place these files in this directory before generating social cards:
+# Social card assets
 
 | File | Required | Description |
 |------|----------|-------------|
-| `badge.png` | **Yes** | Circular score badge PNG — placeholder text removed, transparent background, high-res (≥640px) |
-| `score-font.ttf` | **Yes** | Stylized font for the bare score number (e.g. the "81" look) |
-| `border.png` | No | Optional full-card 1080×1350 transparent border overlay |
+| `badge.svg` | **Yes** | Circular rating overlay (`whatsthebest.svg`). Score is drawn on top by the app. |
+| `score-font.ttf` | No | Score font (Pacifico Regular). Falls back to Impact + chromatic aberration if omitted. |
+| `border.png` | No | Optional 1080×1350 transparent outer frame |
 
-See `docs/social-assets-setup.md` for full setup instructions including Instagram/X account configuration.
+See `docs/social-assets-setup.md` for Instagram/X account setup.
