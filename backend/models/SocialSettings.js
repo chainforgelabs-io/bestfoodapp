@@ -27,7 +27,7 @@ const socialSettingsSchema = new mongoose.Schema({
   },
   defaultPlatforms: {
     type: [String],
-    enum: ["instagram", "x"],
+    enum: ["instagram", "x", "facebook"],
     default: ["instagram"],
   },
   updatedAt: {

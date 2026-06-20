@@ -93,6 +93,12 @@ const reviewSchema = new mongoose.Schema({
         publishedAt: { type: Date, default: null },
         error: { type: String, default: null },
       },
+      facebook: {
+        postId: { type: String, default: null },
+        permalink: { type: String, default: null },
+        publishedAt: { type: Date, default: null },
+        error: { type: String, default: null },
+      },
     },
     approvedBy: { type: String, default: null },
     approvedAt: { type: Date, default: null },

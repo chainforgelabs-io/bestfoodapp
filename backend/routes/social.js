@@ -77,6 +77,7 @@ function serializeSocialPost(sp) {
     targets: {
       instagram: sp.targets?.instagram || null,
       x: sp.targets?.x || null,
+      facebook: sp.targets?.facebook || null,
     },
     approvedBy: sp.approvedBy ?? null,
     approvedAt: sp.approvedAt ?? null,
@@ -138,7 +139,7 @@ router.put("/settings", async (req, res) => {
       if (!Array.isArray(defaultPlatforms)) {
         return res.status(400).json({ message: "defaultPlatforms must be an array" });
       }
-      const allowed = ["instagram", "x"];
+      const allowed = ["instagram", "x", "facebook"];
       if (!defaultPlatforms.every((p) => allowed.includes(p))) {
         return res.status(400).json({ message: "Invalid platform in defaultPlatforms" });
       }
@@ -199,6 +200,7 @@ router.get("/queue", async (req, res) => {
           { "socialPost.status": "published" },
           { "socialPost.targets.instagram.postId": { $ne: null } },
           { "socialPost.targets.x.postId": { $ne: null } },
+          { "socialPost.targets.facebook.postId": { $ne: null } },
         ],
       });
     } else if (req.query.posted === "false") {
@@ -207,6 +209,7 @@ router.get("/queue", async (req, res) => {
           { "socialPost.status": "published" },
           { "socialPost.targets.instagram.postId": { $ne: null } },
           { "socialPost.targets.x.postId": { $ne: null } },
+          { "socialPost.targets.facebook.postId": { $ne: null } },
         ],
       });
     }
@@ -254,7 +257,18 @@ router.get("/queue", async (req, res) => {
         ? slice[slice.length - 1].reviewDate
         : null;
 
-    res.json({ items, nextCursor, stagingThreshold: settings.stagingThreshold });
+    // Total matching the active filter (independent of cursor pagination) so the
+    // UI can show e.g. "42 available to post" for the current filter combo.
+    const countQuery = { ...query };
+    delete countQuery.reviewDate; // ignore the pagination cursor
+    const total = await Review.countDocuments(countQuery);
+
+    res.json({
+      items,
+      nextCursor,
+      total,
+      stagingThreshold: settings.stagingThreshold,
+    });
   } catch (err) {
     console.error("social queue", err);
     res.status(500).json({ message: "Server error" });
@@ -423,7 +437,7 @@ router.post("/publish", async (req, res) => {
       return res.status(400).json({ message: "No card image to publish" });
     }
 
-    const allowed = ["instagram", "x"];
+    const allowed = ["instagram", "x", "facebook"];
     const requested = platforms.filter((p) => allowed.includes(p));
     if (requested.length === 0) {
       return res.status(400).json({ message: "No valid platforms requested" });

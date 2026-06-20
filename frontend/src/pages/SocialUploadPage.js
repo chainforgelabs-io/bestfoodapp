@@ -25,6 +25,12 @@ function formatReviewDate(value) {
 
 const DEFAULT_TRANSFORM = { rotation: 0, scale: 1, offsetX: 0, offsetY: 0 };
 
+const PLATFORMS = [
+  { id: "instagram", label: "Instagram" },
+  { id: "x", label: "X" },
+  { id: "facebook", label: "Facebook" },
+];
+
 function renderCaptionFromTemplate(template, item) {
   if (!template || !item) return "";
   return template
@@ -41,6 +47,7 @@ function SocialUploadPage() {
   const [loading, setLoading] = useState(true);
   const [nextCursor, setNextCursor] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [queueTotal, setQueueTotal] = useState(null);
 
   const [filters, setFilters] = useState({
     hasPhoto: "",
@@ -92,6 +99,7 @@ function SocialUploadPage() {
         });
 
         setNextCursor(data.nextCursor || null);
+        setQueueTotal(typeof data.total === "number" ? data.total : null);
         setItems((prev) =>
           reset ? data.items || [] : [...prev, ...(data.items || [])]
         );
@@ -267,6 +275,49 @@ function SocialUploadPage() {
     }
   };
 
+  const slugify = (str) =>
+    (str || "card")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60);
+
+  const downloadImage = async (url, filename) => {
+    if (!url) return;
+    try {
+      const res = await fetch(url, { mode: "cors" });
+      if (!res.ok) throw new Error("fetch failed");
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      // Fallback if a CORS/blob download is blocked — open in a new tab.
+      window.open(url, "_blank", "noopener");
+    }
+  };
+
+  const handleDownloadCard = () => {
+    if (!selected?.socialPost?.cardImageUrl) return;
+    const name = `${slugify(selected.itemName)}-${selected.score}-card.png`;
+    downloadImage(selected.socialPost.cardImageUrl, name);
+  };
+
+  const handleDownloadSource = () => {
+    if (!detailPhoto) return;
+    const ext = (detailPhoto.split("?")[0].match(/\.(jpg|jpeg|png|webp)$/i) || [
+      "",
+      "jpg",
+    ])[1];
+    const name = `${slugify(selected?.itemName)}-source.${ext}`;
+    downloadImage(detailPhoto, name);
+  };
+
   const samplePreview =
     settingsDraft?.captionTemplate
       ?.replace(/{itemName}/g, "Double Cheese Burger")
@@ -388,6 +439,16 @@ function SocialUploadPage() {
               </select>
             </label>
           </div>
+
+          {queueTotal !== null && (
+            <p className="social-filter-count">
+              <strong>{queueTotal}</strong>{" "}
+              {queueTotal === 1 ? "review matches" : "reviews match"} this filter
+              {filters.hasPhoto === "true" && filters.posted === "false"
+                ? " — available to post"
+                : ""}
+            </p>
+          )}
 
           {loading ? (
             <p className="social-empty">Loading admin reviews…</p>
@@ -692,61 +753,55 @@ function SocialUploadPage() {
               <div className="social-form-group">
                 <label>Publish to</label>
                 <div className="social-platform-toggles">
-                  {["instagram", "x"].map((p) => (
-                    <label key={p}>
+                  {PLATFORMS.map((p) => (
+                    <label key={p.id}>
                       <input
                         type="checkbox"
-                        checked={detailPlatforms.includes(p)}
+                        checked={detailPlatforms.includes(p.id)}
                         onChange={(e) => {
                           setDetailPlatforms((prev) =>
                             e.target.checked
-                              ? [...prev, p]
-                              : prev.filter((x) => x !== p)
+                              ? [...prev, p.id]
+                              : prev.filter((x) => x !== p.id)
                           );
                         }}
                       />{" "}
-                      {p === "instagram" ? "Instagram" : "X"}
+                      {p.label}
                     </label>
                   ))}
                 </div>
               </div>
 
-              {(selected.socialPost?.targets?.instagram?.error ||
-                selected.socialPost?.targets?.x?.error) && (
+              {PLATFORMS.some(
+                (p) => selected.socialPost?.targets?.[p.id]?.error
+              ) && (
                 <div className="social-error-box">
-                  {selected.socialPost.targets.instagram?.error && (
-                    <p>Instagram: {selected.socialPost.targets.instagram.error}</p>
-                  )}
-                  {selected.socialPost.targets.x?.error && (
-                    <p>X: {selected.socialPost.targets.x.error}</p>
+                  {PLATFORMS.map((p) =>
+                    selected.socialPost?.targets?.[p.id]?.error ? (
+                      <p key={p.id}>
+                        {p.label}: {selected.socialPost.targets[p.id].error}
+                      </p>
+                    ) : null
                   )}
                 </div>
               )}
 
-              {(selected.socialPost?.targets?.instagram?.permalink ||
-                selected.socialPost?.targets?.x?.permalink) && (
+              {PLATFORMS.some(
+                (p) => selected.socialPost?.targets?.[p.id]?.permalink
+              ) && (
                 <div className="social-permalink">
-                  {selected.socialPost.targets.instagram?.permalink && (
-                    <p>
-                      <a
-                        href={selected.socialPost.targets.instagram.permalink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View on Instagram
-                      </a>
-                    </p>
-                  )}
-                  {selected.socialPost.targets.x?.permalink && (
-                    <p>
-                      <a
-                        href={selected.socialPost.targets.x.permalink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View on X
-                      </a>
-                    </p>
+                  {PLATFORMS.map((p) =>
+                    selected.socialPost?.targets?.[p.id]?.permalink ? (
+                      <p key={p.id}>
+                        <a
+                          href={selected.socialPost.targets[p.id].permalink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View on {p.label}
+                        </a>
+                      </p>
+                    ) : null
                   )}
                 </div>
               )}
@@ -804,6 +859,23 @@ function SocialUploadPage() {
                 >
                   Publish
                 </button>
+                <button
+                  type="button"
+                  className="social-btn secondary"
+                  disabled={!selected.socialPost?.cardImageUrl}
+                  onClick={handleDownloadCard}
+                >
+                  Download card
+                </button>
+                {detailPhoto && (
+                  <button
+                    type="button"
+                    className="social-btn secondary"
+                    onClick={handleDownloadSource}
+                  >
+                    Download source
+                  </button>
+                )}
                 <button
                   type="button"
                   className="social-btn secondary"

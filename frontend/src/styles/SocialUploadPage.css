@@ -68,6 +68,16 @@
   font-size: 0.85rem;
 }
 
+.social-filter-count {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.social-filter-count strong {
+  color: #6b4a99;
+}
+
 .social-queue-list {
   display: flex;
   flex-direction: column;

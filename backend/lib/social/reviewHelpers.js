@@ -26,7 +26,8 @@ function isPosted(socialPost) {
   if (socialPost.status === "published") return true;
   const ig = socialPost.targets?.instagram?.postId;
   const x = socialPost.targets?.x?.postId;
-  return Boolean(ig || x);
+  const fb = socialPost.targets?.facebook?.postId;
+  return Boolean(ig || x || fb);
 }
 
 function defaultSocialPost() {
@@ -39,6 +40,7 @@ function defaultSocialPost() {
     targets: {
       instagram: { postId: null, permalink: null, publishedAt: null, error: null },
       x: { postId: null, permalink: null, publishedAt: null, error: null },
+      facebook: { postId: null, permalink: null, publishedAt: null, error: null },
     },
     approvedBy: null,
     approvedAt: null,
