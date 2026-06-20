@@ -26,6 +26,7 @@
     "mongodb": "^6.8.0",
     "mongoose": "^8.5.4",
     "nodemailer": "^6.9.15",
+    "opentype.js": "^2.0.0",
     "sharp": "^0.35.2"
   }
 }

@@ -1,78 +1,122 @@
 const sharp = require("sharp");
 const fs = require("fs");
+const opentype = require("opentype.js");
 const cardLayout = require("./cardLayout");
 const { assertRequiredAssets, getAssetPath, hasOptionalBorder } = require("./assets");
 
-function buildScoreSvg({ badgeSize, scoreText, scoreCfg, fontBase64 }) {
-  const cx = badgeSize / 2;
-  const cy = badgeSize / 2;
-  const fontSize =
+// Cache the parsed font across invocations (warm serverless containers).
+let cachedFont;
+function loadScoreFont(fontPath) {
+  if (cachedFont !== undefined) return cachedFont;
+  cachedFont = null;
+  try {
+    if (fontPath && fs.existsSync(fontPath)) {
+      cachedFont = opentype.parse(fs.readFileSync(fontPath).buffer);
+    }
+  } catch (err) {
+    console.error("score font parse failed, using block fallback", err.message);
+    cachedFont = null;
+  }
+  return cachedFont;
+}
+
+// Minimal 5x7 block-digit glyphs — a font-free fallback so the score ALWAYS
+// renders even if the TTF is missing/unparseable (serverless has no fonts).
+const BLOCK_DIGITS = {
+  0: ["111", "101", "101", "101", "101", "101", "111"],
+  1: ["010", "110", "010", "010", "010", "010", "111"],
+  2: ["111", "001", "001", "111", "100", "100", "111"],
+  3: ["111", "001", "001", "111", "001", "001", "111"],
+  4: ["101", "101", "101", "111", "001", "001", "001"],
+  5: ["111", "100", "100", "111", "001", "001", "111"],
+  6: ["111", "100", "100", "111", "101", "101", "111"],
+  7: ["111", "001", "001", "010", "010", "100", "100"],
+  8: ["111", "101", "101", "111", "101", "101", "111"],
+  9: ["111", "101", "101", "111", "001", "001", "111"],
+};
+
+function buildBlockDigitsPath(scoreText, targetHeight, originX, originY) {
+  const rows = 7;
+  const cell = targetHeight / rows;
+  const digitCols = 3;
+  const gap = cell; // one-cell gap between digits
+  let x = originX;
+  let d = "";
+  for (const ch of scoreText) {
+    const glyph = BLOCK_DIGITS[ch];
+    if (!glyph) {
+      x += digitCols * cell + gap;
+      continue;
+    }
+    for (let r = 0; r < glyph.length; r += 1) {
+      for (let c = 0; c < glyph[r].length; c += 1) {
+        if (glyph[r][c] === "1") {
+          const px = x + c * cell;
+          const py = originY + r * cell;
+          d += `M${px} ${py}h${cell}v${cell}h${-cell}z`;
+        }
+      }
+    }
+    x += digitCols * cell + gap;
+  }
+  const totalWidth = scoreText.length * digitCols * cell + (scoreText.length - 1) * gap;
+  return { d, totalWidth };
+}
+
+/**
+ * Build the score overlay SVG using vector PATHS (never <text>), so it renders
+ * regardless of system fonts/fontconfig (the cause of blank scores on Vercel).
+ */
+function buildScoreSvg({ badgeSize, scoreText, scoreCfg, font }) {
+  const maxWidth = badgeSize * 0.72;
+  const offsetBase =
     scoreText.length >= 3
-      ? Math.round(badgeSize * scoreCfg.fontSizeRatioThreeDigit)
-      : Math.round(badgeSize * scoreCfg.fontSizeRatio);
-  const offset = Math.max(2, Math.round(fontSize * scoreCfg.aberrationRatio));
+      ? scoreCfg.fontSizeRatioThreeDigit
+      : scoreCfg.fontSizeRatio;
 
-  const fontFace = fontBase64
-    ? `@font-face {
-        font-family: '${scoreCfg.fontFamily}';
-        src: url(data:font/truetype;charset=utf-8;base64,${fontBase64}) format('truetype');
-        font-weight: normal;
-        font-style: normal;
-      }`
-    : "";
-  const fontFamily = fontBase64
-    ? scoreCfg.fontFamily
-    : "Impact, Haettenschweiler, 'Arial Narrow Bold', Arial Black, sans-serif";
+  let pathD;
+  let tx;
+  let ty;
+  let glyphSize;
 
-  // Render at badge dimensions — librsvg draws tiny text on full-canvas SVGs.
+  if (font) {
+    glyphSize = badgeSize * offsetBase;
+    let path = font.getPath(scoreText, 0, 0, glyphSize);
+    let bb = path.getBoundingBox();
+    let tw = bb.x2 - bb.x1;
+    if (tw > maxWidth) {
+      glyphSize *= maxWidth / tw;
+      path = font.getPath(scoreText, 0, 0, glyphSize);
+      bb = path.getBoundingBox();
+      tw = bb.x2 - bb.x1;
+    }
+    const th = bb.y2 - bb.y1;
+    tx = (badgeSize - tw) / 2 - bb.x1;
+    ty = (badgeSize - th) / 2 - bb.y1;
+    pathD = path.toPathData(2);
+  } else {
+    // Font-free block-digit fallback.
+    const targetHeight = badgeSize * 0.5;
+    const { d, totalWidth } = buildBlockDigitsPath(scoreText, targetHeight, 0, 0);
+    glyphSize = targetHeight;
+    tx = (badgeSize - totalWidth) / 2;
+    ty = (badgeSize - targetHeight) / 2;
+    pathD = d;
+  }
+
+  const offset = Math.max(2, Math.round(glyphSize * scoreCfg.aberrationRatio));
+
   return `
 <svg width="${badgeSize}" height="${badgeSize}" xmlns="http://www.w3.org/2000/svg">
-  <defs><style>${fontFace}</style></defs>
-  <text
-    x="${cx - offset}"
-    y="${cy}"
-    font-family="${fontFamily}"
-    font-size="${fontSize}"
-    font-weight="${scoreCfg.fontWeight || "900"}"
-    fill="${scoreCfg.aberrationCyan}"
-    text-anchor="middle"
-    dominant-baseline="middle"
-    opacity="0.9"
-  >${scoreText}</text>
-  <text
-    x="${cx + offset}"
-    y="${cy}"
-    font-family="${fontFamily}"
-    font-size="${fontSize}"
-    font-weight="${scoreCfg.fontWeight || "900"}"
-    fill="${scoreCfg.aberrationRed}"
-    text-anchor="middle"
-    dominant-baseline="middle"
-    opacity="0.9"
-  >${scoreText}</text>
-  <text
-    x="${cx}"
-    y="${cy}"
-    font-family="${fontFamily}"
-    font-size="${fontSize}"
-    font-weight="${scoreCfg.fontWeight || "900"}"
-    fill="${scoreCfg.color}"
-    text-anchor="middle"
-    dominant-baseline="middle"
-  >${scoreText}</text>
+  <g transform="translate(${tx - offset},${ty})"><path d="${pathD}" fill="${scoreCfg.aberrationCyan}" opacity="0.9"/></g>
+  <g transform="translate(${tx + offset},${ty})"><path d="${pathD}" fill="${scoreCfg.aberrationRed}" opacity="0.9"/></g>
+  <g transform="translate(${tx},${ty})"><path d="${pathD}" fill="${scoreCfg.color}"/></g>
 </svg>`;
 }
 
 async function renderScoreOverlay({ badgeSize, scoreText, scoreCfg, fontPath }) {
-  const fontBase64 = fontPath
-    ? fs.readFileSync(fontPath).toString("base64")
-    : null;
-  const scoreSvg = buildScoreSvg({
-    badgeSize,
-    scoreText,
-    scoreCfg,
-    fontBase64,
-  });
+  const font = loadScoreFont(fontPath);
+  const scoreSvg = buildScoreSvg({ badgeSize, scoreText, scoreCfg, font });
   return sharp(Buffer.from(scoreSvg)).png().toBuffer();
 }
 

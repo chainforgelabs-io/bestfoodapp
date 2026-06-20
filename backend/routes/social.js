@@ -25,6 +25,7 @@ const SERVER_STARTED_AT = new Date().toISOString();
 // to /api/social/version confirms which code a given deploy is actually running.
 const RENDERER_FEATURES = [
   "badge-overlay-score",
+  "score-vector-paths",
   "exif-autorotate",
   "versioned-card-url",
   "manual-transform",
