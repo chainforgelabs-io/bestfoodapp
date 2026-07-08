@@ -1,0 +1,23 @@
+/* SiteFooter.css - quiet attribution line below main content */
+
+.site-footer {
+  text-align: center;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+}
+
+.site-footer-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+.site-footer-credit:hover,
+.site-footer-credit:focus-visible {
+  opacity: 1;
+  text-decoration: underline;
+}

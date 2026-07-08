@@ -23,8 +23,10 @@ import ScoringCriteriaPage from "./pages/ScoringCriteriaPage";
 import MapRatingsPage from "./pages/MapRatingsPage";
 import SocialUploadPage from "./pages/SocialUploadPage";
 import AdminRoute from "./components/AdminRoute";
+import SiteFooter from "./components/SiteFooter";
 import "./styles/MobileEnhancements.css"; // Import mobile enhancements
 import "./styles/EnterpriseOverrides.css";
+import "./styles/SiteFooter.css";
 
 function App() {
   return (
@@ -129,6 +131,7 @@ function App() {
               />
             </Routes>
           </main>
+          <SiteFooter />
           <Analytics />
         </div>
       </Router>
