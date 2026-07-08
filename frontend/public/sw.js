@@ -1,44 +1,24 @@
 /* eslint-disable no-restricted-globals */
-const CACHE_NAME = "best-food-app-v1";
-const urlsToCache = [
-  "/",
-  "/static/js/bundle.js",
-  "/static/css/main.css",
-  "/manifest.json",
-  "/logo192.png",
-  "/logo512.png",
-];
+// Self-destructing service worker.
+//
+// A previous version of this worker cached index.html cache-first with a
+// fixed cache name, which served stale HTML pointing at deleted JS bundles
+// after every deploy (blank page + "Unexpected token '<'"). This replacement
+// removes all caches, unregisters itself, and reloads open tabs so existing
+// visitors recover on their next visit.
 
-// Install event - cache resources
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache);
-    })
-  );
+self.addEventListener("install", () => {
+  self.skipWaiting();
 });
 
-// Fetch event - serve from cache when offline
-self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Return cached version or fetch from network
-      return response || fetch(event.request);
-    })
-  );
-});
-
-// Activate event - clean up old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    (async () => {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((name) => caches.delete(name)));
+      await self.registration.unregister();
+      const clients = await self.clients.matchAll({ type: "window" });
+      clients.forEach((client) => client.navigate(client.url));
+    })()
   );
 });

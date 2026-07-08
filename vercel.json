@@ -15,6 +15,13 @@
   ],
   "routes": [
     {
+      "src": "/sw\\.js$",
+      "dest": "/sw.js",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      }
+    },
+    {
       "src": "/static/(.*)",
       "dest": "/static/$1",
       "headers": {

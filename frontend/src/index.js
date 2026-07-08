@@ -11,19 +11,10 @@ root.render(
   </React.StrictMode>
 );
 
-// Register service worker for PWA functionality
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then((registration) => {
-        console.log("SW registered: ", registration);
-      })
-      .catch((registrationError) => {
-        console.log("SW registration failed: ", registrationError);
-      });
-  });
-}
+// Service worker registration removed: the old cache-first worker served
+// stale index.html after deploys, breaking the site. /sw.js now hosts a
+// self-destructing worker so previously registered clients clean themselves
+// up on their next visit.
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

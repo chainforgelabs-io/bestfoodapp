@@ -25,7 +25,7 @@ function SiteFooter() {
         className="site-footer-credit"
         href="https://chainforgelabs.io"
         target="_blank"
-        rel="noopener"
+        rel="noopener noreferrer"
       >
         <svg
           viewBox="0 0 32 32"
