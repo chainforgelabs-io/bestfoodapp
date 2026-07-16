@@ -1,21 +1,22 @@
+/**
+ * Shared Axios client: production uses same-origin `/api`; development uses
+ * REACT_APP_API_BASE_URL. Attaches JWT from localStorage and clears it on 401.
+ */
 import axios from "axios";
 
 const instance = axios.create({
-  // Use relative URL for API requests - this will automatically use the current domain
-  // Works for both local development and all Vercel environments (preview URLs and custom domain)
+  // Relative `/api` in production (Vercel rewrites); absolute base URL in local dev.
   baseURL:
     process.env.NODE_ENV === "production"
       ? "/api"
       : process.env.REACT_APP_API_BASE_URL,
 });
 
-// Optional: Token interceptors to include token in every request
+// Attach Bearer token when present; server validates — client only drops on 401.
 instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
-      // Always include the token in the request - let the server validate it
-      // Only remove it if we get a 401 response
       config.headers.Authorization = `Bearer ${token}`;
 
       // Optional: Log token expiration info for debugging

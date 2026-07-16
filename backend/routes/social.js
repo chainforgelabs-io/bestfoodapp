@@ -1,3 +1,7 @@
+/**
+ * Admin social routes: queue reviews, render/upload cards, publish to IG/FB/X.
+ * Auth: protect + admin. Card pipeline lives under ../lib/social/.
+ */
 const express = require("express");
 const mongoose = require("mongoose");
 const Review = require("../models/Review");

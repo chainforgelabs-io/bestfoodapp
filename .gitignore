@@ -1,1 +1,37 @@
-/node_modules
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Env and secrets — never commit real values
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Keys and credentials
+*.pem
+*.p12
+*.key
+credentials.json
+**/secrets/
+
+# OS / editor
+.DS_Store
+.cursor/
+*.swp
+*.swo
+
+# Logs and coverage
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
+.nyc_output/
+
+# Local notes / dumps
+*.dump
+*.sql
+**/exports/
+backend/notes

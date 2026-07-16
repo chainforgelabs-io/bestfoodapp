@@ -3,7 +3,7 @@ const path = require("path");
 
 const ASSETS_DIR = path.join(__dirname, "../../assets/social");
 
-// Primary badge overlay — Carson's whatsthebest.svg (circular rating badge).
+// Primary badge overlay — brand circular rating badge (whatsthebest.svg).
 const BADGE_FILENAME = "badge.svg";
 
 function getAssetPath(filename) {

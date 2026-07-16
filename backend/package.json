@@ -10,9 +10,9 @@
     "start:prod": "NODE_ENV=production node index.js"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "author": "Chain Forge Labs",
+  "license": "MIT",
+  "description": "Express API for Best Food App (MongoDB, auth, reviews, social cards)",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.637.0",
     "@aws-sdk/client-textract": "^3.1071.0",

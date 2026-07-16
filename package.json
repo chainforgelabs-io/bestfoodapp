@@ -1,6 +1,7 @@
 {
   "name": "food-ranking-app",
   "version": "1.0.0",
+  "description": "Best Food App — city-scoped food rankings (Chain Forge Labs portfolio demo)",
   "private": true,
   "workspaces": [
     "frontend",

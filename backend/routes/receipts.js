@@ -1,3 +1,7 @@
+/**
+ * Receipt upload helpers: signed S3 URLs and Textract AnalyzeExpense autofill.
+ * OCR is skipped gracefully when AWS credentials / region are missing.
+ */
 const express = require("express");
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");

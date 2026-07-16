@@ -1,3 +1,3 @@
-# Social Upload — Carson setup guide
+# Social Upload — Setup
 
-See [social-assets-setup.md](./social-assets-setup.md) for the full asset and account setup checklist.
+See [social-assets-setup.md](./social-assets-setup.md) for the asset and account setup checklist.

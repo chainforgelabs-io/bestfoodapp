@@ -1,13 +1,13 @@
 # Social Upload — Assets & Account Setup
 
-This guide is for Carson. The coding agent builds the portal infrastructure; these items are supplied/configured on your side.
+Operator checklist for card assets and social publishing credentials. Application code lives under `backend/lib/social/` and `backend/routes/social.js`.
 
-## When: Card assets (needed to generate cards)
+## Card assets (required to generate cards)
 
-**Provide before testing card generation (Milestone 2 visuals).**
+Provide these before testing card generation.
 
 ### 1. `badge.svg` (required)
-- The circular score badge (`whatsthebest.svg`)
+- The circular score badge
 - **Remove** any placeholder text — the app draws the score with chromatic aberration styling
 - Transparent background (black in the source file is treated as transparent when compositing)
 - Save to: `backend/assets/social/badge.svg`
@@ -26,15 +26,13 @@ This guide is for Carson. The coding agent builds the portal infrastructure; the
 After dropping assets in, tune `backend/lib/social/cardLayout.js`:
 - `badge.size` (default 300px)
 - `badge.marginRight` / `marginTop` (default 48px)
-- `score.fontSize` (default 130)
+- `score.fontSize` / ratio fields for digit count
 
 ---
 
-## When: Instagram (needed to publish live)
+## Instagram (needed to publish live)
 
-**Set up when the portal UI works and you want real posts.**
-
-1. Convert your brand Instagram account to **Business** or **Creator**
+1. Convert the brand Instagram account to **Business** or **Creator**
 2. Link it to a **Facebook Page**
 3. Create a **Meta Developer App** at developers.facebook.com
 4. Add Instagram product; request permissions:
@@ -50,17 +48,15 @@ META_APP_ID=your_meta_app_id
 META_APP_SECRET=your_meta_app_secret
 ```
 
-Works in Meta **dev mode** for your own brand account — no Advanced Access / app review needed for v1.
+Works in Meta **dev mode** for the brand account — Advanced Access / app review not required for a single-account demo.
 
 ---
 
-## When: X / Twitter (fast-follow)
-
-**Set up when you want X publishing (after Instagram works).**
+## X / Twitter (optional)
 
 1. Create a project/app at developer.twitter.com
 2. Enable OAuth 1.0a with read + write permissions
-3. Generate Access Token & Secret for your brand account
+3. Generate Access Token & Secret for the brand account
 4. Add env vars:
 
 ```
@@ -70,12 +66,12 @@ X_ACCESS_TOKEN=your_access_token
 X_ACCESS_TOKEN_SECRET=your_access_token_secret
 ```
 
-**Link placement:** By default, `bestfoodapp.com` is stripped from the post body (cheaper; link-in-reply pattern). Caption template can still mention the site in Instagram posts.
+**Link placement:** By default, `bestfoodapp.com` is stripped from the post body (cheaper; link-in-reply pattern). Caption templates can still mention the site on Instagram.
 
 ---
 
 ## Optional: Unified API swap (Ayrshare)
 
-If you prefer not to manage Meta/X tokens yourself:
+If you prefer not to manage Meta/X tokens directly:
 - Set `AYRSHARE_API_KEY` and swap the publisher implementation (one-file change in `lib/social/publishers/`)
 - IG/X env vars above become unnecessary

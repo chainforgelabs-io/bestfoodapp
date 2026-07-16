@@ -1,3 +1,7 @@
+/**
+ * Leaderboard aggregations: global and city-scoped top restaurants / food items.
+ * Overall score blends admin and community when both exist; otherwise uses whichever is set.
+ */
 const express = require("express");
 const mongoose = require("mongoose");
 const Restaurant = require("../models/Restaurant");
@@ -6,7 +10,7 @@ const Address = require("../models/Address");
 
 const router = express.Router();
 
-// Helper function to calculate overall average score for food items
+// Prefer the mean of admin + community when both are present; else the non-zero score.
 const calculateOverallScore = (adminScore, communityScore) => {
   if (adminScore > 0 && communityScore > 0) {
     return (adminScore + communityScore) / 2;
