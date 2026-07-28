@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import axios from "../api/axios";
 import SEO from "../components/SEO";
 import PhotoPlaceholder from "../components/PhotoPlaceholder";
+import { FOOD_CATEGORIES, FOOD_TYPES } from "../utils/standardizedOptions";
 import "../styles/SocialUploadPage.css";
 
 const STATUS_LABELS = {
@@ -50,19 +51,40 @@ function SocialUploadPage() {
   const [queuePage, setQueuePage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [queueTotal, setQueueTotal] = useState(null);
+  const [queueCities, setQueueCities] = useState([]);
+  const [itemSearchInput, setItemSearchInput] = useState("");
 
   const [filters, setFilters] = useState({
     hasPhoto: "",
     posted: "false",
     staged: "true",
     status: "",
+    itemSearch: "",
+    foodCategory: "",
+    foodType: "",
+    city: "",
     sort: "reviewDate",
     order: "desc",
     uniqueByFoodItem: false,
   });
 
+  const hasFoodOrCityFilters =
+    filters.itemSearch ||
+    filters.foodCategory ||
+    filters.foodType ||
+    filters.city;
+
   const usesPagePagination =
-    filters.uniqueByFoodItem || filters.sort !== "reviewDate";
+    filters.uniqueByFoodItem ||
+    filters.sort !== "reviewDate" ||
+    hasFoodOrCityFilters;
+
+  const foodTypeOptions = useMemo(() => {
+    if (!filters.foodCategory) return [];
+    return (FOOD_TYPES[filters.foodCategory] || []).filter(
+      (t) => t !== "Add +"
+    );
+  }, [filters.foodCategory]);
 
   const [settings, setSettings] = useState(null);
   const [settingsDraft, setSettingsDraft] = useState(null);
@@ -90,6 +112,10 @@ function SocialUploadPage() {
       if (filters.posted) params.posted = filters.posted;
       if (filters.staged) params.staged = filters.staged;
       if (filters.status) params.status = filters.status;
+      if (filters.itemSearch) params.itemSearch = filters.itemSearch;
+      if (filters.foodCategory) params.foodCategory = filters.foodCategory;
+      if (filters.foodType) params.foodType = filters.foodType;
+      if (filters.city) params.city = filters.city;
       if (filters.sort) params.sort = filters.sort;
       if (filters.order) params.order = filters.order;
       if (filters.uniqueByFoodItem) params.uniqueBy = "foodItem";
@@ -140,6 +166,24 @@ function SocialUploadPage() {
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
+
+  useEffect(() => {
+    axios
+      .get("/social/queue/filters")
+      .then(({ data }) => setQueueCities(data.cities || []))
+      .catch(() => setQueueCities([]));
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((f) => {
+        const next = itemSearchInput.trim();
+        if (f.itemSearch === next) return f;
+        return { ...f, itemSearch: next };
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [itemSearchInput]);
 
   useEffect(() => {
     if (tab === "queue") loadQueue(true);
@@ -459,6 +503,68 @@ function SocialUploadPage() {
                 <option value="published">Published</option>
                 <option value="failed">Failed</option>
                 <option value="skipped">Skipped</option>
+              </select>
+            </label>
+            <label className="social-filter-search">
+              Food search
+              <input
+                type="search"
+                placeholder="Dish name…"
+                value={itemSearchInput}
+                onChange={(e) => setItemSearchInput(e.target.value)}
+              />
+            </label>
+            <label>
+              Category
+              <select
+                value={filters.foodCategory}
+                onChange={(e) =>
+                  setFilters((f) => ({
+                    ...f,
+                    foodCategory: e.target.value,
+                    foodType: "",
+                  }))
+                }
+              >
+                <option value="">Any</option>
+                {FOOD_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Food type
+              <select
+                value={filters.foodType}
+                disabled={!filters.foodCategory}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, foodType: e.target.value }))
+                }
+              >
+                <option value="">Any</option>
+                {foodTypeOptions.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              City
+              <select
+                value={filters.city}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, city: e.target.value }))
+                }
+              >
+                <option value="">Any</option>
+                {queueCities.map((cityName) => (
+                  <option key={cityName} value={cityName}>
+                    {cityName}
+                  </option>
+                ))}
               </select>
             </label>
             <label>

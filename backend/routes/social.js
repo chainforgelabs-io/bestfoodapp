@@ -31,6 +31,44 @@ const QUEUE_SORT_FIELDS = new Set([
   "restaurantName",
 ]);
 
+function escapeRegex(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Food/city filters applied after joining food items and addresses. */
+function parseQueueFoodFilters(req) {
+  return {
+    itemSearch: String(req.query.itemSearch || "").trim(),
+    foodCategory: String(req.query.foodCategory || "").trim(),
+    foodType: String(req.query.foodType || "").trim(),
+    city: String(req.query.city || "").trim(),
+  };
+}
+
+function buildPostLookupMatch({ itemSearch, foodCategory, foodType, city }) {
+  const match = {};
+  if (itemSearch) {
+    match["foodItemDoc.name"] = {
+      $regex: escapeRegex(itemSearch),
+      $options: "i",
+    };
+  }
+  if (foodCategory) {
+    match["foodItemDoc.category"] = foodCategory;
+  }
+  if (foodType) {
+    match["foodItemDoc.type"] = foodType;
+  }
+  if (city) {
+    match["addressDoc.city"] = city;
+  }
+  return match;
+}
+
+function hasPostLookupFilters(postLookupMatch) {
+  return postLookupMatch && Object.keys(postLookupMatch).length > 0;
+}
+
 /** Build Mongo match query for GET /queue from query-string filters. */
 function buildQueueMatch(req, settings) {
   const query = { userRole: "admin" };
@@ -204,6 +242,7 @@ function shapeAggReview(doc) {
 
 async function fetchQueueViaAggregation({
   matchQuery,
+  postLookupMatch,
   sort,
   order,
   uniqueBy,
@@ -213,6 +252,12 @@ async function fetchQueueViaAggregation({
   const skip = (page - 1) * limit;
   const pipeline = [{ $match: matchQuery }];
 
+  pipeline.push(...buildLookupStages());
+
+  if (hasPostLookupFilters(postLookupMatch)) {
+    pipeline.push({ $match: postLookupMatch });
+  }
+
   if (uniqueBy === "foodItem") {
     pipeline.push(
       { $sort: { score: -1, reviewDate: -1, _id: -1 } },
@@ -221,7 +266,6 @@ async function fetchQueueViaAggregation({
     );
   }
 
-  pipeline.push(...buildLookupStages());
   pipeline.push({ $sort: buildAggSortStage(sort, order) });
   pipeline.push({ $skip: skip });
   pipeline.push({ $limit: limit + 1 });
@@ -237,13 +281,18 @@ async function fetchQueueViaAggregation({
   };
 }
 
-async function countQueueTotal(matchQuery, uniqueBy) {
-  if (uniqueBy === "foodItem") {
-    const result = await Review.aggregate([
-      { $match: matchQuery },
-      { $group: { _id: "$foodItem" } },
-      { $count: "total" },
-    ]);
+async function countQueueTotal(matchQuery, uniqueBy, postLookupMatch) {
+  if (uniqueBy === "foodItem" || hasPostLookupFilters(postLookupMatch)) {
+    const pipeline = [{ $match: matchQuery }];
+    pipeline.push(...buildLookupStages());
+    if (hasPostLookupFilters(postLookupMatch)) {
+      pipeline.push({ $match: postLookupMatch });
+    }
+    if (uniqueBy === "foodItem") {
+      pipeline.push({ $group: { _id: "$foodItem" } });
+    }
+    pipeline.push({ $count: "total" });
+    const result = await Review.aggregate(pipeline);
     return result[0]?.total || 0;
   }
   return Review.countDocuments(matchQuery);
@@ -391,22 +440,54 @@ router.put("/settings", async (req, res) => {
   }
 });
 
+// GET /queue/filters — distinct cities in the admin review queue
+router.get("/queue/filters", async (req, res) => {
+  try {
+    const result = await Review.aggregate([
+      { $match: { userRole: "admin" } },
+      ...buildLookupStages(),
+      {
+        $group: {
+          _id: null,
+          cities: { $addToSet: "$addressDoc.city" },
+        },
+      },
+    ]);
+    const cities = (result[0]?.cities || [])
+      .filter((c) => c && String(c).trim())
+      .sort((a, b) => a.localeCompare(b));
+    res.json({ cities });
+  } catch (err) {
+    console.error("social queue filters", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // GET /queue
 router.get("/queue", async (req, res) => {
   try {
     const settings = await SocialSettings.getOrCreate();
     const { sort, order, uniqueBy, limit, page } = parseQueueListParams(req);
     const matchQuery = buildQueueMatch(req, settings);
+    const foodFilters = parseQueueFoodFilters(req);
+    const postLookupMatch = buildPostLookupMatch(foodFilters);
     const skipMode = usesSkipPagination(sort, uniqueBy);
+    const useAggregation =
+      skipMode ||
+      uniqueBy === "foodItem" ||
+      sort === "itemName" ||
+      sort === "restaurantName" ||
+      hasPostLookupFilters(postLookupMatch);
 
     let reviews;
     let hasMore = false;
     let nextCursor = null;
     let currentPage = page;
 
-    if (skipMode || uniqueBy === "foodItem" || sort === "itemName" || sort === "restaurantName") {
+    if (useAggregation) {
       const result = await fetchQueueViaAggregation({
         matchQuery,
+        postLookupMatch,
         sort,
         order,
         uniqueBy,
@@ -453,12 +534,12 @@ router.get("/queue", async (req, res) => {
       mapReviewToQueueItem(review, settings)
     );
 
-    const total = await countQueueTotal(matchQuery, uniqueBy);
+    const total = await countQueueTotal(matchQuery, uniqueBy, postLookupMatch);
 
     res.json({
       items,
       nextCursor,
-      hasMore: skipMode ? hasMore : !!nextCursor,
+      hasMore: useAggregation ? hasMore : !!nextCursor,
       page: currentPage,
       total,
       stagingThreshold: settings.stagingThreshold,

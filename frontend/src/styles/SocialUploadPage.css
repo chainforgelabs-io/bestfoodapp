@@ -61,11 +61,21 @@
   gap: 6px;
 }
 
-.social-filter-bar select {
+.social-filter-bar select,
+.social-filter-bar input[type="search"] {
   border: 1px solid #e8eaf5;
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 0.85rem;
+}
+
+.social-filter-search input[type="search"] {
+  min-width: 140px;
+}
+
+.social-filter-bar select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .social-filter-checkbox {
