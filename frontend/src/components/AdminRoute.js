@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Navigate } from "react-router-dom";
 import axios from "../api/axios";
-import tokenUtils from "../utils/auth";
+import tokenUtils, { AUTH_CHANGED_EVENT } from "../utils/auth";
 
 function AdminRoute({ children }) {
   const [status, setStatus] = useState("loading"); // loading | allowed | denied
 
-  useEffect(() => {
+  const checkAccess = useCallback(() => {
     if (!tokenUtils.isAuthenticated()) {
       setStatus("denied");
       return;
@@ -23,6 +23,12 @@ function AdminRoute({ children }) {
       })
       .catch(() => setStatus("denied"));
   }, []);
+
+  useEffect(() => {
+    checkAccess();
+    window.addEventListener(AUTH_CHANGED_EVENT, checkAccess);
+    return () => window.removeEventListener(AUTH_CHANGED_EVENT, checkAccess);
+  }, [checkAccess]);
 
   if (status === "loading") {
     return (

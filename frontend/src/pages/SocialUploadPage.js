@@ -46,6 +46,8 @@ function SocialUploadPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nextCursor, setNextCursor] = useState(null);
+  const [hasMorePages, setHasMorePages] = useState(false);
+  const [queuePage, setQueuePage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [queueTotal, setQueueTotal] = useState(null);
 
@@ -54,7 +56,13 @@ function SocialUploadPage() {
     posted: "false",
     staged: "true",
     status: "",
+    sort: "reviewDate",
+    order: "desc",
+    uniqueByFoodItem: false,
   });
+
+  const usesPagePagination =
+    filters.uniqueByFoodItem || filters.sort !== "reviewDate";
 
   const [settings, setSettings] = useState(null);
   const [settingsDraft, setSettingsDraft] = useState(null);
@@ -76,29 +84,44 @@ function SocialUploadPage() {
   }, []);
 
   const buildQueueParams = useCallback(
-    (cursor) => {
+    (cursorOrPage, isLoadMore = false) => {
       const params = { limit: 50 };
       if (filters.hasPhoto) params.hasPhoto = filters.hasPhoto;
       if (filters.posted) params.posted = filters.posted;
       if (filters.staged) params.staged = filters.staged;
       if (filters.status) params.status = filters.status;
-      if (cursor) params.cursor = cursor;
+      if (filters.sort) params.sort = filters.sort;
+      if (filters.order) params.order = filters.order;
+      if (filters.uniqueByFoodItem) params.uniqueBy = "foodItem";
+
+      if (usesPagePagination) {
+        params.page = isLoadMore ? cursorOrPage : 1;
+      } else if (cursorOrPage) {
+        params.cursor = cursorOrPage;
+      }
+
       return params;
     },
-    [filters]
+    [filters, usesPagePagination]
   );
 
   const loadQueue = useCallback(
-    async (reset = true, cursor = null) => {
+    async (reset = true, cursorOrPage = null) => {
       try {
         if (reset) setLoading(true);
         else setLoadingMore(true);
 
+        const pageToLoad = reset ? 1 : cursorOrPage || queuePage + 1;
         const { data } = await axios.get("/social/queue", {
-          params: buildQueueParams(cursor),
+          params: buildQueueParams(
+            usesPagePagination ? pageToLoad : cursorOrPage,
+            !reset && usesPagePagination
+          ),
         });
 
         setNextCursor(data.nextCursor || null);
+        setHasMorePages(!!data.hasMore);
+        setQueuePage(data.page || pageToLoad);
         setQueueTotal(typeof data.total === "number" ? data.total : null);
         setItems((prev) =>
           reset ? data.items || [] : [...prev, ...(data.items || [])]
@@ -111,7 +134,7 @@ function SocialUploadPage() {
         setLoadingMore(false);
       }
     },
-    [buildQueueParams]
+    [buildQueueParams, queuePage, usesPagePagination]
   );
 
   useEffect(() => {
@@ -438,12 +461,58 @@ function SocialUploadPage() {
                 <option value="skipped">Skipped</option>
               </select>
             </label>
+            <label>
+              Sort by
+              <select
+                value={filters.sort}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, sort: e.target.value }))
+                }
+              >
+                <option value="reviewDate">Review date</option>
+                <option value="score">Score</option>
+                <option value="itemName">Food item</option>
+                <option value="restaurantName">Restaurant</option>
+              </select>
+            </label>
+            <label>
+              Order
+              <select
+                value={filters.order}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, order: e.target.value }))
+                }
+              >
+                <option value="desc">Descending</option>
+                <option value="asc">Ascending</option>
+              </select>
+            </label>
+            <label className="social-filter-checkbox">
+              <input
+                type="checkbox"
+                checked={filters.uniqueByFoodItem}
+                onChange={(e) =>
+                  setFilters((f) => ({
+                    ...f,
+                    uniqueByFoodItem: e.target.checked,
+                  }))
+                }
+              />
+              Unique by food item
+            </label>
           </div>
 
           {queueTotal !== null && (
             <p className="social-filter-count">
               <strong>{queueTotal}</strong>{" "}
-              {queueTotal === 1 ? "review matches" : "reviews match"} this filter
+              {filters.uniqueByFoodItem
+                ? queueTotal === 1
+                  ? "distinct food item matches"
+                  : "distinct food items match"
+                : queueTotal === 1
+                  ? "review matches"
+                  : "reviews match"}{" "}
+              this filter
               {filters.hasPhoto === "true" && filters.posted === "false"
                 ? " — available to post"
                 : ""}
@@ -512,13 +581,18 @@ function SocialUploadPage() {
             </div>
           )}
 
-          {nextCursor && (
+          {(usesPagePagination ? hasMorePages : nextCursor) && (
             <div className="social-load-more">
               <button
                 type="button"
                 className="social-btn secondary"
                 disabled={loadingMore}
-                onClick={() => loadQueue(false, nextCursor)}
+                onClick={() =>
+                  loadQueue(
+                    false,
+                    usesPagePagination ? queuePage + 1 : nextCursor
+                  )
+                }
               >
                 {loadingMore ? "Loading…" : "Load more"}
               </button>

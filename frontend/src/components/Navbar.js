@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { NavLink } from "react-router-dom";
 import {
   Home,
@@ -13,12 +13,23 @@ import {
 import Logo from "../assets/logo.png";
 import "../styles/Navbar.css";
 import axios from "../api/axios";
-import tokenUtils from "../utils/auth";
+import tokenUtils, { AUTH_CHANGED_EVENT } from "../utils/auth";
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  const refreshAdminStatus = useCallback(() => {
+    if (!tokenUtils.isAuthenticated()) {
+      setIsAdmin(false);
+      return;
+    }
+    axios
+      .get("/users/profile")
+      .then((res) => setIsAdmin(res.data?.role === "admin"))
+      .catch(() => setIsAdmin(false));
+  }, []);
 
   // Handle scroll effect for navbar background
   useEffect(() => {
@@ -31,15 +42,11 @@ function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (!tokenUtils.isAuthenticated()) {
-      setIsAdmin(false);
-      return;
-    }
-    axios
-      .get("/users/profile")
-      .then((res) => setIsAdmin(res.data?.role === "admin"))
-      .catch(() => setIsAdmin(false));
-  }, []);
+    refreshAdminStatus();
+    window.addEventListener(AUTH_CHANGED_EVENT, refreshAdminStatus);
+    return () =>
+      window.removeEventListener(AUTH_CHANGED_EVENT, refreshAdminStatus);
+  }, [refreshAdminStatus]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);

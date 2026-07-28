@@ -113,6 +113,22 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.feed-card-photo-count {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .feed-card-body {
   padding: 14px 16px 16px;
 }

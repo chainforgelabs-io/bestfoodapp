@@ -47,7 +47,7 @@ function ReviewDetailModal({
   currentUserId,
   onUpdated,
   onDeleted,
-  allowModify = true,
+  allowModify = false,
 }) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);

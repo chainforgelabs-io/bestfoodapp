@@ -1,6 +1,14 @@
 // Authentication utility functions
 import { jwtDecode } from "jwt-decode";
 
+export const AUTH_CHANGED_EVENT = "auth-changed";
+
+function notifyAuthChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+  }
+}
+
 export const tokenUtils = {
   // Get token from localStorage with error handling
   getToken: () => {
@@ -33,6 +41,7 @@ export const tokenUtils = {
         tokenLength: token.length,
         setAt: new Date().toISOString(),
       });
+      notifyAuthChanged();
     } catch (error) {
       console.error("Error storing token in localStorage:", error);
     }
@@ -44,6 +53,7 @@ export const tokenUtils = {
       const items = ["token", "keepLoggedIn", "tokenSetAt", "tokenExpectedExp"];
       items.forEach((item) => localStorage.removeItem(item));
       console.log("🧹 Authentication data cleared");
+      notifyAuthChanged();
     } catch (error) {
       console.error("Error clearing token from localStorage:", error);
     }

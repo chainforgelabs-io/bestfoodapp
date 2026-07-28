@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Images } from "lucide-react";
 import axios from "../api/axios";
 import tokenUtils from "../utils/auth";
 import PhotoPlaceholder from "../components/PhotoPlaceholder";
@@ -169,6 +170,7 @@ function FeedPage() {
             const restaurantName = review.restaurantId?.name || "Restaurant";
             const score = Math.round(review.score || 0);
             const photo = review.photos?.[0];
+            const photoCount = review.photos?.length || 0;
             const isOwn = authorId && selfId && authorId === selfId;
 
             return (
@@ -187,6 +189,12 @@ function FeedPage() {
                   >
                     {score}
                   </span>
+                  {photoCount > 1 && (
+                    <span className="feed-card-photo-count" aria-label={`${photoCount} photos`}>
+                      <Images size={14} strokeWidth={2} aria-hidden />
+                      {photoCount}
+                    </span>
+                  )}
                 </div>
 
                 <div className="feed-card-body">

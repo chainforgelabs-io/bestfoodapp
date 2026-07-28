@@ -241,7 +241,7 @@ export const FOOD_TYPES = {
     "Beer",
     "Wine",
     "Cocktail",
-    "Caesar",
+    "Caesar", // Canadian cocktail — not Caesar Salad (see Soups & Salads)
     "Whiskey",
     "Vodka",
     "Rum",

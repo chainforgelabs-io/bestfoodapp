@@ -24,6 +24,231 @@ const { getPublisher } = require("../lib/social/publishers");
 
 const router = express.Router();
 
+const QUEUE_SORT_FIELDS = new Set([
+  "reviewDate",
+  "score",
+  "itemName",
+  "restaurantName",
+]);
+
+/** Build Mongo match query for GET /queue from query-string filters. */
+function buildQueueMatch(req, settings) {
+  const query = { userRole: "admin" };
+  const andClauses = [];
+
+  if (req.query.hasPhoto === "true") {
+    query["photos.0"] = { $exists: true };
+  } else if (req.query.hasPhoto === "false") {
+    andClauses.push({
+      $or: [{ photos: { $exists: false } }, { photos: { $size: 0 } }],
+    });
+  }
+
+  if (req.query.staged === "true") {
+    query.score = { $gte: settings.stagingThreshold };
+  } else if (req.query.staged === "false") {
+    query.score = { $lt: settings.stagingThreshold };
+  }
+
+  if (req.query.status) {
+    const statuses = String(req.query.status)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (statuses.length > 0) {
+      query["socialPost.status"] = { $in: statuses };
+    }
+  }
+
+  if (req.query.posted === "true") {
+    andClauses.push({
+      $or: [
+        { "socialPost.status": "published" },
+        { "socialPost.targets.instagram.postId": { $ne: null } },
+        { "socialPost.targets.x.postId": { $ne: null } },
+        { "socialPost.targets.facebook.postId": { $ne: null } },
+      ],
+    });
+  } else if (req.query.posted === "false") {
+    andClauses.push({
+      $nor: [
+        { "socialPost.status": "published" },
+        { "socialPost.targets.instagram.postId": { $ne: null } },
+        { "socialPost.targets.x.postId": { $ne: null } },
+        { "socialPost.targets.facebook.postId": { $ne: null } },
+      ],
+    });
+  }
+
+  if (andClauses.length > 0) {
+    query.$and = andClauses;
+  }
+
+  return query;
+}
+
+function parseQueueListParams(req) {
+  const sort = QUEUE_SORT_FIELDS.has(req.query.sort)
+    ? req.query.sort
+    : "reviewDate";
+  const order = req.query.order === "asc" ? "asc" : "desc";
+  const uniqueBy = req.query.uniqueBy === "foodItem" ? "foodItem" : null;
+  const limit = Math.min(Math.max(parseInt(req.query.limit || "50", 10), 1), 50);
+  const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+  return { sort, order, uniqueBy, limit, page };
+}
+
+function usesSkipPagination(sort, uniqueBy) {
+  return uniqueBy === "foodItem" || sort !== "reviewDate";
+}
+
+function sortDirection(order) {
+  return order === "asc" ? 1 : -1;
+}
+
+function mapReviewToQueueItem(review, settings) {
+  const foodItem =
+    review.foodItem && typeof review.foodItem === "object"
+      ? review.foodItem
+      : null;
+  const restaurant =
+    review.restaurantId && typeof review.restaurantId === "object"
+      ? review.restaurantId
+      : null;
+
+  return {
+    reviewId: review._id,
+    foodItemId: foodItem?._id || review.foodItem,
+    itemName: foodItem?.name || "Unknown item",
+    restaurantName: restaurant?.name || "Unknown restaurant",
+    city: restaurant?.address?.city || "",
+    score: Math.round(review.score || 0),
+    reviewDate: review.reviewDate,
+    photos: review.photos || [],
+    hasRealPhoto: hasRealPhoto(review),
+    isStaged: isStaged(review, settings.stagingThreshold),
+    socialPost: serializeSocialPost(review.socialPost),
+  };
+}
+
+function buildLookupStages() {
+  return [
+    {
+      $lookup: {
+        from: "fooditems",
+        localField: "foodItem",
+        foreignField: "_id",
+        as: "foodItemDoc",
+      },
+    },
+    { $unwind: { path: "$foodItemDoc", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "restaurants",
+        localField: "restaurantId",
+        foreignField: "_id",
+        as: "restaurantDoc",
+      },
+    },
+    { $unwind: { path: "$restaurantDoc", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "addresses",
+        localField: "restaurantDoc.address",
+        foreignField: "_id",
+        as: "addressDoc",
+      },
+    },
+    { $unwind: { path: "$addressDoc", preserveNullAndEmptyArrays: true } },
+  ];
+}
+
+function buildAggSortStage(sort, order) {
+  const dir = sortDirection(order);
+  switch (sort) {
+    case "score":
+      return { score: dir, reviewDate: -1, _id: -1 };
+    case "itemName":
+      return { "foodItemDoc.name": dir, reviewDate: -1, _id: -1 };
+    case "restaurantName":
+      return { "restaurantDoc.name": dir, reviewDate: -1, _id: -1 };
+    default:
+      return { reviewDate: dir, _id: dir };
+  }
+}
+
+function shapeAggReview(doc) {
+  return {
+    _id: doc._id,
+    score: doc.score,
+    reviewDate: doc.reviewDate,
+    photos: doc.photos,
+    socialPost: doc.socialPost,
+    foodItem: doc.foodItemDoc
+      ? {
+          _id: doc.foodItemDoc._id,
+          name: doc.foodItemDoc.name,
+          category: doc.foodItemDoc.category,
+          type: doc.foodItemDoc.type,
+        }
+      : doc.foodItem,
+    restaurantId: doc.restaurantDoc
+      ? {
+          _id: doc.restaurantDoc._id,
+          name: doc.restaurantDoc.name,
+          address: doc.addressDoc ? { city: doc.addressDoc.city } : undefined,
+        }
+      : doc.restaurantId,
+  };
+}
+
+async function fetchQueueViaAggregation({
+  matchQuery,
+  sort,
+  order,
+  uniqueBy,
+  limit,
+  page,
+}) {
+  const skip = (page - 1) * limit;
+  const pipeline = [{ $match: matchQuery }];
+
+  if (uniqueBy === "foodItem") {
+    pipeline.push(
+      { $sort: { score: -1, reviewDate: -1, _id: -1 } },
+      { $group: { _id: "$foodItem", doc: { $first: "$$ROOT" } } },
+      { $replaceRoot: { newRoot: "$doc" } }
+    );
+  }
+
+  pipeline.push(...buildLookupStages());
+  pipeline.push({ $sort: buildAggSortStage(sort, order) });
+  pipeline.push({ $skip: skip });
+  pipeline.push({ $limit: limit + 1 });
+
+  const docs = await Review.aggregate(pipeline);
+  const hasMore = docs.length > limit;
+  const slice = hasMore ? docs.slice(0, limit) : docs;
+  return {
+    reviews: slice.map(shapeAggReview),
+    hasMore,
+    page,
+    nextCursor: null,
+  };
+}
+
+async function countQueueTotal(matchQuery, uniqueBy) {
+  if (uniqueBy === "foodItem") {
+    const result = await Review.aggregate([
+      { $match: matchQuery },
+      { $group: { _id: "$foodItem" } },
+      { $count: "total" },
+    ]);
+    return result[0]?.total || 0;
+  }
+  return Review.countDocuments(matchQuery);
+}
+
 const SERVER_STARTED_AT = new Date().toISOString();
 // Bump this list whenever the renderer/feature surface changes so a quick hit
 // to /api/social/version confirms which code a given deploy is actually running.
@@ -170,106 +395,71 @@ router.put("/settings", async (req, res) => {
 router.get("/queue", async (req, res) => {
   try {
     const settings = await SocialSettings.getOrCreate();
-    const limit = Math.min(Math.max(parseInt(req.query.limit || "50", 10), 1), 50);
-    const query = { userRole: "admin" };
-    const andClauses = [];
+    const { sort, order, uniqueBy, limit, page } = parseQueueListParams(req);
+    const matchQuery = buildQueueMatch(req, settings);
+    const skipMode = usesSkipPagination(sort, uniqueBy);
 
-    if (req.query.hasPhoto === "true") {
-      query["photos.0"] = { $exists: true };
-    } else if (req.query.hasPhoto === "false") {
-      andClauses.push({
-        $or: [{ photos: { $exists: false } }, { photos: { $size: 0 } }],
+    let reviews;
+    let hasMore = false;
+    let nextCursor = null;
+    let currentPage = page;
+
+    if (skipMode || uniqueBy === "foodItem" || sort === "itemName" || sort === "restaurantName") {
+      const result = await fetchQueueViaAggregation({
+        matchQuery,
+        sort,
+        order,
+        uniqueBy,
+        limit,
+        page,
       });
-    }
-
-    if (req.query.staged === "true") {
-      query.score = { $gte: settings.stagingThreshold };
-    } else if (req.query.staged === "false") {
-      query.score = { $lt: settings.stagingThreshold };
-    }
-
-    if (req.query.status) {
-      const statuses = String(req.query.status)
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (statuses.length > 0) {
-        query["socialPost.status"] = { $in: statuses };
+      reviews = result.reviews;
+      hasMore = result.hasMore;
+      currentPage = result.page;
+    } else {
+      const query = { ...matchQuery };
+      if (req.query.cursor) {
+        const cursorDate = new Date(req.query.cursor);
+        if (!Number.isNaN(cursorDate.getTime())) {
+          query.reviewDate =
+            order === "asc"
+              ? { $gt: cursorDate }
+              : { $lt: cursorDate };
+        }
       }
+
+      const dir = sortDirection(order);
+      const found = await Review.find(query)
+        .sort({ reviewDate: dir, _id: dir })
+        .limit(limit + 1)
+        .populate("foodItem", "name category type")
+        .populate({
+          path: "restaurantId",
+          select: "name address",
+          populate: { path: "address", select: "city" },
+        })
+        .lean();
+
+      hasMore = found.length > limit;
+      reviews = hasMore ? found.slice(0, limit) : found;
+      nextCursor =
+        hasMore && reviews.length > 0
+          ? reviews[reviews.length - 1].reviewDate
+          : null;
+      currentPage = 1;
     }
 
-    if (req.query.posted === "true") {
-      andClauses.push({
-        $or: [
-          { "socialPost.status": "published" },
-          { "socialPost.targets.instagram.postId": { $ne: null } },
-          { "socialPost.targets.x.postId": { $ne: null } },
-          { "socialPost.targets.facebook.postId": { $ne: null } },
-        ],
-      });
-    } else if (req.query.posted === "false") {
-      andClauses.push({
-        $nor: [
-          { "socialPost.status": "published" },
-          { "socialPost.targets.instagram.postId": { $ne: null } },
-          { "socialPost.targets.x.postId": { $ne: null } },
-          { "socialPost.targets.facebook.postId": { $ne: null } },
-        ],
-      });
-    }
+    const items = reviews.map((review) =>
+      mapReviewToQueueItem(review, settings)
+    );
 
-    if (andClauses.length > 0) {
-      query.$and = andClauses;
-    }
-
-    if (req.query.cursor) {
-      const cursorDate = new Date(req.query.cursor);
-      if (!Number.isNaN(cursorDate.getTime())) {
-        query.reviewDate = { $lt: cursorDate };
-      }
-    }
-
-    const reviews = await Review.find(query)
-      .sort({ reviewDate: -1, _id: -1 })
-      .limit(limit + 1)
-      .populate("foodItem", "name category type")
-      .populate({
-        path: "restaurantId",
-        select: "name address",
-        populate: { path: "address", select: "city" },
-      })
-      .lean();
-
-    const hasMore = reviews.length > limit;
-    const slice = hasMore ? reviews.slice(0, limit) : reviews;
-
-    const items = slice.map((review) => ({
-      reviewId: review._id,
-      itemName: review.foodItem?.name || "Unknown item",
-      restaurantName: review.restaurantId?.name || "Unknown restaurant",
-      city: review.restaurantId?.address?.city || "",
-      score: Math.round(review.score || 0),
-      reviewDate: review.reviewDate,
-      photos: review.photos || [],
-      hasRealPhoto: hasRealPhoto(review),
-      isStaged: isStaged(review, settings.stagingThreshold),
-      socialPost: serializeSocialPost(review.socialPost),
-    }));
-
-    const nextCursor =
-      hasMore && slice.length > 0
-        ? slice[slice.length - 1].reviewDate
-        : null;
-
-    // Total matching the active filter (independent of cursor pagination) so the
-    // UI can show e.g. "42 available to post" for the current filter combo.
-    const countQuery = { ...query };
-    delete countQuery.reviewDate; // ignore the pagination cursor
-    const total = await Review.countDocuments(countQuery);
+    const total = await countQueueTotal(matchQuery, uniqueBy);
 
     res.json({
       items,
       nextCursor,
+      hasMore: skipMode ? hasMore : !!nextCursor,
+      page: currentPage,
       total,
       stagingThreshold: settings.stagingThreshold,
     });

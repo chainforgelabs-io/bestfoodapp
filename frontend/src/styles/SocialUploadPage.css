@@ -68,6 +68,16 @@
   font-size: 0.85rem;
 }
 
+.social-filter-checkbox {
+  cursor: pointer;
+  user-select: none;
+}
+
+.social-filter-checkbox input {
+  margin: 0;
+  accent-color: #9562d4;
+}
+
 .social-filter-count {
   margin: 0 0 16px;
   font-size: 0.9rem;
