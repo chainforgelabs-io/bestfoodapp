@@ -69,6 +69,142 @@ function hasPostLookupFilters(postLookupMatch) {
   return postLookupMatch && Object.keys(postLookupMatch).length > 0;
 }
 
+/** Base review match for stats (admin reviews + optional photo/staged filters). */
+function buildStatsMatch(req, settings) {
+  const query = { userRole: "admin" };
+  const andClauses = [];
+
+  if (req.query.hasPhoto === "true") {
+    query["photos.0"] = { $exists: true };
+  } else if (req.query.hasPhoto === "false") {
+    andClauses.push({
+      $or: [{ photos: { $exists: false } }, { photos: { $size: 0 } }],
+    });
+  }
+
+  if (req.query.staged === "true") {
+    query.score = { $gte: settings.stagingThreshold };
+  } else if (req.query.staged === "false") {
+    query.score = { $lt: settings.stagingThreshold };
+  }
+
+  if (andClauses.length > 0) {
+    query.$and = andClauses;
+  }
+
+  return query;
+}
+
+function parseStatsFilters(req) {
+  return {
+    city: String(req.query.city || "").trim(),
+    hasPhoto: req.query.hasPhoto || "",
+    staged: req.query.staged || "",
+  };
+}
+
+function reshapeStatsRows(rows, threshold) {
+  const categoryMap = new Map();
+  let totalReviews = 0;
+
+  for (const row of rows) {
+    const category = row._id?.category || "Uncategorized";
+    const type = row._id?.type || "Unspecified";
+    const distinctIds = (row.distinctFoodItems || []).filter(Boolean);
+    const typeEntry = {
+      type,
+      reviewCount: row.reviewCount,
+      distinctFoodItems: distinctIds.length,
+      avgScore: Math.round(row.avgScore || 0),
+      withPhoto: row.withPhoto,
+      staged: row.staged,
+    };
+
+    totalReviews += row.reviewCount;
+
+    if (!categoryMap.has(category)) {
+      categoryMap.set(category, {
+        category,
+        reviewCount: 0,
+        distinctFoodItems: new Set(),
+        scoreSum: 0,
+        withPhoto: 0,
+        staged: 0,
+        types: [],
+      });
+    }
+
+    const cat = categoryMap.get(category);
+    cat.reviewCount += typeEntry.reviewCount;
+    distinctIds.forEach((id) => cat.distinctFoodItems.add(String(id)));
+    cat.scoreSum += (row.avgScore || 0) * row.reviewCount;
+    cat.withPhoto += typeEntry.withPhoto;
+    cat.staged += typeEntry.staged;
+    cat.types.push(typeEntry);
+  }
+
+  const categories = [...categoryMap.values()]
+    .map((cat) => ({
+      category: cat.category,
+      reviewCount: cat.reviewCount,
+      distinctFoodItems: cat.distinctFoodItems.size,
+      avgScore: cat.reviewCount
+        ? Math.round(cat.scoreSum / cat.reviewCount)
+        : 0,
+      withPhoto: cat.withPhoto,
+      staged: cat.staged,
+      types: cat.types.sort((a, b) => b.reviewCount - a.reviewCount),
+    }))
+    .sort((a, b) => b.reviewCount - a.reviewCount);
+
+  return { totalReviews, categories, threshold };
+}
+
+async function fetchSocialStats(req, settings) {
+  const matchQuery = buildStatsMatch(req, settings);
+  const { city } = parseStatsFilters(req);
+  const threshold = settings.stagingThreshold;
+
+  const pipeline = [{ $match: matchQuery }, ...buildLookupStages()];
+
+  if (city) {
+    pipeline.push({ $match: { "addressDoc.city": city } });
+  }
+
+  pipeline.push({
+    $group: {
+      _id: {
+        category: { $ifNull: ["$foodItemDoc.category", "Uncategorized"] },
+        type: { $ifNull: ["$foodItemDoc.type", "Unspecified"] },
+      },
+      reviewCount: { $sum: 1 },
+      distinctFoodItems: { $addToSet: "$foodItem" },
+      avgScore: { $avg: "$score" },
+      withPhoto: {
+        $sum: {
+          $cond: [
+            { $gt: [{ $size: { $ifNull: ["$photos", []] } }, 0] },
+            1,
+            0,
+          ],
+        },
+      },
+      staged: {
+        $sum: {
+          $cond: [{ $gte: ["$score", threshold] }, 1, 0],
+        },
+      },
+    },
+  });
+
+  pipeline.push({
+    $sort: { "_id.category": 1, reviewCount: -1 },
+  });
+
+  const rows = await Review.aggregate(pipeline);
+  return reshapeStatsRows(rows, threshold);
+}
+
 /** Build Mongo match query for GET /queue from query-string filters. */
 function buildQueueMatch(req, settings) {
   const query = { userRole: "admin" };
@@ -436,6 +572,21 @@ router.put("/settings", async (req, res) => {
     });
   } catch (err) {
     console.error("social settings put", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /stats — admin review counts grouped by food category and type
+router.get("/stats", async (req, res) => {
+  try {
+    const settings = await SocialSettings.getOrCreate();
+    const stats = await fetchSocialStats(req, settings);
+    res.json({
+      ...stats,
+      stagingThreshold: settings.stagingThreshold,
+    });
+  } catch (err) {
+    console.error("social stats", err);
     res.status(500).json({ message: "Server error" });
   }
 });

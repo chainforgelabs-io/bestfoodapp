@@ -540,6 +540,83 @@
   }
 }
 
+.social-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.social-stats-category {
+  background: #fff;
+  border: 1px solid #e8e0f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(107, 74, 153, 0.06);
+}
+
+.social-stats-category-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0ebf7;
+  background: #faf8fd;
+}
+
+.social-stats-category-header h2 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  color: #333;
+}
+
+.social-stats-category-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 0.82rem;
+  color: #666;
+}
+
+.social-stats-category-summary span {
+  white-space: nowrap;
+}
+
+.social-stats-table-wrap {
+  overflow-x: auto;
+}
+
+.social-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.social-stats-table th,
+.social-stats-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid #f3eef9;
+}
+
+.social-stats-table th {
+  font-weight: 600;
+  color: #6b4a99;
+  background: #fff;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.social-stats-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.social-stats-table td:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.social-stats-table th:not(:first-child) {
+  text-align: right;
+}
+
 @media (max-width: 640px) {
   .social-upload-page {
     padding-top: calc(80px + env(safe-area-inset-top, 0px));

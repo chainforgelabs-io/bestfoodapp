@@ -99,6 +99,14 @@ function SocialUploadPage() {
   const [detailBusy, setDetailBusy] = useState(false);
   const [message, setMessage] = useState("");
 
+  const [statsFilters, setStatsFilters] = useState({
+    city: "",
+    hasPhoto: "",
+    staged: "",
+  });
+  const [statsData, setStatsData] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
   const loadSettings = useCallback(async () => {
     const { data } = await axios.get("/social/settings");
     setSettings(data);
@@ -163,6 +171,23 @@ function SocialUploadPage() {
     [buildQueueParams, queuePage, usesPagePagination]
   );
 
+  const loadStats = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      const params = {};
+      if (statsFilters.city) params.city = statsFilters.city;
+      if (statsFilters.hasPhoto) params.hasPhoto = statsFilters.hasPhoto;
+      if (statsFilters.staged) params.staged = statsFilters.staged;
+      const { data } = await axios.get("/social/stats", { params });
+      setStatsData(data);
+    } catch (err) {
+      console.error("Failed to load social stats", err);
+      setStatsData(null);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [statsFilters]);
+
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
@@ -188,6 +213,10 @@ function SocialUploadPage() {
   useEffect(() => {
     if (tab === "queue") loadQueue(true);
   }, [tab, filters, loadQueue]);
+
+  useEffect(() => {
+    if (tab === "stats") loadStats();
+  }, [tab, statsFilters, loadStats]);
 
   useEffect(() => {
     if (!selected || selected.socialPost?.caption) return;
@@ -430,6 +459,13 @@ function SocialUploadPage() {
           onClick={() => setTab("queue")}
         >
           Queue
+        </button>
+        <button
+          type="button"
+          className={`social-tab-btn ${tab === "stats" ? "active" : ""}`}
+          onClick={() => setTab("stats")}
+        >
+          Stats
         </button>
         <button
           type="button"
@@ -703,6 +739,135 @@ function SocialUploadPage() {
                 {loadingMore ? "Loading…" : "Load more"}
               </button>
             </div>
+          )}
+        </>
+      )}
+
+      {tab === "stats" && (
+        <>
+          <div className="social-filter-bar">
+            <label>
+              City
+              <select
+                value={statsFilters.city}
+                onChange={(e) =>
+                  setStatsFilters((f) => ({ ...f, city: e.target.value }))
+                }
+              >
+                <option value="">Any</option>
+                {queueCities.map((cityName) => (
+                  <option key={cityName} value={cityName}>
+                    {cityName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Photo
+              <select
+                value={statsFilters.hasPhoto}
+                onChange={(e) =>
+                  setStatsFilters((f) => ({
+                    ...f,
+                    hasPhoto: e.target.value,
+                  }))
+                }
+              >
+                <option value="">Any</option>
+                <option value="true">Has photo</option>
+                <option value="false">No photo</option>
+              </select>
+            </label>
+            <label>
+              Staged
+              <select
+                value={statsFilters.staged}
+                onChange={(e) =>
+                  setStatsFilters((f) => ({
+                    ...f,
+                    staged: e.target.value,
+                  }))
+                }
+              >
+                <option value="">Any</option>
+                <option value="true">
+                  Staged (≥{" "}
+                  {statsData?.stagingThreshold ??
+                    settings?.stagingThreshold ??
+                    70}
+                  )
+                </option>
+                <option value="false">Below threshold</option>
+              </select>
+            </label>
+          </div>
+
+          {statsLoading ? (
+            <p className="social-empty">Loading stats…</p>
+          ) : !statsData || statsData.categories?.length === 0 ? (
+            <p className="social-empty">No reviews match these filters.</p>
+          ) : (
+            <>
+              <p className="social-filter-count">
+                <strong>{statsData.totalReviews}</strong>{" "}
+                {statsData.totalReviews === 1 ? "review" : "reviews"} across{" "}
+                <strong>{statsData.categories.length}</strong>{" "}
+                {statsData.categories.length === 1 ? "category" : "categories"}
+                {statsData.stagingThreshold != null && (
+                  <>
+                    {" "}
+                    · staging threshold{" "}
+                    <strong>{statsData.stagingThreshold}</strong>
+                  </>
+                )}
+              </p>
+
+              <div className="social-stats-list">
+                {statsData.categories.map((cat) => (
+                  <section
+                    key={cat.category}
+                    className="social-stats-category"
+                  >
+                    <header className="social-stats-category-header">
+                      <h2>{cat.category}</h2>
+                      <div className="social-stats-category-summary">
+                        <span>{cat.reviewCount} reviews</span>
+                        <span>{cat.distinctFoodItems} dishes</span>
+                        <span>avg {cat.avgScore}</span>
+                        <span>{cat.withPhoto} with photo</span>
+                        <span>{cat.staged} staged</span>
+                      </div>
+                    </header>
+                    <div className="social-stats-table-wrap">
+                      <table className="social-stats-table">
+                        <thead>
+                          <tr>
+                            <th>Type</th>
+                            <th>Reviews</th>
+                            <th>Dishes</th>
+                            <th>Avg score</th>
+                            <th>With photo</th>
+                            <th>Staged</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {cat.types.map((row) => (
+                            <tr key={`${cat.category}-${row.type}`}>
+                              <td>{row.type}</td>
+                              <td>{row.reviewCount}</td>
+                              <td>{row.distinctFoodItems}</td>
+                              <td>{row.avgScore}</td>
+                              <td>{row.withPhoto}</td>
+                              <td>{row.staged}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </>
           )}
         </>
       )}

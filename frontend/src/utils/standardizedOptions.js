@@ -129,6 +129,7 @@ export const FOOD_TYPES = {
     "Burger",
     "Tacos",
     "Burrito",
+    "Banh Mi",
     "Hot Dog",
     "Sandwich",
     "Wrap",
@@ -650,7 +651,7 @@ export const INFO_DATA = {
   },
   "Handhelds": {
     description: "Foods eaten with hands, portable meals",
-    examples: "Burgers, tacos, sandwiches, wraps",
+    examples: "Burgers, tacos, banh mi, sandwiches, wraps",
     characteristics:
       "• Portable eating\n• Casual dining\n• Easy to eat\n• Popular lunch options",
   },
