@@ -63,8 +63,13 @@ const SEO = ({
             "@context": "https://schema.org",
             "@type": "Organization",
             name: siteTitle,
-            url: currentUrl,
-            logo: `${process.env.PUBLIC_URL}/logo512.png`,
+            url: "https://bestfoodapp.com",
+            logo: "https://bestfoodapp.com/logo512.png",
+            sameAs: [
+              "https://www.instagram.com/bestfoodapp",
+              "https://www.facebook.com/bestfoodapp",
+              "https://x.com/bestfoodapp",
+            ],
           })}
         </script>
       )}

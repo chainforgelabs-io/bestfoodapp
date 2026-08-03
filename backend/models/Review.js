@@ -64,6 +64,20 @@ const reviewSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
+  // SEO fields (populated by lib/seo on publish)
+  slug: { type: String, index: true, default: null },
+  canonicalUrl: { type: String, default: null },
+  ogImageUrl: { type: String, default: null },
+  ogImageGeneratedAt: { type: Date, default: null },
+  schemaVersion: { type: Number, default: 1 },
+  lastRefreshedAt: { type: Date, default: null },
+  publishedAt: { type: Date, default: null },
+  relatedReviewIds: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Review",
+    },
+  ],
   socialPost: {
     status: {
       type: String,

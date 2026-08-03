@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import "../styles/RestaurantPage.css";
 import axios from "../api/axios";
 import SEO from "../components/SEO";
@@ -9,6 +9,7 @@ function RestaurantPage() {
   const [restaurant, setRestaurant] = useState(null);
   const [foodItems, setFoodItems] = useState([]);
   const [restaurantScores, setRestaurantScores] = useState(null);
+  const [relatedReviews, setRelatedReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate(); // To handle navigation back or other actions
 
@@ -40,6 +41,39 @@ function RestaurantPage() {
             communityAverageScore: 0,
             overallAverageScore: 0,
           });
+        }
+
+        try {
+          const reviewsRes = await axios.get(
+            `/restaurants/${restaurantResponse.data._id}/reviews`
+          );
+          const reviews = Array.isArray(reviewsRes.data)
+            ? reviewsRes.data
+            : reviewsRes.data?.reviews || [];
+          const relatedIds = [
+            ...new Set(
+              reviews.flatMap((r) =>
+                (r.relatedReviewIds || []).map((id) => String(id))
+              )
+            ),
+          ].slice(0, 6);
+          if (relatedIds.length) {
+            const related = await Promise.all(
+              relatedIds.map(async (id) => {
+                try {
+                  const { data } = await axios.get(`/reviews/${id}`);
+                  return data;
+                } catch {
+                  return null;
+                }
+              })
+            );
+            setRelatedReviews(related.filter(Boolean));
+          } else {
+            setRelatedReviews([]);
+          }
+        } catch {
+          setRelatedReviews([]);
         }
       } catch (error) {
         console.error("Error fetching restaurant data:", error);
@@ -74,18 +108,24 @@ function RestaurantPage() {
     );
   }
 
+  // Restaurant node only — no free-floating AggregateRating (third-party business).
+  // Ratings belong on Review schema emitted at publish time.
+  const canonicalPath = restaurant.slug
+    ? `/restaurant/${restaurant.slug}`
+    : `/restaurant/${restaurant._id}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Restaurant",
     name: restaurant.name,
-    url: typeof window !== "undefined" ? window.location.href : undefined,
+    url: `https://bestfoodapp.com${canonicalPath}`,
     address: restaurant.address
       ? {
           "@type": "PostalAddress",
           streetAddress: restaurant.address.street || "",
           addressLocality: restaurant.address.city || "",
           addressRegion: restaurant.address.province || "",
-          addressCountry: restaurant.address.country || "",
+          postalCode: restaurant.address.postalCode || undefined,
+          addressCountry: restaurant.address.country || "CA",
         }
       : undefined,
     servesCuisine: Array.isArray(restaurant.cuisine)
@@ -93,22 +133,6 @@ function RestaurantPage() {
       : restaurant.type
       ? [restaurant.type]
       : undefined,
-    aggregateRating:
-      Array.isArray(foodItems) && foodItems.length > 0
-        ? {
-            "@type": "AggregateRating",
-            ratingValue:
-              Math.round(
-                (foodItems.reduce(
-                  (sum, item) => sum + (item.overallAverageScore || 0),
-                  0
-                ) /
-                  foodItems.length) *
-                  10
-              ) / 10,
-            reviewCount: foodItems.length,
-          }
-        : undefined,
   };
 
   return (
@@ -123,6 +147,7 @@ function RestaurantPage() {
         keywords={`${restaurant.name}, ${restaurant?.type || "restaurant"}, ${
           restaurant?.address?.city || ""
         } food, best food, ratings`}
+        canonicalUrl={`https://bestfoodapp.com${canonicalPath}`}
         jsonLd={jsonLd}
       />
       {/* Restaurant Header */}
@@ -258,6 +283,47 @@ function RestaurantPage() {
           </div>
         )}
       </div>
+
+      <nav className="restaurant-breadcrumbs" aria-label="Breadcrumb">
+        <Link to="/">Home</Link>
+        {" / "}
+        {restaurant.address?.city && (
+          <>
+            <Link
+              to={`/city/${String(restaurant.address.city)
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")}`}
+            >
+              {restaurant.address.city}
+            </Link>
+            {" / "}
+          </>
+        )}
+        <span>{restaurant.name}</span>
+      </nav>
+
+      {relatedReviews.length > 0 && (
+        <div className="food-items-section">
+          <h2 className="section-title">Related reviews</h2>
+          <ul className="related-reviews-list">
+            {relatedReviews.map((r) => (
+              <li key={r._id}>
+                <Link
+                  to={`/restaurant/${
+                    r.restaurantId?.slug ||
+                    r.restaurantId?._id ||
+                    restaurant.slug ||
+                    restaurant._id
+                  }`}
+                >
+                  {r.foodItem?.name || "Review"} — score{" "}
+                  {Math.round(r.score || 0)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Back Button */}
       <button onClick={() => navigate(-1)} className="back-button">

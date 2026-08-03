@@ -532,12 +532,54 @@ function LeaderboardsPage() {
     }
   };
 
+  const itemListJsonLd =
+    Array.isArray(leaderboardData) && leaderboardData.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: seoMeta.title,
+          itemListElement: leaderboardData.slice(0, 20).map((item, index) => {
+            const name =
+              item.name ||
+              item.restaurant?.name ||
+              item.foodItem?.name ||
+              `Entry ${index + 1}`;
+            const restaurantSlug =
+              item.restaurant?.slug ||
+              item.foodItem?.restaurant?.slug ||
+              item.restaurant?._id ||
+              item.foodItem?.restaurant?._id ||
+              item.restaurant ||
+              item.foodItem?.restaurant;
+            return {
+              "@type": "ListItem",
+              position: index + 1,
+              name,
+              url: restaurantSlug
+                ? `https://bestfoodapp.com/restaurant/${restaurantSlug}`
+                : undefined,
+            };
+          }),
+        }
+      : undefined;
+
   return (
     <div className="leaderboards-page">
       <SEO
         title={seoMeta.title}
         description={seoMeta.description}
         keywords={seoMeta.keywords}
+        canonicalUrl={
+          selectedCity?.city
+            ? `https://bestfoodapp.com${generateCityUrl(
+                selectedCity.city,
+                selectedCity.province,
+                selectedCity.country,
+                "/leaderboards"
+              )}`
+            : "https://bestfoodapp.com/leaderboards"
+        }
+        jsonLd={itemListJsonLd}
       />
       <div className="leaderboards-header">
         <h1 className="page-title">🏆 Food Leaderboards</h1>

@@ -6,6 +6,22 @@ const Review = require("../models/Review");
 const Restaurant = require("../models/Restaurant");
 const Address = require("../models/Address");
 const { protect } = require("../middleware/authMiddleware"); // Import the protect middleware
+const { allocateSlug } = require("../lib/seo/slugs");
+
+/** Resolve by Mongo ObjectId or immutable slug. */
+async function resolveRestaurant(idOrSlug, { populateAddress = false } = {}) {
+  const isObjectId = mongoose.isValidObjectId(idOrSlug);
+  let q;
+  if (isObjectId) {
+    q = Restaurant.findOne({
+      $or: [{ _id: idOrSlug }, { slug: idOrSlug }],
+    });
+  } else {
+    q = Restaurant.findOne({ slug: idOrSlug });
+  }
+  if (populateAddress) q = q.populate("address");
+  return q;
+}
 
 // Define the weights for different food categories
 const categoryWeights = {
@@ -22,14 +38,21 @@ const categoryWeights = {
 // Create a new restaurant (Protected: Only authenticated users can create restaurants)
 router.post("/", protect, async (req, res) => {
   try {
-    const { name, address, type, cuisine, ambiance } = req.body;
+    const { name, address, type, cuisine, ambiance, website, cityId, gersId, location } =
+      req.body;
+    const slug = await allocateSlug(Restaurant, name);
     const restaurant = new Restaurant({
       name,
       address,
       type,
       cuisine,
       ambiance,
-      createdBy: req.user._id, // Add this line to set the creator
+      website: website || null,
+      cityId: cityId || null,
+      gersId: gersId || null,
+      location: location || undefined,
+      slug,
+      createdBy: req.user._id,
     });
     const savedRestaurant = await restaurant.save();
     res.status(201).json(savedRestaurant);
@@ -164,12 +187,12 @@ router.get("/rank/type-or-cuisine/city/:city", async (req, res) => {
   }
 });
 
-// Get a single restaurant by ID (Public: Anyone can view a restaurant)
+// Get a single restaurant by ID or slug (Public)
 router.get("/:id", async (req, res) => {
   try {
-    const restaurant = await Restaurant.findById(req.params.id).populate(
-      "address"
-    );
+    const restaurant = await resolveRestaurant(req.params.id, {
+      populateAddress: true,
+    });
     if (!restaurant)
       return res.status(404).json({ message: "Restaurant not found" });
     res.status(200).json(restaurant);
@@ -183,14 +206,13 @@ router.get("/:id/score", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find the restaurant by ID to ensure it exists
-    const restaurant = await Restaurant.findById(id);
+    const restaurant = await resolveRestaurant(id);
     if (!restaurant) {
       return res.status(404).json({ message: "Restaurant not found" });
     }
 
     // Step 1: Find all food items associated with this restaurant
-    const foodItems = await FoodItem.find({ restaurant: id });
+    const foodItems = await FoodItem.find({ restaurant: restaurant._id });
 
     if (!foodItems || foodItems.length === 0) {
       return res
@@ -255,7 +277,11 @@ router.get("/:id/score", async (req, res) => {
 // Get all reviews for a restaurant (Public: Anyone can view reviews)
 router.get("/:id/reviews", async (req, res) => {
   try {
-    const restaurantId = req.params.id;
+    const restaurant = await resolveRestaurant(req.params.id);
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found" });
+    }
+    const restaurantId = restaurant._id;
 
     // Step 1: Find all food items associated with this restaurant
     const foodItems = await FoodItem.find({ restaurant: restaurantId });

@@ -140,6 +140,20 @@ router.post("/", protect, async (req, res) => {
     // Save the updated user
     await user.save();
 
+    // Mark published + fire SEO automation (never blocks the response on failure)
+    try {
+      savedReview.publishedAt = savedReview.publishedAt || new Date();
+      await savedReview.save();
+      const { onReviewPublished } = require("../lib/seo");
+      setImmediate(() => {
+        onReviewPublished(savedReview._id).catch((seoErr) =>
+          console.error("onReviewPublished failed", seoErr)
+        );
+      });
+    } catch (seoErr) {
+      console.error("seo publish hook setup failed", seoErr);
+    }
+
     res.status(201).json(savedReview);
   } catch (err) {
     console.error(err); // Log the error for debugging
@@ -218,6 +232,25 @@ router.get("/feed", protect, async (req, res) => {
 });
 
 // POST /api/reviews/:id/like
+// Public single review (for related-reviews modules / SEO)
+router.get("/:id", async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid review id" });
+    }
+    const review = await Review.findById(req.params.id)
+      .populate("foodItem", "name category type")
+      .populate("restaurantId", "name slug")
+      .populate("userId", "username")
+      .lean();
+    if (!review) return res.status(404).json({ message: "Review not found" });
+    res.json(review);
+  } catch (err) {
+    console.error("get review", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.post("/:id/like", protect, async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);

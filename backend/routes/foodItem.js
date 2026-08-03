@@ -7,6 +7,15 @@ const FoodItem = require("../models/FoodItem");
 const Review = require("../models/Review");
 const { protect } = require("../middleware/authMiddleware");
 
+async function resolveRestaurantId(idOrSlug) {
+  if (mongoose.isValidObjectId(idOrSlug)) {
+    const byId = await Restaurant.findById(idOrSlug).select("_id");
+    if (byId) return byId._id;
+  }
+  const bySlug = await Restaurant.findOne({ slug: idOrSlug }).select("_id");
+  return bySlug?._id || null;
+}
+
 // Helper function to categorize prices
 function categorizePrices(prices) {
   const sortedPrices = [...prices].sort((a, b) => a - b);
@@ -169,8 +178,12 @@ router.get("/search", async (req, res) => {
 // Get all food items from restaurant id (Public: Anyone can view food items by restaurant)
 router.get("/restaurant/:restaurantId", async (req, res) => {
   try {
+    const restaurantId = await resolveRestaurantId(req.params.restaurantId);
+    if (!restaurantId) {
+      return res.status(404).json({ message: "Restaurant not found" });
+    }
     const foodItems = await FoodItem.find({
-      restaurant: req.params.restaurantId,
+      restaurant: restaurantId,
     });
 
     if (!foodItems || foodItems.length === 0) {
@@ -228,7 +241,10 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
 // Get the average admin and community scores for all food items in a restaurant
 router.get("/restaurant/:restaurantId/scores", async (req, res) => {
   try {
-    const { restaurantId } = req.params;
+    const restaurantId = await resolveRestaurantId(req.params.restaurantId);
+    if (!restaurantId) {
+      return res.status(404).json({ message: "Restaurant not found" });
+    }
 
     // Find all food items for the specified restaurant
     const foodItems = await FoodItem.find({ restaurant: restaurantId });

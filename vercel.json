@@ -5,12 +5,22 @@
   "functions": {
     "api/index.js": {
       "includeFiles": "backend/assets/social/**"
+    },
+    "api/render.js": {
+      "includeFiles": "frontend/build/index.html"
+    },
+    "api/sitemap.js": {
+      "includeFiles": "backend/models/**"
     }
   },
   "crons": [
     {
       "path": "/api/cron/refresh-meta-token",
       "schedule": "0 0 1 * *"
+    },
+    {
+      "path": "/api/cron/seo-maintenance",
+      "schedule": "0 6 * * *"
     }
   ],
   "routes": [
@@ -40,12 +50,24 @@
       "dest": "/$1"
     },
     {
+      "src": "/sitemap\\.xml$",
+      "dest": "/api/sitemap"
+    },
+    {
       "src": "/api/cron/(.*)",
       "dest": "/api/cron/$1"
     },
     {
       "src": "/api/(.*)",
       "dest": "/api?path=$1"
+    },
+    {
+      "src": "^/(city|leaderboards|restaurant|scoring-criteria|feed|map|badge)(/.*)?$",
+      "dest": "/api/render"
+    },
+    {
+      "src": "^/$",
+      "dest": "/api/render"
     },
     {
       "src": "/(.*)",

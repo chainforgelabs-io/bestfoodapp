@@ -566,3 +566,29 @@
     max-width: 100%;
   }
 }
+
+.restaurant-breadcrumbs {
+  margin: 16px 0 8px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.restaurant-breadcrumbs a {
+  color: #6b4a99;
+  text-decoration: none;
+}
+
+.related-reviews-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.related-reviews-list a {
+  color: #6b4a99;
+  font-weight: 600;
+  text-decoration: none;
+}

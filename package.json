@@ -10,9 +10,16 @@
   "scripts": {
     "start": "cd backend && npm run start",
     "build": "ls -la && cd frontend && npm install && npm run build",
-    "dev": "concurrently \"cd backend && npm run start:dev\" \"cd frontend && npm start\""
+    "dev": "concurrently \"cd backend && npm run start:dev\" \"cd frontend && npm start\"",
+    "places:import-cities": "node backend/lib/places/scripts/importCities.js",
+    "places:import": "node backend/lib/places/scripts/importPlaces.js",
+    "places:resync": "node backend/lib/places/scripts/resyncPlaces.js",
+    "seo:backfill-slugs": "node backend/lib/seo/scripts/backfillRestaurantSlugs.js",
+    "seo:test-sitemap": "node backend/lib/seo/__tests__/sitemap.invariant.test.js"
   },
   "dependencies": {
+    "@turf/boolean-point-in-polygon": "^7.3.5",
+    "@turf/nearest-point": "^7.3.5",
     "@vercel/analytics": "^1.5.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",

@@ -280,6 +280,43 @@ function ReviewSubmissionPage() {
     }));
   };
 
+  const selectRestaurantSuggestion = async (restaurant) => {
+    if (!restaurant) return;
+    if (restaurant.kind === "place") {
+      try {
+        const { data } = await axios.post(
+          `/places/promote/${restaurant.placeId}`,
+          {
+            cuisine: restaurant.cuisineHint
+              ? [restaurant.cuisineHint]
+              : undefined,
+          }
+        );
+        setFormData({
+          ...formData,
+          restaurant: restaurant.name,
+          restaurantId: data.restaurantId,
+          address:
+            restaurant.displayStreet || restaurant.address?.street || "",
+        });
+      } catch (err) {
+        console.error("Promote place failed", err);
+        alert(
+          "Could not select this place. Try adding the restaurant manually."
+        );
+        return;
+      }
+    } else {
+      setFormData({
+        ...formData,
+        restaurant: restaurant.name,
+        restaurantId: restaurant._id,
+        address: restaurant.displayStreet || restaurant.address?.street || "",
+      });
+    }
+    setShowSuggestions(false);
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
       setActiveSuggestion((prev) => (prev + 1) % restaurantSuggestions.length);
@@ -292,13 +329,82 @@ function ReviewSubmissionPage() {
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (restaurantSuggestions.length > 0) {
-        const selectedRestaurant = restaurantSuggestions[activeSuggestion];
-        setFormData({
-          ...formData,
-          restaurant: selectedRestaurant.name,
-        });
-        setShowSuggestions(false); // Hide dropdown after selection
+        selectRestaurantSuggestion(restaurantSuggestions[activeSuggestion]);
       }
+    }
+  };
+
+  // Merge DB restaurants + seeded places into suggestion rows
+  const loadRestaurantSuggestions = async (searchTerm = "") => {
+    if (
+      !formData.location.city ||
+      !formData.location.province ||
+      !formData.location.country
+    ) {
+      return;
+    }
+
+    try {
+      const response = await axios.get(`/restaurants/search`, {
+        params: {
+          city: formData.location.city,
+          province: formData.location.province,
+          country: formData.location.country,
+        },
+      });
+
+      let filteredRestaurants;
+      if (searchTerm.trim() === "") {
+        filteredRestaurants = response.data.slice(0, 10);
+      } else {
+        filteredRestaurants = response.data.filter((restaurant) =>
+          restaurant.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      const mapped = filteredRestaurants.map((r) => ({
+        ...r,
+        kind: "restaurant",
+        displayStreet: r.address?.street || "",
+      }));
+
+      // Seeded places (no public page until reviewed)
+      if (searchTerm.trim().length >= 2) {
+        try {
+          const placesRes = await axios.get("/places/search", {
+            params: {
+              q: searchTerm,
+              city: formData.location.city,
+              province: formData.location.province,
+              country: formData.location.country,
+              limit: 15,
+            },
+          });
+          const placeRows = (placesRes.data.results || [])
+            .filter((p) => p.kind === "place")
+            .map((p) => ({
+              _id: p.placeId,
+              placeId: p.placeId,
+              kind: "place",
+              name: p.name,
+              displayStreet: p.street,
+              address: { street: p.street },
+              cuisineHint: p.cuisineHint,
+              website: p.website,
+              gersId: p.gersId,
+            }));
+          const restaurantIds = new Set(mapped.map((r) => String(r._id)));
+          for (const p of placeRows) {
+            if (!restaurantIds.has(String(p._id))) mapped.push(p);
+          }
+        } catch (placeErr) {
+          console.warn("Places search unavailable", placeErr);
+        }
+      }
+
+      setRestaurantSuggestions(mapped.slice(0, 25));
+    } catch (error) {
+      console.error("Error searching restaurants:", error);
     }
   };
 
@@ -307,81 +413,13 @@ function ReviewSubmissionPage() {
     const searchTerm = e.target.value;
     setFormData({ ...formData, restaurant: searchTerm });
     setShowSuggestions(true);
-
-    if (
-      formData.location.city &&
-      formData.location.province &&
-      formData.location.country
-    ) {
-      try {
-        const response = await axios.get(`/restaurants/search`, {
-          params: {
-            city: formData.location.city,
-            province: formData.location.province,
-            country: formData.location.country,
-          },
-        });
-
-        let filteredRestaurants;
-        if (searchTerm.trim() === "") {
-          // Show first 10 restaurants when input is empty
-          filteredRestaurants = response.data.slice(0, 10);
-        } else {
-          // Filter restaurants based on search term
-          filteredRestaurants = response.data.filter((restaurant) =>
-            restaurant.name.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        }
-
-        setRestaurantSuggestions(filteredRestaurants);
-      } catch (error) {
-        console.error("Error searching restaurants:", error);
-      }
-    }
+    await loadRestaurantSuggestions(searchTerm);
   };
 
   // Handle input focus to show all restaurants
   const handleRestaurantFocus = async () => {
     setShowSuggestions(true);
-
-    // Load all restaurants when input is focused
-    if (
-      formData.location.city &&
-      formData.location.province &&
-      formData.location.country
-    ) {
-      try {
-        const response = await axios.get(`/restaurants/search`, {
-          params: {
-            city: formData.location.city,
-            province: formData.location.province,
-            country: formData.location.country,
-          },
-        });
-
-        let restaurantsToShow;
-        if (formData.restaurant.trim() === "") {
-          // Show first 10 restaurants when input is empty
-          restaurantsToShow = response.data.slice(0, 10);
-        } else {
-          // Filter restaurants based on current input value but show all matching
-          const filteredRestaurants = response.data.filter((restaurant) =>
-            restaurant.name
-              .toLowerCase()
-              .includes(formData.restaurant.toLowerCase())
-          );
-          // If there are many results, limit to first 20, otherwise show all
-          restaurantsToShow =
-            filteredRestaurants.length > 20
-              ? filteredRestaurants.slice(0, 20)
-              : filteredRestaurants;
-        }
-
-        setRestaurantSuggestions(restaurantsToShow);
-      } catch (error) {
-        console.error("Error loading restaurants:", error);
-      }
-    }
+    await loadRestaurantSuggestions(formData.restaurant || "");
   };
 
   // Handle when a restaurant is added via modal
@@ -998,21 +1036,21 @@ function ReviewSubmissionPage() {
                     <ul className="suggestions-dropdown">
                       {restaurantSuggestions.map((restaurant, index) => (
                         <li
-                          key={restaurant._id}
+                          key={`${restaurant.kind || "r"}-${restaurant._id}`}
                           className={`suggestion-item ${
                             index === activeSuggestion ? "active" : ""
                           }`}
-                          onClick={() => {
-                            setFormData({
-                              ...formData,
-                              restaurant: restaurant.name,
-                              restaurantId: restaurant._id,
-                              address: restaurant.address.street,
-                            });
-                            setShowSuggestions(false);
-                          }}
+                          onClick={() => selectRestaurantSuggestion(restaurant)}
                         >
-                          {restaurant.name} - {restaurant.address.street}
+                          {restaurant.name}
+                          {restaurant.displayStreet ||
+                          restaurant.address?.street
+                            ? ` — ${
+                                restaurant.displayStreet ||
+                                restaurant.address.street
+                              }`
+                            : ""}
+                          {restaurant.kind === "place" ? " (seeded)" : ""}
                         </li>
                       ))}
                       <li

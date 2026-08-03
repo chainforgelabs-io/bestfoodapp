@@ -22,6 +22,9 @@ import SEO from "./components/SEO";
 import ScoringCriteriaPage from "./pages/ScoringCriteriaPage";
 import MapRatingsPage from "./pages/MapRatingsPage";
 import SocialUploadPage from "./pages/SocialUploadPage";
+import PlacesAdminPage from "./pages/PlacesAdminPage";
+import SeoDashboardPage from "./pages/SeoDashboardPage";
+import BadgePage from "./pages/BadgePage";
 import AdminRoute from "./components/AdminRoute";
 import SiteFooter from "./components/SiteFooter";
 import "./styles/MobileEnhancements.css"; // Import mobile enhancements
@@ -67,6 +70,7 @@ function App() {
                 path="/restaurant/:restaurantID"
                 element={<RestaurantPage />}
               />
+              <Route path="/badge/:restaurantSlug" element={<BadgePage />} />
               <Route
                 path="/profile"
                 element={
@@ -126,6 +130,22 @@ function App() {
                 element={
                   <AdminRoute>
                     <SocialUploadPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/places"
+                element={
+                  <AdminRoute>
+                    <PlacesAdminPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/seo"
+                element={
+                  <AdminRoute>
+                    <SeoDashboardPage />
                   </AdminRoute>
                 }
               />

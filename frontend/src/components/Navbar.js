@@ -169,20 +169,44 @@ function Navbar() {
             </NavLink>
           </li>
           {isAdmin && (
-            <li className="nav-item">
-              <NavLink
-                to="/admin/social"
-                className={({ isActive }) =>
-                  isActive ? "nav-link active" : "nav-link"
-                }
-                onClick={closeMenu}
-              >
-                <span className="nav-icon">
-                  <Share2 size={22} strokeWidth={2} aria-hidden />
-                </span>
-                Social
-              </NavLink>
-            </li>
+            <>
+              <li className="nav-item">
+                <NavLink
+                  to="/admin/social"
+                  className={({ isActive }) =>
+                    isActive ? "nav-link active" : "nav-link"
+                  }
+                  onClick={closeMenu}
+                >
+                  <span className="nav-icon">
+                    <Share2 size={22} strokeWidth={2} aria-hidden />
+                  </span>
+                  Social
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  to="/admin/places"
+                  className={({ isActive }) =>
+                    isActive ? "nav-link active" : "nav-link"
+                  }
+                  onClick={closeMenu}
+                >
+                  Places
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  to="/admin/seo"
+                  className={({ isActive }) =>
+                    isActive ? "nav-link active" : "nav-link"
+                  }
+                  onClick={closeMenu}
+                >
+                  SEO
+                </NavLink>
+              </li>
+            </>
           )}
         </ul>
 

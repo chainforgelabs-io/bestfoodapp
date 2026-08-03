@@ -129,6 +129,8 @@ const uploadsRoutes = require("../backend/routes/uploads");
 const receiptRoutes = require("../backend/routes/receipts");
 const adminRoutes = require("../backend/routes/admin");
 const socialRoutes = require("../backend/routes/social");
+const placesRoutes = require("../backend/routes/places");
+const seoAdminRoutes = require("../backend/routes/seoAdmin");
 
 // Use routes (MODIFIED - removed /api prefix; Vercel rewrites /api/* to ?path=*)
 app.use("/auth", authRoutes);
@@ -142,6 +144,8 @@ app.use("/uploads", uploadsRoutes);
 app.use("/receipts", receiptRoutes);
 app.use("/admin", adminRoutes);
 app.use("/social", socialRoutes);
+app.use("/places", placesRoutes);
+app.use("/seo", seoAdminRoutes);
 
 // Basic route for testing (MODIFIED - now accessible at /api/)
 app.get("/", (req, res) => {

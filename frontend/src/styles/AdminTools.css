@@ -1,0 +1,152 @@
+.admin-tools-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 100px 16px 48px;
+  text-align: left;
+}
+
+.admin-tools-header h1 {
+  margin: 0 0 8px;
+  color: #333;
+}
+
+.admin-tools-header p {
+  color: #666;
+  margin: 0 0 12px;
+}
+
+.admin-tools-nav {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.admin-tools-nav a {
+  color: #6b4a99;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-tools-message {
+  color: #6b4a99;
+  font-weight: 600;
+}
+
+.admin-tools-card {
+  background: #fff;
+  border: 1px solid #e8e0f0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 12px rgba(107, 74, 153, 0.06);
+}
+
+.admin-tools-card h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+.admin-btn {
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+.admin-btn.secondary {
+  background: #fff;
+  color: #6b4a99;
+  border: 1px solid #d8c6ef;
+}
+
+.admin-btn.danger {
+  background: #fff;
+  color: #b33;
+  border: 1px solid #f0c0c0;
+}
+
+.admin-batch-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.admin-batch-list button {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  background: #faf8fd;
+  cursor: pointer;
+}
+
+.admin-batch-list button.active {
+  border-color: #9562d4;
+  background: #f3eefa;
+}
+
+.admin-places-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-places-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.admin-places-table th,
+.admin-places-table td {
+  border-bottom: 1px solid #f0ebf7;
+  padding: 8px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-places-table input {
+  width: 100%;
+  border: 1px solid #e8eaf5;
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.admin-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.admin-metric {
+  background: #fff;
+  border: 1px solid #e8e0f0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-metric-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #6b4a99;
+}
+
+.admin-metric-label {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.admin-queue-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #555;
+}

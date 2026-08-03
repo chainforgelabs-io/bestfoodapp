@@ -8,8 +8,10 @@ Disallow: /login
 Disallow: /register
 Disallow: /reset-password
 Disallow: /profile
+Disallow: /submit-review
+Disallow: /add-restaurant
 
-# Sitemap
+# Sitemap (served dynamically by api/sitemap.js)
 Sitemap: https://bestfoodapp.com/sitemap.xml
 
 # Crawl-delay
