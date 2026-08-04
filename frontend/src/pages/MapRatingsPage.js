@@ -9,6 +9,7 @@ import { GoogleMap, MarkerF, InfoWindowF } from "@react-google-maps/api";
 import CitySearch from "../components/CitySearch";
 import SEO from "../components/SEO";
 import axios from "../api/axios";
+import { restaurantPath } from "../utils/restaurantUrls";
 
 const libraries = ["places"]; // kept for reference; loading handled by CitySearch
 
@@ -165,6 +166,7 @@ function MapRatingsPage() {
         if (!point) continue;
         results.push({
           id: r._id,
+          slug: r.slug || null,
           name: r.name,
           address: r.address,
           point,
@@ -311,7 +313,10 @@ function MapRatingsPage() {
                           Cuisine: {m.cuisine}
                         </div>
                       )}
-                      <a className="small" href={`/restaurant/${m.id}`}>
+                      <a
+                        className="small"
+                        href={restaurantPath({ slug: m.slug, _id: m.id })}
+                      >
                         View details →
                       </a>
                     </div>

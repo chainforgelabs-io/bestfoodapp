@@ -6,6 +6,7 @@ import SEO from "../components/SEO";
 import CitySearch from "../components/CitySearch"; // Adjust the path if necessary
 import { useCityFromUrl } from "../hooks/useCityFromUrl";
 import { generateSeoMeta } from "../utils/cityUtils";
+import { restaurantPath } from "../utils/restaurantUrls";
 import "../styles/HomePage.css";
 import Logo from "../assets/logo.png"; // Import your logo here
 
@@ -524,7 +525,7 @@ function HomePage() {
                     <div
                       key={result._id}
                       className="result-item"
-                      onClick={() => navigate(`/restaurant/${result._id}`)}
+                      onClick={() => navigate(restaurantPath(result))}
                     >
                       <div className="result-header">
                         <div className="rank-number">#{index + 1}</div>
@@ -622,7 +623,7 @@ function HomePage() {
                         className="restaurant-info clickable"
                         onClick={() =>
                           navigate(
-                            `/restaurant/${item?.foodItem?.restaurant?._id}`
+                            restaurantPath(item?.foodItem?.restaurant)
                           )
                         }
                       >

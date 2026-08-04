@@ -199,16 +199,30 @@ function PlacesAdminPage() {
                     <td>{p.address?.locality}</td>
                     <td>
                       <input
-                        defaultValue={p.cuisineHint || p.sourceCategory || ""}
+                        defaultValue={p.cuisineHint || ""}
+                        placeholder={p.sourceCategory || "cuisine"}
+                        title={
+                          p.sourceCategory
+                            ? `Overture: ${p.sourceCategory} → mapped on promote`
+                            : "Mapped to app cuisine on promote"
+                        }
                         onBlur={(e) => {
-                          if (
-                            e.target.value !==
-                            (p.cuisineHint || p.sourceCategory || "")
-                          ) {
+                          if (e.target.value !== (p.cuisineHint || "")) {
                             savePlace(p._id, { cuisineHint: e.target.value });
                           }
                         }}
                       />
+                      {p.sourceCategory && (
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "#888",
+                            marginTop: 2,
+                          }}
+                        >
+                          {p.sourceCategory}
+                        </div>
+                      )}
                     </td>
                     <td>{p.status}</td>
                     <td>

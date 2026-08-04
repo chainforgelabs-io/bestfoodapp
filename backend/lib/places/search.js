@@ -4,6 +4,7 @@
 
 const Place = require("../../models/Place");
 const Restaurant = require("../../models/Restaurant");
+const { mapOvertureCategory } = require("./categoryMap");
 
 async function searchPlacesAndRestaurants({
   q,
@@ -78,17 +79,22 @@ async function searchPlacesAndRestaurants({
       province: r.address?.province || "",
       website: r.website || null,
       cuisine: r.cuisine || [],
+      type: r.type || null,
       cuisineHint: null,
       gersId: r.gersId || null,
+      slug: r.slug || null,
     });
   }
 
   for (const p of places) {
     if (p.restaurantId && promotedRestaurantIds.has(String(p.restaurantId))) {
-      // Already represented as restaurant
       continue;
     }
     if (p.status === "promoted" && p.restaurantId) continue;
+    const mapped = mapOvertureCategory({
+      sourceCategory: p.sourceCategory,
+      cuisineHint: p.cuisineHint,
+    });
     results.push({
       kind: "place",
       id: p._id,
@@ -99,9 +105,12 @@ async function searchPlacesAndRestaurants({
       city: p.address?.locality || "",
       province: p.address?.region || "",
       website: p.website || null,
-      cuisine: [],
-      cuisineHint: p.cuisineHint || p.sourceCategory || null,
+      cuisine: [mapped.cuisine],
+      type: mapped.type,
+      cuisineHint: mapped.cuisine,
+      sourceCategory: p.sourceCategory || null,
       gersId: p.gersId,
+      slug: null,
     });
   }
 

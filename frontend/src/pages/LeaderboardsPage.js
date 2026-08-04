@@ -7,6 +7,7 @@ import SEO from "../components/SEO";
 import CitySearch from "../components/CitySearch";
 import { useCityFromUrl } from "../hooks/useCityFromUrl";
 import { generateSeoMeta, generateCityUrl } from "../utils/cityUtils";
+import { restaurantKey } from "../utils/restaurantUrls";
 import { Compass, Building2, Store, Crown } from "lucide-react";
 import { getCategoryIcon } from "../utils/categoryIcon";
 import "../styles/LeaderboardsPage.css"; // Import your CSS file for styling
@@ -493,11 +494,13 @@ function LeaderboardsPage() {
     }
   };
 
-  // Navigation handlers
-  const handleRestaurantClick = (restaurantId) => {
-    if (restaurantId) {
-      navigate(`/restaurant/${restaurantId}`);
-    }
+  // Navigation handlers — prefer slug when the object is passed
+  const handleRestaurantClick = (restaurantOrId) => {
+    const key =
+      typeof restaurantOrId === "object" && restaurantOrId !== null
+        ? restaurantKey(restaurantOrId)
+        : restaurantOrId;
+    if (key) navigate(`/restaurant/${key}`);
   };
 
   const handleCityClick = (city) => {
@@ -514,22 +517,10 @@ function LeaderboardsPage() {
   };
 
   const handleFoodItemClick = (item) => {
-    // For food items, navigate to their restaurant
-    let restaurantId = null;
-
-    if (item.foodItem?.restaurant?._id) {
-      restaurantId = item.foodItem.restaurant._id;
-    } else if (item.foodItem?.restaurant) {
-      restaurantId = item.foodItem.restaurant;
-    } else if (item.restaurant?._id) {
-      restaurantId = item.restaurant._id;
-    } else if (item.restaurant) {
-      restaurantId = item.restaurant;
-    }
-
-    if (restaurantId) {
-      navigate(`/restaurant/${restaurantId}`);
-    }
+    const restaurant =
+      item.foodItem?.restaurant || item.restaurant || null;
+    const key = restaurantKey(restaurant);
+    if (key) navigate(`/restaurant/${key}`);
   };
 
   const itemListJsonLd =
@@ -704,7 +695,7 @@ function LeaderboardsPage() {
                   className={`leaderboard-card ${index < 3 ? "top-three" : ""}`}
                   onClick={() => {
                     if (activeCategory === "restaurants") {
-                      handleRestaurantClick(item._id);
+                      handleRestaurantClick(item);
                     } else if (activeCategory === "food-items") {
                       handleFoodItemClick(item);
                     }
@@ -824,14 +815,10 @@ function LeaderboardsPage() {
                               category.type === "restaurants" ||
                               category.type === "cuisine"
                             ) {
-                              handleRestaurantClick(item._id);
+                              handleRestaurantClick(item);
                             } else if (category.type === "overall") {
                               // For overall food items, navigate to restaurant
-                              const restaurantId =
-                                item.restaurant?._id || item.restaurant;
-                              if (restaurantId) {
-                                handleRestaurantClick(restaurantId);
-                              }
+                              handleFoodItemClick(item);
                             }
                           }}
                           style={{ cursor: "pointer" }}

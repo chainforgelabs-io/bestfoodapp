@@ -196,7 +196,7 @@ router.get("/feed", protect, async (req, res) => {
         .limit(limit)
         .populate("userId", "username profilePicture")
         .populate("foodItem", "name category type")
-        .populate("restaurantId", "name")
+        .populate("restaurantId", "name slug")
         .lean(),
       Review.countDocuments(filterQuery),
     ]);

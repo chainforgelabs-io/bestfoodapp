@@ -24,14 +24,43 @@ function SeoDashboardPage() {
       <header className="admin-tools-header">
         <h1>SEO dashboard</h1>
         <p>
-          Indexed/published health, category go-live gate, badge embeds, and
-          import batch status.
+          Ops health for discoverability — not Google Search Console. Use it to
+          spot gaps (missing slugs, failed jobs, batch status). Real rankings
+          still live in GSC / analytics.
         </p>
         <div className="admin-tools-nav">
           <Link to="/admin/places">Places import</Link>
           <Link to="/admin/social">Social</Link>
         </div>
       </header>
+
+      <section className="admin-tools-card">
+        <h2>How to use this page</h2>
+        <ol style={{ margin: 0, paddingLeft: "1.25rem", lineHeight: 1.6 }}>
+          <li>
+            After deploy, confirm <strong>Slug coverage</strong> stays near 100%
+            for restaurants with reviews. If it drops, run{" "}
+            <code>npm run seo:backfill-slugs</code>.
+          </li>
+          <li>
+            Check <strong>Failed SEO jobs</strong> after publishing reviews —
+            should stay at 0 (OG image / slug steps).
+          </li>
+          <li>
+            <strong>Recent place batches</strong> shows import progress
+            (Saskatoon approved, etc.).
+          </li>
+          <li>
+            <strong>Categories live / Badge gate</strong> = when badge embeds
+            are allowed (5+ scored entries in a category).
+          </li>
+          <li>
+            Monthly: note branded-search + AI citation checks outside this UI
+            (per SEO spec). Optional: wire{" "}
+            <code>GOOGLE_SERVICE_ACCOUNT_JSON</code> so audit jobs fill in.
+          </li>
+        </ol>
+      </section>
 
       {error && <p className="admin-tools-message">{error}</p>}
       {!data ? (

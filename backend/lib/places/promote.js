@@ -8,6 +8,7 @@ const Place = require("../../models/Place");
 const Restaurant = require("../../models/Restaurant");
 const Address = require("../../models/Address");
 const { allocateSlug } = require("../seo/slugs");
+const { mapOvertureCategory, DEFAULT_TYPE } = require("./categoryMap");
 
 async function promotePlace(placeId, { userId, cuisine, type } = {}) {
   const place = await Place.findById(placeId);
@@ -16,6 +17,22 @@ async function promotePlace(placeId, { userId, cuisine, type } = {}) {
   if (place.status === "promoted" && place.restaurantId) {
     return { restaurantId: place.restaurantId, alreadyPromoted: true };
   }
+
+  const mapped = mapOvertureCategory({
+    sourceCategory: place.sourceCategory,
+    cuisineHint: place.cuisineHint,
+  });
+
+  let cuisineList;
+  if (Array.isArray(cuisine) && cuisine.length) {
+    cuisineList = cuisine;
+  } else if (cuisine) {
+    cuisineList = [cuisine];
+  } else {
+    cuisineList = [mapped.cuisine];
+  }
+
+  const restaurantType = type || mapped.type || DEFAULT_TYPE;
 
   const run = async (session) => {
     const opts = session ? { session } : {};
@@ -38,14 +55,8 @@ async function promotePlace(placeId, { userId, cuisine, type } = {}) {
         {
           name: place.name,
           address: addressDocs[0]._id,
-          type: type || "Casual Dining",
-          cuisine: Array.isArray(cuisine)
-            ? cuisine
-            : cuisine
-              ? [cuisine]
-              : place.cuisineHint
-                ? [place.cuisineHint]
-                : ["Other"],
+          type: restaurantType,
+          cuisine: cuisineList,
           createdBy: userId,
           slug,
           cityId: place.cityId,
@@ -59,6 +70,9 @@ async function promotePlace(placeId, { userId, cuisine, type } = {}) {
       opts
     );
 
+    if (!place.cuisineHint || place.cuisineHint === place.sourceCategory) {
+      place.cuisineHint = mapped.cuisine;
+    }
     place.status = "promoted";
     place.restaurantId = restaurantDocs[0]._id;
     place.updatedAt = new Date();
@@ -68,6 +82,9 @@ async function promotePlace(placeId, { userId, cuisine, type } = {}) {
       restaurantId: restaurantDocs[0]._id,
       addressId: addressDocs[0]._id,
       alreadyPromoted: false,
+      type: restaurantType,
+      cuisine: cuisineList,
+      slug,
     };
   };
 
@@ -83,7 +100,6 @@ async function promotePlace(placeId, { userId, cuisine, type } = {}) {
     } catch {
       /* ignore */
     }
-    // Standalone Mongo / transaction unsupported — retry without session
     if (
       String(err.message || "").includes("Transaction") ||
       err.code === 20 ||

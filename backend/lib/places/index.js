@@ -8,6 +8,7 @@ const { dedupeBatch } = require("./dedupe");
 const { reconcilePlaces } = require("./reconcile");
 const { promotePlace } = require("./promote");
 const { searchPlacesAndRestaurants } = require("./search");
+const { mapOvertureCategory } = require("./categoryMap");
 
 module.exports = {
   normalizePlace,
@@ -17,4 +18,5 @@ module.exports = {
   reconcilePlaces,
   promotePlace,
   searchPlacesAndRestaurants,
+  mapOvertureCategory,
 };

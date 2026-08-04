@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import axios from "../api/axios";
 import Notification from "./Notification";
 import PhotoPlaceholder from "./PhotoPlaceholder";
+import { restaurantPath } from "../utils/restaurantUrls";
 import "../styles/ReviewDetailModal.css";
 
 function getScoreColor(score) {
@@ -65,6 +66,8 @@ function ReviewDetailModal({
   const photos = Array.isArray(review?.photos) ? review.photos : [];
   const restaurantId =
     review?.restaurant?._id || review?.restaurantId?._id || review?.restaurantId;
+  const restaurantSlug =
+    review?.restaurant?.slug || review?.restaurantId?.slug || null;
   const restaurantName =
     review?.restaurant?.name || review?.restaurantId?.name || "Restaurant";
   const foodName = review?.foodItem?.name || "Food Item";
@@ -349,9 +352,12 @@ function ReviewDetailModal({
             )}
 
             <div className="review-detail-actions">
-              {restaurantId && (
+              {(restaurantSlug || restaurantId) && (
                 <Link
-                  to={`/restaurant/${restaurantId}`}
+                  to={restaurantPath({
+                    slug: restaurantSlug,
+                    _id: restaurantId,
+                  })}
                   className="review-detail-link"
                   onClick={onClose}
                 >

@@ -287,9 +287,12 @@ function ReviewSubmissionPage() {
         const { data } = await axios.post(
           `/places/promote/${restaurant.placeId}`,
           {
-            cuisine: restaurant.cuisineHint
-              ? [restaurant.cuisineHint]
-              : undefined,
+            cuisine: restaurant.cuisine?.length
+              ? restaurant.cuisine
+              : restaurant.cuisineHint
+                ? [restaurant.cuisineHint]
+                : undefined,
+            type: restaurant.type || undefined,
           }
         );
         setFormData({
@@ -389,6 +392,8 @@ function ReviewSubmissionPage() {
               name: p.name,
               displayStreet: p.street,
               address: { street: p.street },
+              cuisine: p.cuisine || [],
+              type: p.type || null,
               cuisineHint: p.cuisineHint,
               website: p.website,
               gersId: p.gersId,

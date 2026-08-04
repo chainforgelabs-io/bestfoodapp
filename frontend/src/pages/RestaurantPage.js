@@ -22,7 +22,17 @@ function RestaurantPage() {
         const restaurantResponse = await axios.get(
           `/restaurants/${restaurantID}`
         );
-        setRestaurant(restaurantResponse.data);
+        const restaurantData = restaurantResponse.data;
+        setRestaurant(restaurantData);
+
+        // Prefer pretty slug URL in the address bar (SPA replace; server also 301s)
+        if (
+          restaurantData?.slug &&
+          restaurantID !== restaurantData.slug &&
+          /^[a-f0-9]{24}$/i.test(restaurantID)
+        ) {
+          navigate(`/restaurant/${restaurantData.slug}`, { replace: true });
+        }
 
         // Fetch food items for this restaurant
         const foodItemsResponse = await axios.get(
@@ -83,7 +93,7 @@ function RestaurantPage() {
     };
 
     fetchRestaurantData();
-  }, [restaurantID]);
+  }, [restaurantID, navigate]);
 
   if (loading) {
     return (
