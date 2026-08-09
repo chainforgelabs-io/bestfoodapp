@@ -19,16 +19,24 @@ function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminTools, setShowAdminTools] = useState(false);
 
   const refreshAdminStatus = useCallback(() => {
     if (!tokenUtils.isAuthenticated()) {
       setIsAdmin(false);
+      setShowAdminTools(false);
       return;
     }
     axios
       .get("/users/profile")
-      .then((res) => setIsAdmin(res.data?.role === "admin"))
-      .catch(() => setIsAdmin(false));
+      .then((res) => {
+        setIsAdmin(res.data?.role === "admin");
+        setShowAdminTools(!!res.data?.showAdminTools);
+      })
+      .catch(() => {
+        setIsAdmin(false);
+        setShowAdminTools(false);
+      });
   }, []);
 
   // Handle scroll effect for navbar background
@@ -168,7 +176,7 @@ function Navbar() {
               Profile
             </NavLink>
           </li>
-          {isAdmin && (
+          {isAdmin && showAdminTools && (
             <>
               <li className="nav-item">
                 <NavLink
@@ -204,6 +212,17 @@ function Navbar() {
                   onClick={closeMenu}
                 >
                   SEO
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  to="/admin/menus"
+                  className={({ isActive }) =>
+                    isActive ? "nav-link active" : "nav-link"
+                  }
+                  onClick={closeMenu}
+                >
+                  Menus
                 </NavLink>
               </li>
             </>

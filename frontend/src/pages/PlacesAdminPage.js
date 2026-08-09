@@ -2,7 +2,27 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "../api/axios";
 import SEO from "../components/SEO";
+import {
+  RESTAURANT_TYPES,
+  CUISINE_TYPES,
+} from "../utils/standardizedOptions";
 import "../styles/AdminTools.css";
+
+function emptyDraft() {
+  return {
+    name: "",
+    type: RESTAURANT_TYPES[0] || "Casual Dining",
+    cuisine: [],
+    website: "",
+    address: {
+      street: "",
+      city: "",
+      province: "",
+      country: "Canada",
+      postalCode: "",
+    },
+  };
+}
 
 function PlacesAdminPage() {
   const [batches, setBatches] = useState([]);
@@ -11,8 +31,11 @@ function PlacesAdminPage() {
   const [places, setPlaces] = useState([]);
   const [batch, setBatch] = useState(null);
   const [queue, setQueue] = useState([]);
+  const [staged, setStaged] = useState([]);
+  const [drafts, setDrafts] = useState({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
 
   const loadBatches = useCallback(async () => {
     const { data } = await axios.get("/places/batches");
@@ -25,11 +48,45 @@ function PlacesAdminPage() {
     setQueue(data.items || []);
   }, []);
 
+  const loadStaged = useCallback(async () => {
+    const { data } = await axios.get("/places/staged");
+    const items = data.items || [];
+    setStaged(items);
+    setDrafts((prev) => {
+      const next = { ...prev };
+      for (const item of items) {
+        const id = item.place._id;
+        if (!next[id]) {
+          const p = item.preview || {};
+          next[id] = {
+            name: p.name || item.place.name || "",
+            type: p.type || RESTAURANT_TYPES[0],
+            cuisine: Array.isArray(p.cuisine) ? [...p.cuisine] : [],
+            website: p.website || "",
+            address: {
+              street: p.address?.street || "",
+              city: p.address?.city || "",
+              province: p.address?.province || "",
+              country: p.address?.country || "Canada",
+              postalCode: p.address?.postalCode || "",
+            },
+          };
+        }
+      }
+      // Drop drafts for places no longer staged
+      const ids = new Set(items.map((i) => String(i.place._id)));
+      for (const key of Object.keys(next)) {
+        if (!ids.has(key)) delete next[key];
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
-    Promise.all([loadBatches(), loadQueue()])
+    Promise.all([loadBatches(), loadQueue(), loadStaged()])
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
-  }, [loadBatches, loadQueue]);
+  }, [loadBatches, loadQueue, loadStaged]);
 
   const openBatch = async (batchId) => {
     setSelectedBatchId(batchId);
@@ -52,7 +109,7 @@ function PlacesAdminPage() {
 
   const approveBatch = async () => {
     await axios.post(`/places/batches/${selectedBatchId}/approve`);
-    setMessage("Batch approved — places are now active for autocomplete");
+    setMessage("Batch approved — remaining places are active for autocomplete");
     await loadBatches();
     await openBatch(selectedBatchId);
   };
@@ -62,6 +119,82 @@ function PlacesAdminPage() {
       `/places/batches/${selectedBatchId}/dismiss/${placeId}`
     );
     setPlaces((prev) => prev.filter((p) => p._id !== placeId));
+    setMessage("Dismissed — removed from batch");
+  };
+
+  const stagePlace = async (placeId) => {
+    setBusyId(placeId);
+    try {
+      await axios.post(
+        `/places/batches/${selectedBatchId}/stage/${placeId}`
+      );
+      setPlaces((prev) => prev.filter((p) => p._id !== placeId));
+      setMessage("Staged for verification");
+      await loadStaged();
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Stage failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const updateDraft = (placeId, patch) => {
+    setDrafts((prev) => ({
+      ...prev,
+      [placeId]: {
+        ...(prev[placeId] || emptyDraft()),
+        ...patch,
+        address: {
+          ...(prev[placeId]?.address || emptyDraft().address),
+          ...(patch.address || {}),
+        },
+      },
+    }));
+  };
+
+  const toggleCuisine = (placeId, cuisine) => {
+    const draft = drafts[placeId] || emptyDraft();
+    const current = draft.cuisine || [];
+    const next = current.includes(cuisine)
+      ? current.filter((c) => c !== cuisine)
+      : [...current, cuisine];
+    updateDraft(placeId, { cuisine: next });
+  };
+
+  const verifyStaged = async (placeId) => {
+    setBusyId(placeId);
+    try {
+      const draft = drafts[placeId] || emptyDraft();
+      if (!draft.name?.trim()) {
+        setMessage("Name is required");
+        return;
+      }
+      if (!draft.cuisine?.length) {
+        setMessage("Select at least one cuisine");
+        return;
+      }
+      await axios.post(`/places/staged/${placeId}/verify`, draft);
+      setMessage("Verified — restaurant added to the system");
+      await loadStaged();
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Verify failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const unstagePlace = async (placeId) => {
+    setBusyId(placeId);
+    try {
+      await axios.post(`/places/staged/${placeId}/unstage`);
+      setMessage("Returned to pending review");
+      await loadStaged();
+      if (selectedBatchId) await openBatch(selectedBatchId);
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Unstage failed");
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const toggleAutopilot = async () => {
@@ -94,12 +227,13 @@ function PlacesAdminPage() {
       <header className="admin-tools-header">
         <h1>Places import</h1>
         <p>
-          Confirm each batch before places enter autocomplete. Edits become
-          learned rules for future imports.
+          Stage places from a batch, edit system categories, then verify to
+          create restaurants. Edits and dismissals become learned rules.
         </p>
         <div className="admin-tools-nav">
           <Link to="/admin/social">Social</Link>
           <Link to="/admin/seo">SEO dashboard</Link>
+          <Link to="/admin/menus">Menus</Link>
         </div>
       </header>
 
@@ -117,6 +251,136 @@ function PlacesAdminPage() {
         <button type="button" className="admin-btn secondary" onClick={runReconcile}>
           Run reconcile vs restaurants
         </button>
+      </section>
+
+      <section className="admin-tools-card">
+        <h2>Staged restaurants ({staged.length})</h2>
+        <p style={{ color: "#666", marginTop: 0 }}>
+          Review mapped categories, edit as needed, then verify to add the
+          restaurant to the system.
+        </p>
+        {staged.length === 0 ? (
+          <p>No staged places. Approve a place from a batch to stage it.</p>
+        ) : (
+          <ul className="admin-staged-list">
+            {staged.map(({ place, preview }) => {
+              const draft = drafts[place._id] || emptyDraft();
+              return (
+                <li key={place._id} className="admin-staged-card">
+                  <div className="admin-staged-meta">
+                    <strong>{place.nameRaw || place.name}</strong>
+                    {preview?.sourceCategory && (
+                      <span className="admin-staged-source">
+                        Overture: {preview.sourceCategory}
+                      </span>
+                    )}
+                  </div>
+                  <div className="admin-staged-fields">
+                    <label>
+                      Name
+                      <input
+                        value={draft.name}
+                        onChange={(e) =>
+                          updateDraft(place._id, { name: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Type
+                      <select
+                        value={draft.type}
+                        onChange={(e) =>
+                          updateDraft(place._id, { type: e.target.value })
+                        }
+                      >
+                        {RESTAURANT_TYPES.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Website
+                      <input
+                        value={draft.website}
+                        onChange={(e) =>
+                          updateDraft(place._id, { website: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Street
+                      <input
+                        value={draft.address.street}
+                        onChange={(e) =>
+                          updateDraft(place._id, {
+                            address: { street: e.target.value },
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      City
+                      <input
+                        value={draft.address.city}
+                        onChange={(e) =>
+                          updateDraft(place._id, {
+                            address: { city: e.target.value },
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Province
+                      <input
+                        value={draft.address.province}
+                        onChange={(e) =>
+                          updateDraft(place._id, {
+                            address: { province: e.target.value },
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+                  <div className="admin-staged-cuisine">
+                    <span className="admin-staged-cuisine-label">Cuisine</span>
+                    <div className="admin-staged-cuisine-chips">
+                      {CUISINE_TYPES.map((c) => (
+                        <label key={c} className="admin-cuisine-chip">
+                          <input
+                            type="checkbox"
+                            checked={(draft.cuisine || []).includes(c)}
+                            onChange={() => toggleCuisine(place._id, c)}
+                          />
+                          {c}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="admin-staged-actions">
+                    <button
+                      type="button"
+                      className="admin-btn"
+                      disabled={busyId === place._id}
+                      onClick={() => verifyStaged(place._id)}
+                    >
+                      Verify &amp; add
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn secondary"
+                      disabled={busyId === place._id}
+                      onClick={() => unstagePlace(place._id)}
+                    >
+                      Unstage
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       <section className="admin-tools-card">
@@ -225,10 +489,19 @@ function PlacesAdminPage() {
                       )}
                     </td>
                     <td>{p.status}</td>
-                    <td>
+                    <td className="admin-places-row-actions">
+                      <button
+                        type="button"
+                        className="admin-btn"
+                        disabled={busyId === p._id}
+                        onClick={() => stagePlace(p._id)}
+                      >
+                        Approve
+                      </button>
                       <button
                         type="button"
                         className="admin-btn danger"
+                        disabled={busyId === p._id}
                         onClick={() => dismissPlace(p._id)}
                       >
                         Dismiss

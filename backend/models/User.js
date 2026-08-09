@@ -34,6 +34,8 @@ const userSchema = new mongoose.Schema({
   },
   occupation: { type: String },
   role: { type: String, enum: ["user", "admin"], default: "user" }, // Add role field
+  // Admin-only: when true, Navbar shows admin tool links (default off)
+  showAdminTools: { type: Boolean, default: false },
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   points: { type: Number, default: 0 },

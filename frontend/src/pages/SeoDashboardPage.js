@@ -31,6 +31,7 @@ function SeoDashboardPage() {
         <div className="admin-tools-nav">
           <Link to="/admin/places">Places import</Link>
           <Link to="/admin/social">Social</Link>
+          <Link to="/admin/menus">Menus</Link>
         </div>
       </header>
 

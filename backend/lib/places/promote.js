@@ -1,5 +1,5 @@
 /**
- * Promote a place → restaurant on first published review.
+ * Promote a place → restaurant on first published review or admin verify.
  * Idempotent. Uses a transaction when supported; falls back otherwise.
  */
 
@@ -10,7 +10,19 @@ const Address = require("../../models/Address");
 const { allocateSlug } = require("../seo/slugs");
 const { mapOvertureCategory, DEFAULT_TYPE } = require("./categoryMap");
 
-async function promotePlace(placeId, { userId, cuisine, type } = {}) {
+/**
+ * @param {string} placeId
+ * @param {object} opts
+ * @param {string} opts.userId
+ * @param {string|string[]} [opts.cuisine]
+ * @param {string} [opts.type]
+ * @param {string} [opts.name]
+ * @param {string} [opts.website]
+ * @param {object} [opts.address] - { street, city, province, country, postalCode }
+ */
+async function promotePlace(placeId, opts = {}) {
+  const { userId, cuisine, type, name, website, address: addressOverride } =
+    opts;
   const place = await Place.findById(placeId);
   if (!place) throw new Error("place_not_found");
 
@@ -33,27 +45,44 @@ async function promotePlace(placeId, { userId, cuisine, type } = {}) {
   }
 
   const restaurantType = type || mapped.type || DEFAULT_TYPE;
+  const restaurantName = (name && String(name).trim()) || place.name;
+  const restaurantWebsite =
+    website !== undefined ? website || null : place.website;
+
+  const street =
+    addressOverride?.street ||
+    place.address?.street ||
+    place.address?.freeform ||
+    "Unknown";
+  const city =
+    addressOverride?.city || place.address?.locality || "Unknown";
+  const province =
+    addressOverride?.province || place.address?.region || "";
+  const country =
+    addressOverride?.country || place.address?.country || "Canada";
+  const postalCode =
+    addressOverride?.postalCode || place.address?.postcode || "";
 
   const run = async (session) => {
-    const opts = session ? { session } : {};
+    const optsSession = session ? { session } : {};
     const addressDocs = await Address.create(
       [
         {
-          street: place.address?.street || place.address?.freeform || "Unknown",
-          city: place.address?.locality || "Unknown",
-          province: place.address?.region || "",
-          country: place.address?.country || "Canada",
-          postalCode: place.address?.postcode || "",
+          street,
+          city,
+          province,
+          country,
+          postalCode,
         },
       ],
-      opts
+      optsSession
     );
 
-    const slug = await allocateSlug(Restaurant, place.name);
+    const slug = await allocateSlug(Restaurant, restaurantName);
     const restaurantDocs = await Restaurant.create(
       [
         {
-          name: place.name,
+          name: restaurantName,
           address: addressDocs[0]._id,
           type: restaurantType,
           cuisine: cuisineList,
@@ -62,21 +91,24 @@ async function promotePlace(placeId, { userId, cuisine, type } = {}) {
           cityId: place.cityId,
           gersId: place.gersId,
           brandName: place.brandName || null,
-          website: place.website,
+          website: restaurantWebsite,
           location: place.location,
           countryCode: "ca",
         },
       ],
-      opts
+      optsSession
     );
 
     if (!place.cuisineHint || place.cuisineHint === place.sourceCategory) {
-      place.cuisineHint = mapped.cuisine;
+      place.cuisineHint = cuisineList[0] || mapped.cuisine;
+    }
+    if (name && String(name).trim() && String(name).trim() !== place.name) {
+      place.name = String(name).trim();
     }
     place.status = "promoted";
     place.restaurantId = restaurantDocs[0]._id;
     place.updatedAt = new Date();
-    await place.save(opts);
+    await place.save(optsSession);
 
     return {
       restaurantId: restaurantDocs[0]._id,
@@ -85,6 +117,7 @@ async function promotePlace(placeId, { userId, cuisine, type } = {}) {
       type: restaurantType,
       cuisine: cuisineList,
       slug,
+      name: restaurantName,
     };
   };
 
@@ -113,6 +146,29 @@ async function promotePlace(placeId, { userId, cuisine, type } = {}) {
   }
 }
 
+function buildStagePreview(place) {
+  const mapped = mapOvertureCategory({
+    sourceCategory: place.sourceCategory,
+    cuisineHint: place.cuisineHint,
+  });
+  return {
+    name: place.name,
+    type: mapped.type || DEFAULT_TYPE,
+    cuisine: [mapped.cuisine],
+    website: place.website || "",
+    address: {
+      street: place.address?.street || place.address?.freeform || "",
+      city: place.address?.locality || "",
+      province: place.address?.region || "",
+      country: place.address?.country || "Canada",
+      postalCode: place.address?.postcode || "",
+    },
+    sourceCategory: place.sourceCategory || null,
+    cuisineHint: place.cuisineHint || null,
+  };
+}
+
 module.exports = {
   promotePlace,
+  buildStagePreview,
 };

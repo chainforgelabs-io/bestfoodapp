@@ -1,0 +1,208 @@
+.menu-import-page .menu-import-label {
+  display: block;
+  margin: 14px 0 6px;
+  font-weight: 600;
+  color: #444;
+}
+
+.menu-import-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.95rem;
+}
+
+.menu-import-error {
+  color: #b33;
+  font-weight: 600;
+}
+
+.menu-import-file-hint {
+  margin: 6px 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.menu-import-suggestions {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 1px solid #e8e0f0;
+  border-radius: 10px;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.menu-import-suggestions button {
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: none;
+  border-bottom: 1px solid #f0eaf7;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.menu-import-suggestions button:hover {
+  background: #f8f4fc;
+}
+
+.menu-import-queue-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.menu-import-queue-header h2 {
+  margin: 0;
+}
+
+.menu-import-queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-import-change {
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+
+.menu-import-change-top {
+  margin-bottom: 8px;
+}
+
+.menu-import-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.menu-import-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.menu-import-badge--add {
+  background: #e7f6ec;
+  color: #1a7a3c;
+}
+
+.menu-import-badge--update {
+  background: #fff4e5;
+  color: #9a5b00;
+}
+
+.menu-import-existing {
+  margin: 0 0 10px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.menu-import-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.menu-import-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.menu-import-price-changed {
+  border-color: #e0a060;
+  background: #fff8ef;
+}
+
+.menu-import-actions {
+  margin-top: 12px;
+}
+
+.menu-import-todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-import-todo-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #fafafa;
+}
+
+.menu-import-todo-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.menu-import-todo-state {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b4a99;
+}
+
+.menu-import-todo-meta {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.menu-import-siblings {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #e8e0f0;
+  border-radius: 10px;
+  background: #faf8fd;
+}
+
+.menu-import-siblings-title {
+  margin: 0 0 10px;
+  color: #444;
+  font-size: 0.95rem;
+}
+
+.menu-import-siblings-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.menu-import-siblings-list li {
+  margin-bottom: 6px;
+}
+
+.menu-import-siblings-list label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #333;
+}

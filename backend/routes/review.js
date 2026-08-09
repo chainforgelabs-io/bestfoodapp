@@ -5,7 +5,7 @@ const FoodItem = require("../models/FoodItem");
 const User = require("../models/User");
 const Receipt = require("../models/Receipt");
 const mongoose = require("mongoose");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, optionalAuth } = require("../middleware/authMiddleware");
 const moment = require("moment");
 
 // Function to update food item scores
@@ -169,7 +169,8 @@ const canModifyReview = (review, user) => {
 };
 
 // GET /api/reviews/feed — paginated platform-wide feed (most recent first)
-router.get("/feed", protect, async (req, res) => {
+// Public read; like/follow personalization when authenticated.
+router.get("/feed", optionalAuth, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 50));
@@ -182,12 +183,14 @@ router.get("/feed", protect, async (req, res) => {
         ? { "photos.0": { $exists: true } }
         : {};
 
-    const currentUser = await User.findById(req.user._id)
-      .select("following")
-      .lean();
-    const followingIds = (currentUser?.following || []).map((id) =>
-      id.toString()
-    );
+    let followingIds = [];
+    const viewerId = req.user?._id?.toString() || null;
+    if (viewerId) {
+      const currentUser = await User.findById(req.user._id)
+        .select("following")
+        .lean();
+      followingIds = (currentUser?.following || []).map((id) => id.toString());
+    }
 
     const [items, total] = await Promise.all([
       Review.find(filterQuery)
@@ -203,10 +206,10 @@ router.get("/feed", protect, async (req, res) => {
 
     const enriched = items.map((review) => {
       const authorId = review.userId?._id?.toString() || review.userId?.toString();
-      const likedByMe = (review.likes || []).some(
-        (uid) => uid.toString() === req.user._id.toString()
-      );
-      const isOwnPost = authorId === req.user._id.toString();
+      const likedByMe = viewerId
+        ? (review.likes || []).some((uid) => uid.toString() === viewerId)
+        : false;
+      const isOwnPost = viewerId ? authorId === viewerId : false;
       return {
         ...review,
         author: review.userId,

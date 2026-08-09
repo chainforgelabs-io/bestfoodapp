@@ -102,6 +102,9 @@ app.use("/api/places", placesRoutes);
 const seoAdminRoutes = require("./routes/seoAdmin");
 app.use("/api/seo", seoAdminRoutes);
 
+const menuImportRoutes = require("./routes/menuImport");
+app.use("/api/menu-imports", menuImportRoutes);
+
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;
 mongoose

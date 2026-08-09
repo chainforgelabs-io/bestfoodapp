@@ -6,7 +6,10 @@ const FoodItem = require("../models/FoodItem");
 const Restaurant = require("../models/Restaurant");
 const Review = require("../models/Review");
 const Address = require("../models/Address");
-const { protect } = require("../middleware/authMiddleware"); // Import the protect middleware
+const {
+  protect,
+  optionalAuth,
+} = require("../middleware/authMiddleware"); // Import auth middleware
 const { sendPasswordResetEmail } = require("../utils/emailService");
 const crypto = require("crypto");
 
@@ -219,10 +222,29 @@ router.get("/profile", protect, (req, res) => {
 // Update User Profile (Protected: Only the authenticated user can update their own profile)
 router.put("/profile", protect, async (req, res) => {
   try {
-    const updatedData = {
-      ...req.body, // Make sure only allowed fields are updated
-      updatedAt: Date.now(),
-    };
+    const allowed = [
+      "bio",
+      "firstName",
+      "lastName",
+      "profilePicture",
+      "location",
+      "showAdminTools",
+      "sex",
+      "incomeRange",
+      "maritalStatus",
+      "occupation",
+    ];
+    const updatedData = { updatedAt: Date.now() };
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updatedData[key] = req.body[key];
+    }
+    // Only admins may toggle showAdminTools
+    if (
+      updatedData.showAdminTools !== undefined &&
+      req.user.role !== "admin"
+    ) {
+      delete updatedData.showAdminTools;
+    }
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
@@ -240,6 +262,32 @@ router.put("/profile", protect, async (req, res) => {
   }
 });
 
+// GET /users/search?q= — public username / name search (before /:id)
+router.get("/search", optionalAuth, async (req, res) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    if (q.length < 1) {
+      return res.json({ users: [] });
+    }
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(escaped, "i");
+    const users = await User.find({
+      $or: [
+        { username: regex },
+        { firstName: regex },
+        { lastName: regex },
+      ],
+    })
+      .select("_id username profilePicture firstName lastName")
+      .limit(20)
+      .lean();
+    res.json({ users });
+  } catch (err) {
+    console.error("users search", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Delete User Account
 router.delete("/profile", protect, async (req, res) => {
   try {
@@ -251,8 +299,8 @@ router.delete("/profile", protect, async (req, res) => {
   }
 });
 
-// Get user details, reviews, followers, and following
-router.get("/:id", protect, async (req, res) => {
+// Get user details, reviews, followers, and following (public read)
+router.get("/:id", optionalAuth, async (req, res) => {
   try {
     // Find user by ID and populate followers and following before executing the query
     const user = await User.findById(req.params.id)
@@ -280,8 +328,8 @@ router.get("/:id", protect, async (req, res) => {
   }
 });
 
-// Get all reviews by a specific user
-router.get("/:id/reviews", protect, async (req, res) => {
+// Get all reviews by a specific user (public read)
+router.get("/:id/reviews", optionalAuth, async (req, res) => {
   try {
     const reviews = await Review.find({ user: req.params.id });
 
@@ -298,8 +346,8 @@ router.get("/:id/reviews", protect, async (req, res) => {
   }
 });
 
-// GET /users/:id/stats — review aggregates for profile header
-router.get("/:id/stats", protect, async (req, res) => {
+// GET /users/:id/stats — review aggregates for profile header (public read)
+router.get("/:id/stats", optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = new mongoose.Types.ObjectId(id);
@@ -356,7 +404,7 @@ router.get("/:id/stats", protect, async (req, res) => {
 
 // Paginated & sortable user reviews
 // GET /users/:id/reviews-paginated?page=1&limit=12&sort=date|score|photos&order=desc|asc
-router.get("/:id/reviews-paginated", protect, async (req, res) => {
+router.get("/:id/reviews-paginated", optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const page = Math.max(parseInt(req.query.page || "1", 10), 1);
@@ -429,8 +477,8 @@ router.get("/:id/reviews-paginated", protect, async (req, res) => {
   }
 });
 
-// Get all followers of a specific user
-router.get("/:id/followers", protect, async (req, res) => {
+// Get all followers of a specific user (public read)
+router.get("/:id/followers", optionalAuth, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate(
       "followers",
@@ -448,8 +496,8 @@ router.get("/:id/followers", protect, async (req, res) => {
   }
 });
 
-// Get all users that a specific user is following
-router.get("/:id/following", protect, async (req, res) => {
+// Get all users that a specific user is following (public read)
+router.get("/:id/following", optionalAuth, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate(
       "following",

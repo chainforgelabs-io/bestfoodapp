@@ -53,6 +53,7 @@ const placeSchema = new mongoose.Schema({
       "active",
       "low_confidence",
       "suspect_duplicate",
+      "staged",
       "promoted",
       "dismissed",
       "stale",

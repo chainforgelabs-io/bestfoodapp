@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Images } from "lucide-react";
 import axios from "../api/axios";
 import tokenUtils from "../utils/auth";
@@ -10,6 +10,7 @@ import "../styles/FeedPage.css";
 const PAGE_SIZE = 50;
 
 function FeedPage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -17,9 +18,13 @@ function FeedPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [selfId, setSelfId] = useState(null);
   const [filterMode, setFilterMode] = useState("photos"); // "photos" | "all"
+  const isLoggedIn = tokenUtils.isAuthenticated();
 
   useEffect(() => {
-    if (!tokenUtils.isAuthenticated()) return;
+    if (!tokenUtils.isAuthenticated()) {
+      setSelfId(null);
+      return;
+    }
     try {
       const token = tokenUtils.getToken();
       const payload = JSON.parse(atob(token.split(".")[1]));
@@ -53,11 +58,18 @@ function FeedPage() {
   }, [filterMode]);
 
   useEffect(() => {
-    if (!tokenUtils.isAuthenticated()) return;
     loadFeed(1, true);
   }, [loadFeed]);
 
+  const requireLogin = () => {
+    navigate("/login");
+  };
+
   const handleLike = async (review) => {
+    if (!tokenUtils.isAuthenticated()) {
+      requireLogin();
+      return;
+    }
     const liked = review.likedByMe;
     const endpoint = liked ? `/reviews/${review._id}/unlike` : `/reviews/${review._id}/like`;
     try {
@@ -79,6 +91,10 @@ function FeedPage() {
   };
 
   const handleFollow = async (authorId, currentlyFollowing) => {
+    if (!tokenUtils.isAuthenticated()) {
+      requireLogin();
+      return;
+    }
     const endpoint = currentlyFollowing
       ? `/users/${authorId}/unfollow`
       : `/users/${authorId}/follow`;
@@ -112,17 +128,6 @@ function FeedPage() {
     });
   };
 
-  if (!tokenUtils.isAuthenticated()) {
-    return (
-      <div className="feed-page">
-        <SEO title="Feed | Best Food App" description="Community food reviews" />
-        <p className="feed-login-prompt">
-          Please <Link to="/login">log in</Link> to see the community feed.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="feed-page">
       <SEO
@@ -132,6 +137,11 @@ function FeedPage() {
       <header className="feed-header">
         <h1>Community Feed</h1>
         <p>Recent reviews from everyone on Best Food App</p>
+        {!isLoggedIn && (
+          <p className="feed-login-prompt" style={{ marginTop: 8 }}>
+            <Link to="/login">Log in</Link> to like posts and follow reviewers.
+          </p>
+        )}
       </header>
 
       <div className="feed-filter-toggle" role="tablist">

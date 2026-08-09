@@ -24,6 +24,7 @@ import MapRatingsPage from "./pages/MapRatingsPage";
 import SocialUploadPage from "./pages/SocialUploadPage";
 import PlacesAdminPage from "./pages/PlacesAdminPage";
 import SeoDashboardPage from "./pages/SeoDashboardPage";
+import MenuImportAdminPage from "./pages/MenuImportAdminPage";
 import BadgePage from "./pages/BadgePage";
 import AdminRoute from "./components/AdminRoute";
 import SiteFooter from "./components/SiteFooter";
@@ -80,14 +81,7 @@ function App() {
                 }
               />
               <Route path="/feed" element={<FeedPage />} />
-              <Route
-                path="/users/:id"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/users/:id" element={<ProfilePage />} />
               <Route path="/leaderboards" element={<LeaderboardsPage />} />
               <Route path="/map" element={<MapRatingsPage />} />
               <Route
@@ -146,6 +140,14 @@ function App() {
                 element={
                   <AdminRoute>
                     <SeoDashboardPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/menus"
+                element={
+                  <AdminRoute>
+                    <MenuImportAdminPage />
                   </AdminRoute>
                 }
               />

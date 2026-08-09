@@ -13,6 +13,7 @@ const {
   searchPlacesAndRestaurants,
   reconcilePlaces,
   promotePlace,
+  buildStagePreview,
 } = require("../lib/places");
 
 const router = express.Router();
@@ -85,7 +86,11 @@ router.get("/batches/:batchId", protect, admin, async (req, res) => {
       batchId: req.params.batchId,
     }).lean();
     if (!batch) return res.status(404).json({ message: "Batch not found" });
-    const places = await Place.find({ batchId: req.params.batchId })
+    // Hide dismissed (and already staged/promoted) from the batch review table
+    const places = await Place.find({
+      batchId: req.params.batchId,
+      status: { $nin: ["dismissed", "staged", "promoted"] },
+    })
       .sort({ name: 1 })
       .limit(2000)
       .lean();
@@ -93,6 +98,172 @@ router.get("/batches/:batchId", protect, admin, async (req, res) => {
   } catch (err) {
     console.error("places batch detail", err);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /places/staged — places awaiting verify → restaurant
+router.get("/staged", protect, admin, async (req, res) => {
+  try {
+    const places = await Place.find({ status: "staged" })
+      .sort({ updatedAt: -1 })
+      .limit(500)
+      .lean();
+    const items = places.map((p) => ({
+      place: p,
+      preview: buildStagePreview(p),
+    }));
+    res.json({ items });
+  } catch (err) {
+    console.error("places staged list", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /places/batches/:batchId/stage/:placeId
+router.post(
+  "/batches/:batchId/stage/:placeId",
+  protect,
+  admin,
+  async (req, res) => {
+    try {
+      const place = await Place.findOne({
+        _id: req.params.placeId,
+        batchId: req.params.batchId,
+      });
+      if (!place) return res.status(404).json({ message: "Place not found" });
+      if (place.status === "dismissed") {
+        return res.status(400).json({ message: "Place was dismissed" });
+      }
+      if (place.status === "promoted") {
+        return res.status(400).json({ message: "Place already promoted" });
+      }
+
+      place.status = "staged";
+      place.updatedAt = new Date();
+      await place.save();
+
+      res.json({
+        place,
+        preview: buildStagePreview(place),
+      });
+    } catch (err) {
+      console.error("places stage", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+// POST /places/staged/:placeId/unstage
+router.post("/staged/:placeId/unstage", protect, admin, async (req, res) => {
+  try {
+    const place = await Place.findById(req.params.placeId);
+    if (!place) return res.status(404).json({ message: "Place not found" });
+    if (place.status !== "staged") {
+      return res.status(400).json({ message: "Place is not staged" });
+    }
+    place.status = "pending_review";
+    place.updatedAt = new Date();
+    await place.save();
+    res.json({ place });
+  } catch (err) {
+    console.error("places unstage", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /places/staged/:placeId/verify — create restaurant from staged place
+router.post("/staged/:placeId/verify", protect, admin, async (req, res) => {
+  try {
+    const place = await Place.findById(req.params.placeId);
+    if (!place) return res.status(404).json({ message: "Place not found" });
+    if (place.status !== "staged") {
+      return res.status(400).json({ message: "Place is not staged" });
+    }
+
+    const preview = buildStagePreview(place);
+    const body = req.body || {};
+    const name = body.name != null ? String(body.name).trim() : preview.name;
+    const type = body.type || preview.type;
+    let cuisine = body.cuisine;
+    if (typeof cuisine === "string") cuisine = [cuisine];
+    if (!Array.isArray(cuisine) || !cuisine.length) cuisine = preview.cuisine;
+    const website =
+      body.website !== undefined ? String(body.website || "").trim() : preview.website;
+    const address = {
+      street: body.address?.street ?? preview.address.street,
+      city: body.address?.city ?? preview.address.city,
+      province: body.address?.province ?? preview.address.province,
+      country: body.address?.country ?? preview.address.country,
+      postalCode: body.address?.postalCode ?? preview.address.postalCode,
+    };
+
+    // Record learning corrections for fields the admin changed vs source
+    if (name && name !== place.nameRaw && name !== place.name) {
+      await PlaceCorrection.create({
+        ruleType: "name_normalize",
+        match: { nameRaw: place.nameRaw, nameNormalized: place.name },
+        action: { name },
+        batchId: place.batchId,
+        createdBy: req.user._id,
+      });
+    }
+    const cuisinePrimary = cuisine[0];
+    if (
+      cuisinePrimary &&
+      place.sourceCategory &&
+      cuisinePrimary !== place.cuisineHint
+    ) {
+      await PlaceCorrection.create({
+        ruleType: "cuisine_hint",
+        match: { sourceCategory: place.sourceCategory },
+        action: { cuisineHint: cuisinePrimary },
+        batchId: place.batchId,
+        createdBy: req.user._id,
+      });
+      place.cuisineHint = cuisinePrimary;
+    }
+    if (type && type !== preview.type) {
+      await PlaceCorrection.create({
+        ruleType: "field_override",
+        match: {
+          sourceCategory: place.sourceCategory,
+          nameRaw: place.nameRaw,
+        },
+        action: { field: "type", type },
+        batchId: place.batchId,
+        createdBy: req.user._id,
+      });
+    }
+    if (website !== (place.website || "")) {
+      await PlaceCorrection.create({
+        ruleType: "field_override",
+        match: {
+          sourceCategory: place.sourceCategory,
+          nameRaw: place.nameRaw,
+          gersId: place.gersId,
+        },
+        action: { field: "website", website },
+        batchId: place.batchId,
+        createdBy: req.user._id,
+      });
+    }
+
+    await place.save();
+
+    const result = await promotePlace(place._id, {
+      userId: req.user._id,
+      name,
+      type,
+      cuisine,
+      website,
+      address,
+    });
+
+    const updated = await Place.findById(place._id).lean();
+    res.json({ place: updated, restaurant: result });
+  } catch (err) {
+    console.error("places verify", err);
+    res.status(400).json({ message: err.message || "Verify failed" });
   }
 });
 

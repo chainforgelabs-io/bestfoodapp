@@ -22,7 +22,8 @@ const s3 = new S3Client({ region: REGION });
 // POST /api/uploads/photos/presign
 // Body: { files: [{ fileName, contentType }], prefix? }
 // Returns: { uploads: [{ key, url, uploadUrl, contentType, imageBucket }] }
-// For prefix "receipts", objects are private (no public ACL) and use S3_RECEIPTS_BUCKET when set.
+// For prefix "receipts" or "menus", objects are private (no public ACL) and use
+// S3_RECEIPTS_BUCKET when set (menus share the private bucket).
 router.post("/photos/presign", protect, async (req, res) => {
   try {
     const { files = [], prefix = "reviews" } = req.body || {};
@@ -30,8 +31,8 @@ router.post("/photos/presign", protect, async (req, res) => {
       return res.status(400).json({ message: "files array required" });
     }
 
-    const isReceipts = prefix === "receipts";
-    const targetBucket = isReceipts ? RECEIPTS_BUCKET : BUCKET;
+    const isPrivate = prefix === "receipts" || prefix === "menus";
+    const targetBucket = isPrivate ? RECEIPTS_BUCKET : BUCKET;
 
     if (!targetBucket) {
       return res
@@ -55,14 +56,14 @@ router.post("/photos/presign", protect, async (req, res) => {
           Key: key,
           ContentType: contentType,
         };
-        if (!isReceipts) {
+        if (!isPrivate) {
           putParams.ACL = "public-read";
         }
         const command = new PutObjectCommand(putParams);
         const uploadUrl = await getSignedUrl(s3, command, {
           expiresIn: 60 * 5,
         });
-        const publicUrl = isReceipts
+        const publicUrl = isPrivate
           ? null
           : CDN_BASE_URL
             ? `${CDN_BASE_URL}/${key}`

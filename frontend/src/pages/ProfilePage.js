@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import axios from "../api/axios";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import tokenUtils from "../utils/auth";
+import tokenUtils, { AUTH_CHANGED_EVENT } from "../utils/auth";
 import { User } from "lucide-react";
 import PhotoPlaceholder from "../components/PhotoPlaceholder";
 import ReviewDetailModal from "../components/ReviewDetailModal";
@@ -14,6 +14,7 @@ function ProfilePage() {
   const [selfId, setSelfId] = useState(null);
   const profileId = routeId || selfId;
   const isOwnProfile = !routeId || (selfId && routeId === selfId);
+  const isLoggedIn = !!selfId;
 
   const [user, setUser] = useState({});
   const [reviews, setReviews] = useState([]);
@@ -58,11 +59,21 @@ function ProfilePage() {
     country: "",
   });
   const [editSaving, setEditSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [showAdminTools, setShowAdminTools] = useState(false);
+  const [adminToggleSaving, setAdminToggleSaving] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!tokenUtils.isAuthenticated()) {
+    // Own profile (/profile) requires login; /users/:id is public.
+    if (!routeId && !tokenUtils.isAuthenticated()) {
       navigate("/login");
+      return;
+    }
+    if (!tokenUtils.isAuthenticated()) {
+      setSelfId(null);
       return;
     }
     const token = tokenUtils.getToken();
@@ -71,9 +82,10 @@ function ProfilePage() {
       setSelfId(decoded.id);
     } catch {
       tokenUtils.clearToken();
-      navigate("/login");
+      if (!routeId) navigate("/login");
+      else setSelfId(null);
     }
-  }, [navigate]);
+  }, [navigate, routeId]);
 
   const loadUserProfile = useCallback(
     async (id) => {
@@ -84,6 +96,9 @@ function ProfilePage() {
         setUser(userData);
         setFollowerCount(userData.followers?.length || 0);
         setFollowingCount(userData.following?.length || 0);
+        if (selfId && id === selfId) {
+          setShowAdminTools(!!userData.showAdminTools);
+        }
 
         if (selfId && id !== selfId) {
           const meResponse = await axios.get(`/users/${selfId}`);
@@ -93,7 +108,7 @@ function ProfilePage() {
           );
         }
       } catch {
-        if (!routeId) {
+        if (!routeId && tokenUtils.isAuthenticated()) {
           tokenUtils.clearToken();
           navigate("/login");
         }
@@ -101,6 +116,44 @@ function ProfilePage() {
     },
     [navigate, routeId, selfId]
   );
+
+  useEffect(() => {
+    if (searchQuery.trim().length < 1) {
+      setSearchResults([]);
+      return;
+    }
+    const handle = setTimeout(async () => {
+      try {
+        const { data } = await axios.get("/users/search", {
+          params: { q: searchQuery.trim() },
+        });
+        setSearchResults(data.users || []);
+        setSearchOpen(true);
+      } catch (e) {
+        console.error("User search failed", e);
+        setSearchResults([]);
+      }
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [searchQuery]);
+
+  const toggleAdminTools = async () => {
+    if (!isOwnProfile || user.role !== "admin") return;
+    const next = !showAdminTools;
+    setAdminToggleSaving(true);
+    try {
+      const { data } = await axios.put("/users/profile", {
+        showAdminTools: next,
+      });
+      setShowAdminTools(!!data.showAdminTools);
+      setUser(data);
+      window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+    } catch (e) {
+      console.error("Admin tools toggle failed", e);
+    } finally {
+      setAdminToggleSaving(false);
+    }
+  };
 
   const loadStats = useCallback(async (id) => {
     if (!id) return;
@@ -174,6 +227,10 @@ function ProfilePage() {
 
   const handleFollowToggle = async () => {
     if (!profileId || isOwnProfile) return;
+    if (!tokenUtils.isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
     try {
       if (isFollowing) {
         await axios.post(`/users/${profileId}/unfollow`);
@@ -386,6 +443,57 @@ function ProfilePage() {
         noindex={true}
       />
       <div className="profile-layout">
+        <div className="profile-user-search">
+          <label htmlFor="profile-user-search-input" className="profile-user-search-label">
+            Find users
+          </label>
+          <input
+            id="profile-user-search-input"
+            type="search"
+            className="profile-user-search-input"
+            placeholder="Search by username or name…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => searchResults.length > 0 && setSearchOpen(true)}
+            onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+            autoComplete="off"
+          />
+          {searchOpen && searchResults.length > 0 && (
+            <ul className="profile-user-search-results">
+              {searchResults.map((u) => (
+                <li key={u._id}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSearchResults([]);
+                      setSearchOpen(false);
+                      navigate(`/users/${u._id}`);
+                    }}
+                  >
+                    {u.profilePicture ? (
+                      <img src={u.profilePicture} alt="" />
+                    ) : (
+                      <span className="profile-search-avatar-fallback">
+                        {u.username?.[0]?.toUpperCase() || "?"}
+                      </span>
+                    )}
+                    <span>
+                      <strong>{u.username}</strong>
+                      {(u.firstName || u.lastName) && (
+                        <span className="profile-search-fullname">
+                          {[u.firstName, u.lastName].filter(Boolean).join(" ")}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <div className="profile-header-card">
           <div className="profile-header-top">
             <div className="profile-avatar-wrap">
@@ -427,14 +535,27 @@ function ProfilePage() {
                   {followingCount} following
                 </button>
               </p>
-              {isOwnProfile ? (
-                <button
-                  type="button"
-                  className="profile-edit-btn"
-                  onClick={openEditProfile}
-                >
-                  Edit profile
-                </button>
+              {isOwnProfile && isLoggedIn ? (
+                <>
+                  <button
+                    type="button"
+                    className="profile-edit-btn"
+                    onClick={openEditProfile}
+                  >
+                    Edit profile
+                  </button>
+                  {user.role === "admin" && (
+                    <label className="profile-admin-toggle">
+                      <input
+                        type="checkbox"
+                        checked={showAdminTools}
+                        disabled={adminToggleSaving}
+                        onChange={toggleAdminTools}
+                      />
+                      Show admin tools in navigation
+                    </label>
+                  )}
+                </>
               ) : (
                 <button
                   type="button"
