@@ -169,6 +169,21 @@
   background: #fafafa;
 }
 
+.admin-staged-card--error {
+  border-color: #e0a0a0;
+  box-shadow: 0 0 0 2px rgba(179, 51, 51, 0.12);
+}
+
+.admin-staged-card-error {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fdecea;
+  color: #b33;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 .admin-staged-meta {
   display: flex;
   flex-wrap: wrap;

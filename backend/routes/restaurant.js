@@ -76,18 +76,29 @@ router.get("/search", async (req, res) => {
   const { city, province, country } = req.query;
 
   try {
-    // Trust Google Maps API data - no hardcoded mappings needed
-    // Handle both 'province' and 'state' fields for database compatibility
+    const {
+      countrySearchPattern,
+      provinceSearchPattern,
+    } = require("../lib/places/addressNormalize");
+
+    const countryPattern = countrySearchPattern(country);
+    const provincePattern = provinceSearchPattern(province);
+    const cityExact = new RegExp(
+      `^${String(city || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+      "i"
+    );
+
+    // Match Google-style names and Overture codes (CA/Canada, SK/Saskatchewan)
     const addresses = await Address.find({
       $and: [
-        { city: new RegExp(`^${city}$`, "i") }, // Exact city match (case-insensitive)
+        { city: cityExact },
         {
           $or: [
-            { province: new RegExp(`^${province}$`, "i") }, // Check province field
-            { state: new RegExp(`^${province}$`, "i") }, // Check state field
+            { province: new RegExp(provincePattern || `^${province}$`, "i") },
+            { state: new RegExp(provincePattern || `^${province}$`, "i") },
           ],
         },
-        { country: new RegExp(`^${country}$`, "i") }, // Exact country match
+        { country: new RegExp(countryPattern, "i") },
       ],
     });
 
@@ -103,11 +114,11 @@ router.get("/search", async (req, res) => {
           { city: new RegExp(city, "i") }, // Partial city match
           {
             $or: [
-              { province: new RegExp(province, "i") }, // Partial province match
-              { state: new RegExp(province, "i") }, // Partial state match
+              { province: new RegExp(provincePattern || province, "i") },
+              { state: new RegExp(provincePattern || province, "i") },
             ],
           },
-          { country: new RegExp(country, "i") }, // Partial country match
+          { country: new RegExp(countryPattern, "i") },
         ],
       });
 

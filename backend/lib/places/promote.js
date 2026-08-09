@@ -9,6 +9,7 @@ const Restaurant = require("../../models/Restaurant");
 const Address = require("../../models/Address");
 const { allocateSlug } = require("../seo/slugs");
 const { mapOvertureCategory, DEFAULT_TYPE } = require("./categoryMap");
+const { normalizeAddressFields } = require("./addressNormalize");
 
 /**
  * @param {string} placeId
@@ -49,32 +50,22 @@ async function promotePlace(placeId, opts = {}) {
   const restaurantWebsite =
     website !== undefined ? website || null : place.website;
 
-  const street =
-    addressOverride?.street ||
-    place.address?.street ||
-    place.address?.freeform ||
-    "Unknown";
-  const city =
-    addressOverride?.city || place.address?.locality || "Unknown";
-  const province =
-    addressOverride?.province || place.address?.region || "";
-  const country =
-    addressOverride?.country || place.address?.country || "Canada";
-  const postalCode =
-    addressOverride?.postalCode || place.address?.postcode || "";
+  const normalizedAddress = normalizeAddressFields({
+    street:
+      addressOverride?.street ||
+      place.address?.street ||
+      place.address?.freeform ||
+      "Unknown",
+    city: addressOverride?.city || place.address?.locality || "Unknown",
+    province: addressOverride?.province || place.address?.region || "",
+    country: addressOverride?.country || place.address?.country || "Canada",
+    postalCode: addressOverride?.postalCode || place.address?.postcode || "",
+  });
 
   const run = async (session) => {
     const optsSession = session ? { session } : {};
     const addressDocs = await Address.create(
-      [
-        {
-          street,
-          city,
-          province,
-          country,
-          postalCode,
-        },
-      ],
+      [normalizedAddress],
       optsSession
     );
 
@@ -156,13 +147,13 @@ function buildStagePreview(place) {
     type: mapped.type || DEFAULT_TYPE,
     cuisine: [mapped.cuisine],
     website: place.website || "",
-    address: {
+    address: normalizeAddressFields({
       street: place.address?.street || place.address?.freeform || "",
       city: place.address?.locality || "",
       province: place.address?.region || "",
       country: place.address?.country || "Canada",
       postalCode: place.address?.postcode || "",
-    },
+    }),
     sourceCategory: place.sourceCategory || null,
     cuisineHint: place.cuisineHint || null,
   };

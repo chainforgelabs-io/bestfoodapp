@@ -43,16 +43,25 @@ async function searchPlacesAndRestaurants({
     .lean();
 
   if (city || province || country) {
+    const {
+      countrySearchPattern,
+      provinceSearchPattern,
+    } = require("./addressNormalize");
+    const countryRe = country
+      ? new RegExp(countrySearchPattern(country), "i")
+      : null;
+    const provinceRe = province
+      ? new RegExp(provinceSearchPattern(province) || `^${province}$`, "i")
+      : null;
     restaurants = restaurants.filter((r) => {
       const a = r.address || {};
       if (city && a.city?.toLowerCase() !== String(city).toLowerCase()) {
         return false;
       }
-      if (
-        province &&
-        a.province &&
-        a.province.toLowerCase() !== String(province).toLowerCase()
-      ) {
+      if (provinceRe && a.province && !provinceRe.test(a.province)) {
+        return false;
+      }
+      if (countryRe && a.country && !countryRe.test(a.country)) {
         return false;
       }
       return true;

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "../api/axios";
 import SEO from "../components/SEO";
@@ -7,6 +7,8 @@ import {
   CUISINE_TYPES,
 } from "../utils/standardizedOptions";
 import "../styles/AdminTools.css";
+
+const CUISINE_SET = new Set(CUISINE_TYPES);
 
 function emptyDraft() {
   return {
@@ -24,6 +26,34 @@ function emptyDraft() {
   };
 }
 
+function coerceCuisines(list) {
+  const raw = Array.isArray(list) ? list : list ? [list] : [];
+  const allowed = raw
+    .map((c) => String(c || "").trim())
+    .filter((c) => CUISINE_SET.has(c));
+  if (allowed.length) return allowed;
+  // Backend may return "Other" which isn't in the UI chip list
+  return ["American"];
+}
+
+function draftFromPreview(place, preview = {}) {
+  return {
+    name: preview.name || place.name || "",
+    type: RESTAURANT_TYPES.includes(preview.type)
+      ? preview.type
+      : RESTAURANT_TYPES[0],
+    cuisine: coerceCuisines(preview.cuisine),
+    website: preview.website || "",
+    address: {
+      street: preview.address?.street || "",
+      city: preview.address?.city || "",
+      province: preview.address?.province || "",
+      country: preview.address?.country || "Canada",
+      postalCode: preview.address?.postalCode || "",
+    },
+  };
+}
+
 function PlacesAdminPage() {
   const [batches, setBatches] = useState([]);
   const [settings, setSettings] = useState(null);
@@ -35,9 +65,11 @@ function PlacesAdminPage() {
   const [drafts, setDrafts] = useState({});
   const [siblingSelections, setSiblingSelections] = useState({});
   const [keepGersByQueue, setKeepGersByQueue] = useState({});
+  const [cardErrors, setCardErrors] = useState({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
+  const cardRefs = useRef({});
 
   const loadBatches = useCallback(async () => {
     const { data } = await axios.get("/places/batches");
@@ -51,27 +83,27 @@ function PlacesAdminPage() {
     setStaged(items);
     setDrafts((prev) => {
       const next = { ...prev };
+      const ids = new Set(items.map((i) => String(i.place._id)));
       for (const item of items) {
-        const id = item.place._id;
+        const id = String(item.place._id);
+        const fromPreview = draftFromPreview(item.place, item.preview || {});
         if (!next[id]) {
-          const p = item.preview || {};
+          next[id] = fromPreview;
+        } else {
+          // Keep admin edits, but always ensure cuisine is a valid non-empty set
+          const cuisine = coerceCuisines(next[id].cuisine);
           next[id] = {
-            name: p.name || item.place.name || "",
-            type: p.type || RESTAURANT_TYPES[0],
-            cuisine: Array.isArray(p.cuisine) ? [...p.cuisine] : [],
-            website: p.website || "",
+            ...fromPreview,
+            ...next[id],
+            cuisine:
+              cuisine.length > 0 ? cuisine : fromPreview.cuisine,
             address: {
-              street: p.address?.street || "",
-              city: p.address?.city || "",
-              province: p.address?.province || "",
-              country: p.address?.country || "Canada",
-              postalCode: p.address?.postalCode || "",
+              ...fromPreview.address,
+              ...(next[id].address || {}),
             },
           };
         }
       }
-      // Drop drafts for places no longer staged
-      const ids = new Set(items.map((i) => String(i.place._id)));
       for (const key of Object.keys(next)) {
         if (!ids.has(key)) delete next[key];
       }
@@ -84,9 +116,17 @@ function PlacesAdminPage() {
       for (const item of items) {
         const id = String(item.place._id);
         if (!next[id]) {
-          next[id] = (item.siblings || []).map((s) => s._id);
+          next[id] = (item.siblings || []).map((s) => String(s._id));
         }
       }
+      for (const key of Object.keys(next)) {
+        if (!ids.has(key)) delete next[key];
+      }
+      return next;
+    });
+    setCardErrors((prev) => {
+      const next = { ...prev };
+      const ids = new Set(items.map((i) => String(i.place._id)));
       for (const key of Object.keys(next)) {
         if (!ids.has(key)) delete next[key];
       }
@@ -175,13 +215,20 @@ function PlacesAdminPage() {
   };
 
   const updateDraft = (placeId, patch) => {
+    const key = String(placeId);
+    setCardErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
     setDrafts((prev) => ({
       ...prev,
-      [placeId]: {
-        ...(prev[placeId] || emptyDraft()),
+      [key]: {
+        ...(prev[key] || emptyDraft()),
         ...patch,
         address: {
-          ...(prev[placeId]?.address || emptyDraft().address),
+          ...(prev[key]?.address || emptyDraft().address),
           ...(patch.address || {}),
         },
       },
@@ -189,21 +236,23 @@ function PlacesAdminPage() {
   };
 
   const toggleCuisine = (placeId, cuisine) => {
-    const draft = drafts[placeId] || emptyDraft();
+    const key = String(placeId);
+    const draft = drafts[key] || emptyDraft();
     const current = draft.cuisine || [];
     const next = current.includes(cuisine)
       ? current.filter((c) => c !== cuisine)
       : [...current, cuisine];
-    updateDraft(placeId, { cuisine: next });
+    updateDraft(key, { cuisine: next });
   };
 
   const toggleSibling = (placeId, siblingId) => {
     const key = String(placeId);
+    const sid = String(siblingId);
     setSiblingSelections((prev) => {
       const current = prev[key] || [];
-      const next = current.includes(siblingId)
-        ? current.filter((id) => id !== siblingId)
-        : [...current, siblingId];
+      const next = current.includes(sid)
+        ? current.filter((id) => id !== sid)
+        : [...current, sid];
       return { ...prev, [key]: next };
     });
   };
@@ -212,7 +261,7 @@ function PlacesAdminPage() {
     const key = String(placeId);
     setSiblingSelections((prev) => {
       const current = prev[key] || [];
-      const allIds = siblings.map((s) => s._id);
+      const allIds = siblings.map((s) => String(s._id));
       const allSelected =
         allIds.length > 0 && allIds.every((id) => current.includes(id));
       return {
@@ -222,21 +271,46 @@ function PlacesAdminPage() {
     });
   };
 
+  const focusStagedCard = (placeId, errorMsg) => {
+    const key = String(placeId);
+    setCardErrors((prev) => ({ ...prev, [key]: errorMsg }));
+    setMessage(errorMsg);
+    const el = cardRefs.current[key];
+    if (el?.scrollIntoView) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
   const verifyStaged = async (placeId) => {
-    setBusyId(placeId);
+    const key = String(placeId);
+    setBusyId(key);
+    setCardErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
     try {
-      const draft = drafts[placeId] || emptyDraft();
+      const draft = drafts[key] || emptyDraft();
+      const cuisine = coerceCuisines(draft.cuisine);
       if (!draft.name?.trim()) {
-        setMessage("Name is required");
+        focusStagedCard(key, "Name is required");
         return;
       }
-      if (!draft.cuisine?.length) {
-        setMessage("Select at least one cuisine");
+      if (!cuisine.length) {
+        focusStagedCard(key, "Select at least one cuisine");
         return;
       }
-      const alsoPlaceIds = siblingSelections[String(placeId)] || [];
-      const { data } = await axios.post(`/places/staged/${placeId}/verify`, {
+      if (cuisine.join("|") !== (draft.cuisine || []).join("|")) {
+        setDrafts((prev) => ({
+          ...prev,
+          [key]: { ...(prev[key] || emptyDraft()), ...draft, cuisine },
+        }));
+      }
+      const alsoPlaceIds = siblingSelections[key] || [];
+      const { data } = await axios.post(`/places/staged/${key}/verify`, {
         ...draft,
+        cuisine,
         alsoPlaceIds,
       });
       const siblingOk = (data.siblings || []).filter((s) => s.restaurantId)
@@ -252,7 +326,10 @@ function PlacesAdminPage() {
       await loadStaged();
       if (selectedBatchId) await openBatch(selectedBatchId);
     } catch (err) {
-      setMessage(err.response?.data?.message || "Verify failed");
+      focusStagedCard(
+        key,
+        err.response?.data?.message || "Verify failed"
+      );
     } finally {
       setBusyId(null);
     }
@@ -366,14 +443,26 @@ function PlacesAdminPage() {
         ) : (
           <ul className="admin-staged-list">
             {staged.map(({ place, preview, siblings = [] }) => {
-              const draft = drafts[place._id] || emptyDraft();
-              const selectedSiblings =
-                siblingSelections[String(place._id)] || [];
+              const placeKey = String(place._id);
+              const draft = drafts[placeKey] || emptyDraft();
+              const selectedSiblings = siblingSelections[placeKey] || [];
               const allSiblingsSelected =
                 siblings.length > 0 &&
-                siblings.every((s) => selectedSiblings.includes(s._id));
+                siblings.every((s) =>
+                  selectedSiblings.includes(String(s._id))
+                );
+              const cardError = cardErrors[placeKey];
               return (
-                <li key={place._id} className="admin-staged-card">
+                <li
+                  key={placeKey}
+                  ref={(el) => {
+                    if (el) cardRefs.current[placeKey] = el;
+                    else delete cardRefs.current[placeKey];
+                  }}
+                  className={`admin-staged-card${
+                    cardError ? " admin-staged-card--error" : ""
+                  }`}
+                >
                   <div className="admin-staged-meta">
                     <strong>{place.nameRaw || place.name}</strong>
                     {preview?.sourceCategory && (
@@ -382,13 +471,18 @@ function PlacesAdminPage() {
                       </span>
                     )}
                   </div>
+                  {cardError && (
+                    <p className="admin-staged-card-error" role="alert">
+                      {cardError}
+                    </p>
+                  )}
                   <div className="admin-staged-fields">
                     <label>
                       Name
                       <input
                         value={draft.name}
                         onChange={(e) =>
-                          updateDraft(place._id, { name: e.target.value })
+                          updateDraft(placeKey, { name: e.target.value })
                         }
                       />
                     </label>
@@ -397,7 +491,7 @@ function PlacesAdminPage() {
                       <select
                         value={draft.type}
                         onChange={(e) =>
-                          updateDraft(place._id, { type: e.target.value })
+                          updateDraft(placeKey, { type: e.target.value })
                         }
                       >
                         {RESTAURANT_TYPES.map((t) => (
@@ -412,7 +506,7 @@ function PlacesAdminPage() {
                       <input
                         value={draft.website}
                         onChange={(e) =>
-                          updateDraft(place._id, { website: e.target.value })
+                          updateDraft(placeKey, { website: e.target.value })
                         }
                       />
                     </label>
@@ -421,7 +515,7 @@ function PlacesAdminPage() {
                       <input
                         value={draft.address.street}
                         onChange={(e) =>
-                          updateDraft(place._id, {
+                          updateDraft(placeKey, {
                             address: { street: e.target.value },
                           })
                         }
@@ -432,7 +526,7 @@ function PlacesAdminPage() {
                       <input
                         value={draft.address.city}
                         onChange={(e) =>
-                          updateDraft(place._id, {
+                          updateDraft(placeKey, {
                             address: { city: e.target.value },
                           })
                         }
@@ -443,7 +537,7 @@ function PlacesAdminPage() {
                       <input
                         value={draft.address.province}
                         onChange={(e) =>
-                          updateDraft(place._id, {
+                          updateDraft(placeKey, {
                             address: { province: e.target.value },
                           })
                         }
@@ -458,7 +552,7 @@ function PlacesAdminPage() {
                           <input
                             type="checkbox"
                             checked={(draft.cuisine || []).includes(c)}
-                            onChange={() => toggleCuisine(place._id, c)}
+                            onChange={() => toggleCuisine(placeKey, c)}
                           />
                           {c}
                         </label>
@@ -476,8 +570,8 @@ function PlacesAdminPage() {
                       <button
                         type="button"
                         className="admin-btn secondary"
-                        disabled={busyId === place._id}
-                        onClick={() => toggleAllSiblings(place._id, siblings)}
+                        disabled={busyId === placeKey}
+                        onClick={() => toggleAllSiblings(placeKey, siblings)}
                       >
                         {allSiblingsSelected ? "Uncheck all" : "Check all"}
                       </button>
@@ -487,10 +581,12 @@ function PlacesAdminPage() {
                             <label>
                               <input
                                 type="checkbox"
-                                checked={selectedSiblings.includes(s._id)}
-                                disabled={busyId === place._id}
+                                checked={selectedSiblings.includes(
+                                  String(s._id)
+                                )}
+                                disabled={busyId === placeKey}
                                 onChange={() =>
-                                  toggleSibling(place._id, s._id)
+                                  toggleSibling(placeKey, s._id)
                                 }
                               />
                               <span>
@@ -514,16 +610,16 @@ function PlacesAdminPage() {
                     <button
                       type="button"
                       className="admin-btn"
-                      disabled={busyId === place._id}
-                      onClick={() => verifyStaged(place._id)}
+                      disabled={busyId === placeKey}
+                      onClick={() => verifyStaged(placeKey)}
                     >
                       Verify &amp; add
                     </button>
                     <button
                       type="button"
                       className="admin-btn secondary"
-                      disabled={busyId === place._id}
-                      onClick={() => unstagePlace(place._id)}
+                      disabled={busyId === placeKey}
+                      onClick={() => unstagePlace(placeKey)}
                     >
                       Unstage
                     </button>
