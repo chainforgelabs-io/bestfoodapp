@@ -242,3 +242,112 @@
   flex-wrap: wrap;
   gap: 4px;
 }
+
+.admin-place-siblings {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #e8e0f0;
+  border-radius: 10px;
+  background: #faf8fd;
+}
+
+.admin-place-siblings-title {
+  margin: 0 0 10px;
+  color: #444;
+  font-size: 0.95rem;
+}
+
+.admin-place-siblings-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.admin-place-siblings-list li {
+  margin-bottom: 6px;
+}
+
+.admin-place-siblings-list label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.admin-place-siblings-list em {
+  color: #888;
+  font-style: normal;
+  font-size: 0.8rem;
+}
+
+.admin-place-siblings-hint {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.admin-queue-resolve-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-dup-card {
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+
+.admin-dup-header {
+  margin-bottom: 10px;
+  color: #444;
+}
+
+.admin-dup-dist {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.admin-dup-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.admin-dup-option {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  border: 1px solid #e8e0f0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.admin-dup-option input {
+  margin-top: 3px;
+}
+
+.admin-dup-missing {
+  color: #b33;
+  font-size: 0.9rem;
+}
+
+.admin-dup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.admin-queue-other {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0ebf7;
+  color: #555;
+}

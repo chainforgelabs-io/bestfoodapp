@@ -101,6 +101,58 @@ router.get("/batches/:batchId", protect, admin, async (req, res) => {
   }
 });
 
+function escapeRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function placeSummary(p) {
+  if (!p) return null;
+  return {
+    _id: p._id,
+    gersId: p.gersId,
+    name: p.name,
+    nameRaw: p.nameRaw,
+    street: p.address?.street || p.address?.freeform || "",
+    city: p.address?.locality || "",
+    status: p.status,
+  };
+}
+
+async function findSameNamePlaceSiblings(place) {
+  const name = String(place.name || "").trim();
+  if (!name) return [];
+  const nameRegex = new RegExp(`^${escapeRegex(name)}$`, "i");
+  const siblingStatuses = [
+    "pending_review",
+    "active",
+    "low_confidence",
+    "staged",
+  ];
+  const query = {
+    _id: { $ne: place._id },
+    name: nameRegex,
+    status: { $in: siblingStatuses },
+  };
+  if (place.cityId) {
+    query.cityId = place.cityId;
+  } else if (place.address?.locality) {
+    query["address.locality"] = new RegExp(
+      `^${escapeRegex(place.address.locality)}$`,
+      "i"
+    );
+  } else {
+    return [];
+  }
+  const siblings = await Place.find(query).sort({ name: 1 }).limit(50).lean();
+  return siblings.map((s) => ({
+    _id: s._id,
+    name: s.name,
+    street: s.address?.street || s.address?.freeform || "",
+    city: s.address?.locality || "",
+    status: s.status,
+  }));
+}
+
 // GET /places/staged — places awaiting verify → restaurant
 router.get("/staged", protect, admin, async (req, res) => {
   try {
@@ -108,10 +160,15 @@ router.get("/staged", protect, admin, async (req, res) => {
       .sort({ updatedAt: -1 })
       .limit(500)
       .lean();
-    const items = places.map((p) => ({
-      place: p,
-      preview: buildStagePreview(p),
-    }));
+    const items = [];
+    for (const p of places) {
+      const siblings = await findSameNamePlaceSiblings(p);
+      items.push({
+        place: p,
+        preview: buildStagePreview(p),
+        siblings,
+      });
+    }
     res.json({ items });
   } catch (err) {
     console.error("places staged list", err);
@@ -259,8 +316,57 @@ router.post("/staged/:placeId/verify", protect, admin, async (req, res) => {
       address,
     });
 
+    // Optional: apply same categories to other same-name locations
+    const alsoPlaceIds = Array.isArray(body.alsoPlaceIds)
+      ? body.alsoPlaceIds.map(String).filter((id) => id !== String(place._id))
+      : [];
+    const siblingResults = [];
+    for (const siblingId of alsoPlaceIds) {
+      try {
+        const sibling = await Place.findById(siblingId);
+        if (!sibling) {
+          siblingResults.push({ placeId: siblingId, error: "Place not found" });
+          continue;
+        }
+        if (["dismissed", "promoted"].includes(sibling.status)) {
+          siblingResults.push({
+            placeId: siblingId,
+            error: `Place is ${sibling.status}`,
+          });
+          continue;
+        }
+        // Use verified categories/website; sibling keeps its own address/location
+        if (sibling.status !== "staged") {
+          sibling.status = "staged";
+          sibling.updatedAt = new Date();
+          await sibling.save();
+        }
+        const siblingResult = await promotePlace(sibling._id, {
+          userId: req.user._id,
+          name: sibling.name,
+          type,
+          cuisine,
+          website,
+        });
+        siblingResults.push({
+          placeId: sibling._id,
+          restaurantId: siblingResult.restaurantId,
+          alreadyPromoted: !!siblingResult.alreadyPromoted,
+        });
+      } catch (siblingErr) {
+        siblingResults.push({
+          placeId: siblingId,
+          error: siblingErr.message || "Promote failed",
+        });
+      }
+    }
+
     const updated = await Place.findById(place._id).lean();
-    res.json({ place: updated, restaurant: result });
+    res.json({
+      place: updated,
+      restaurant: result,
+      siblings: siblingResults,
+    });
   } catch (err) {
     console.error("places verify", err);
     res.status(400).json({ message: err.message || "Verify failed" });
@@ -421,11 +527,154 @@ router.put("/settings", protect, admin, async (req, res) => {
 });
 
 router.get("/queue", protect, admin, async (req, res) => {
-  const items = await PlaceReviewQueue.find({ resolvedAt: null })
-    .sort({ createdAt: -1 })
-    .limit(200)
-    .lean();
-  res.json({ items });
+  try {
+    const items = await PlaceReviewQueue.find({ resolvedAt: null })
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
+
+    const gersIds = new Set();
+    for (const item of items) {
+      if (item.type === "duplicate") {
+        if (item.payload?.placeGersId) gersIds.add(item.payload.placeGersId);
+        if (item.payload?.otherGersId) gersIds.add(item.payload.otherGersId);
+      }
+    }
+
+    const placesByGers = new Map();
+    if (gersIds.size) {
+      const places = await Place.find({
+        gersId: { $in: [...gersIds] },
+      }).lean();
+      for (const p of places) placesByGers.set(p.gersId, p);
+    }
+
+    const enriched = items.map((item) => {
+      if (item.type !== "duplicate") return item;
+      const a = placesByGers.get(item.payload?.placeGersId);
+      const b = placesByGers.get(item.payload?.otherGersId);
+      return {
+        ...item,
+        places: {
+          a: placeSummary(a),
+          b: placeSummary(b),
+          distanceM: item.payload?.distanceM ?? null,
+        },
+      };
+    });
+
+    res.json({ items: enriched });
+  } catch (err) {
+    console.error("places queue", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /places/queue/:queueId/resolve — merge or keep_separate duplicates
+router.post("/queue/:queueId/resolve", protect, admin, async (req, res) => {
+  try {
+    const item = await PlaceReviewQueue.findById(req.params.queueId);
+    if (!item) return res.status(404).json({ message: "Queue item not found" });
+    if (item.resolvedAt) {
+      return res.status(400).json({ message: "Already resolved" });
+    }
+    if (item.type !== "duplicate") {
+      return res
+        .status(400)
+        .json({ message: "Only duplicate queue items can be resolved here" });
+    }
+
+    const resolution = req.body?.resolution;
+    if (!["merge", "keep_separate"].includes(resolution)) {
+      return res.status(400).json({
+        message: 'resolution must be "merge" or "keep_separate"',
+      });
+    }
+
+    const placeGersId = item.payload?.placeGersId;
+    const otherGersId = item.payload?.otherGersId;
+    if (!placeGersId || !otherGersId) {
+      return res.status(400).json({ message: "Queue item missing gersIds" });
+    }
+
+    const placeA = await Place.findOne({ gersId: placeGersId });
+    const placeB = await Place.findOne({ gersId: otherGersId });
+    if (!placeA || !placeB) {
+      return res.status(404).json({
+        message: "One or both places no longer exist",
+      });
+    }
+
+    if (resolution === "merge") {
+      const keepGersId = req.body?.keepGersId;
+      if (![placeGersId, otherGersId].includes(keepGersId)) {
+        return res.status(400).json({
+          message: "keepGersId must be one of the duplicate places",
+        });
+      }
+      const keeper = keepGersId === placeA.gersId ? placeA : placeB;
+      const loser = keepGersId === placeA.gersId ? placeB : placeA;
+
+      const gersIds = new Set([
+        ...(keeper.gersIds || []),
+        keeper.gersId,
+        loser.gersId,
+        ...(loser.gersIds || []),
+      ]);
+      keeper.gersIds = [...gersIds];
+      if (keeper.status === "suspect_duplicate") {
+        keeper.status = "pending_review";
+      }
+      keeper.updatedAt = new Date();
+      await keeper.save();
+
+      loser.status = "dismissed";
+      loser.updatedAt = new Date();
+      await loser.save();
+
+      await PlaceCorrection.create({
+        ruleType: "dedupe_merge",
+        match: { gersId: keeper.gersId },
+        action: {
+          keepGersId: keeper.gersId,
+          mergedGersId: loser.gersId,
+          mergedGersIds: loser.gersIds || [loser.gersId],
+        },
+        batchId: keeper.batchId || loser.batchId,
+        createdBy: req.user._id,
+      });
+
+      item.resolution = `merge:keep=${keeper.gersId};dismiss=${loser.gersId}`;
+    } else {
+      // keep_separate
+      for (const p of [placeA, placeB]) {
+        if (p.status === "suspect_duplicate") {
+          p.status = "pending_review";
+          p.updatedAt = new Date();
+          await p.save();
+        }
+      }
+      await PlaceCorrection.create({
+        ruleType: "dedupe_keep_separate",
+        match: { gersId: placeGersId },
+        action: {
+          placeGersId,
+          otherGersId,
+        },
+        batchId: placeA.batchId || placeB.batchId,
+        createdBy: req.user._id,
+      });
+      item.resolution = "keep_separate";
+    }
+
+    item.resolvedAt = new Date();
+    await item.save();
+
+    res.json({ ok: true, item });
+  } catch (err) {
+    console.error("places queue resolve", err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 router.post("/reconcile", protect, admin, async (req, res) => {

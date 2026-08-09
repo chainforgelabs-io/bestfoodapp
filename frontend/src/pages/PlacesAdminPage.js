@@ -33,6 +33,8 @@ function PlacesAdminPage() {
   const [queue, setQueue] = useState([]);
   const [staged, setStaged] = useState([]);
   const [drafts, setDrafts] = useState({});
+  const [siblingSelections, setSiblingSelections] = useState({});
+  const [keepGersByQueue, setKeepGersByQueue] = useState({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
@@ -41,11 +43,6 @@ function PlacesAdminPage() {
     const { data } = await axios.get("/places/batches");
     setBatches(data.batches || []);
     setSettings(data.settings || null);
-  }, []);
-
-  const loadQueue = useCallback(async () => {
-    const { data } = await axios.get("/places/queue");
-    setQueue(data.items || []);
   }, []);
 
   const loadStaged = useCallback(async () => {
@@ -75,6 +72,45 @@ function PlacesAdminPage() {
       }
       // Drop drafts for places no longer staged
       const ids = new Set(items.map((i) => String(i.place._id)));
+      for (const key of Object.keys(next)) {
+        if (!ids.has(key)) delete next[key];
+      }
+      return next;
+    });
+    // Default: apply categories to all same-name siblings
+    setSiblingSelections((prev) => {
+      const next = { ...prev };
+      const ids = new Set(items.map((i) => String(i.place._id)));
+      for (const item of items) {
+        const id = String(item.place._id);
+        if (!next[id]) {
+          next[id] = (item.siblings || []).map((s) => s._id);
+        }
+      }
+      for (const key of Object.keys(next)) {
+        if (!ids.has(key)) delete next[key];
+      }
+      return next;
+    });
+  }, []);
+
+  const loadQueue = useCallback(async () => {
+    const { data } = await axios.get("/places/queue");
+    const items = data.items || [];
+    setQueue(items);
+    setKeepGersByQueue((prev) => {
+      const next = { ...prev };
+      for (const item of items) {
+        if (item.type !== "duplicate") continue;
+        const id = String(item._id);
+        if (!next[id]) {
+          next[id] =
+            item.places?.a?.gersId ||
+            item.payload?.placeGersId ||
+            "";
+        }
+      }
+      const ids = new Set(items.map((i) => String(i._id)));
       for (const key of Object.keys(next)) {
         if (!ids.has(key)) delete next[key];
       }
@@ -161,6 +197,31 @@ function PlacesAdminPage() {
     updateDraft(placeId, { cuisine: next });
   };
 
+  const toggleSibling = (placeId, siblingId) => {
+    const key = String(placeId);
+    setSiblingSelections((prev) => {
+      const current = prev[key] || [];
+      const next = current.includes(siblingId)
+        ? current.filter((id) => id !== siblingId)
+        : [...current, siblingId];
+      return { ...prev, [key]: next };
+    });
+  };
+
+  const toggleAllSiblings = (placeId, siblings) => {
+    const key = String(placeId);
+    setSiblingSelections((prev) => {
+      const current = prev[key] || [];
+      const allIds = siblings.map((s) => s._id);
+      const allSelected =
+        allIds.length > 0 && allIds.every((id) => current.includes(id));
+      return {
+        ...prev,
+        [key]: allSelected ? [] : allIds,
+      };
+    });
+  };
+
   const verifyStaged = async (placeId) => {
     setBusyId(placeId);
     try {
@@ -173,11 +234,52 @@ function PlacesAdminPage() {
         setMessage("Select at least one cuisine");
         return;
       }
-      await axios.post(`/places/staged/${placeId}/verify`, draft);
-      setMessage("Verified — restaurant added to the system");
+      const alsoPlaceIds = siblingSelections[String(placeId)] || [];
+      const { data } = await axios.post(`/places/staged/${placeId}/verify`, {
+        ...draft,
+        alsoPlaceIds,
+      });
+      const siblingOk = (data.siblings || []).filter((s) => s.restaurantId)
+        .length;
+      const siblingErr = (data.siblings || []).filter((s) => s.error).length;
+      setMessage(
+        `Verified — restaurant added` +
+          (siblingOk
+            ? ` (+${siblingOk} same-name location${siblingOk === 1 ? "" : "s"})`
+            : "") +
+          (siblingErr ? `; ${siblingErr} sibling error(s)` : "")
+      );
       await loadStaged();
+      if (selectedBatchId) await openBatch(selectedBatchId);
     } catch (err) {
       setMessage(err.response?.data?.message || "Verify failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const resolveDuplicate = async (queueId, resolution) => {
+    setBusyId(queueId);
+    try {
+      const body = { resolution };
+      if (resolution === "merge") {
+        const keepGersId = keepGersByQueue[String(queueId)];
+        if (!keepGersId) {
+          setMessage("Select which place to keep before merging");
+          return;
+        }
+        body.keepGersId = keepGersId;
+      }
+      await axios.post(`/places/queue/${queueId}/resolve`, body);
+      setMessage(
+        resolution === "merge"
+          ? "Merged — duplicate dismissed"
+          : "Kept separate — both restored for review"
+      );
+      await loadQueue();
+      if (selectedBatchId) await openBatch(selectedBatchId);
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Resolve failed");
     } finally {
       setBusyId(null);
     }
@@ -263,8 +365,13 @@ function PlacesAdminPage() {
           <p>No staged places. Approve a place from a batch to stage it.</p>
         ) : (
           <ul className="admin-staged-list">
-            {staged.map(({ place, preview }) => {
+            {staged.map(({ place, preview, siblings = [] }) => {
               const draft = drafts[place._id] || emptyDraft();
+              const selectedSiblings =
+                siblingSelections[String(place._id)] || [];
+              const allSiblingsSelected =
+                siblings.length > 0 &&
+                siblings.every((s) => selectedSiblings.includes(s._id));
               return (
                 <li key={place._id} className="admin-staged-card">
                   <div className="admin-staged-meta">
@@ -358,6 +465,51 @@ function PlacesAdminPage() {
                       ))}
                     </div>
                   </div>
+                  {siblings.length > 0 && (
+                    <div className="admin-place-siblings">
+                      <p className="admin-place-siblings-title">
+                        Found {siblings.length} other{" "}
+                        <strong>{place.name}</strong> location
+                        {siblings.length === 1 ? "" : "s"} in this city. Apply
+                        these categories to them as well?
+                      </p>
+                      <button
+                        type="button"
+                        className="admin-btn secondary"
+                        disabled={busyId === place._id}
+                        onClick={() => toggleAllSiblings(place._id, siblings)}
+                      >
+                        {allSiblingsSelected ? "Uncheck all" : "Check all"}
+                      </button>
+                      <ul className="admin-place-siblings-list">
+                        {siblings.map((s) => (
+                          <li key={s._id}>
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={selectedSiblings.includes(s._id)}
+                                disabled={busyId === place._id}
+                                onChange={() =>
+                                  toggleSibling(place._id, s._id)
+                                }
+                              />
+                              <span>
+                                {s.name}
+                                {s.street ? ` — ${s.street}` : ""}
+                                {s.city ? `, ${s.city}` : ""}
+                                <em> ({s.status})</em>
+                              </span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="admin-place-siblings-hint">
+                        {selectedSiblings.length} additional location
+                        {selectedSiblings.length === 1 ? "" : "s"} selected
+                        (checked by default).
+                      </p>
+                    </div>
+                  )}
                   <div className="admin-staged-actions">
                     <button
                       type="button"
@@ -517,13 +669,92 @@ function PlacesAdminPage() {
 
       <section className="admin-tools-card">
         <h2>Exception queue ({queue.length})</h2>
-        <ul className="admin-queue-list">
-          {queue.map((item) => (
-            <li key={item._id}>
-              <strong>{item.type}</strong> — {item.reason}
-            </li>
-          ))}
-        </ul>
+        {queue.length === 0 ? (
+          <p>No open exceptions.</p>
+        ) : (
+          <ul className="admin-queue-resolve-list">
+            {queue.map((item) => {
+              if (item.type === "duplicate") {
+                const a = item.places?.a;
+                const b = item.places?.b;
+                const keepGers =
+                  keepGersByQueue[String(item._id)] ||
+                  a?.gersId ||
+                  item.payload?.placeGersId ||
+                  "";
+                const dist =
+                  item.places?.distanceM != null
+                    ? `${Number(item.places.distanceM).toFixed(1)} m`
+                    : "—";
+                return (
+                  <li key={item._id} className="admin-dup-card">
+                    <div className="admin-dup-header">
+                      <strong>duplicate</strong> — {item.reason || "different_names_within_25m"}{" "}
+                      <span className="admin-dup-dist">({dist})</span>
+                    </div>
+                    <div className="admin-dup-pair">
+                      {[a, b].filter(Boolean).map((p) => (
+                        <label key={p.gersId} className="admin-dup-option">
+                          <input
+                            type="radio"
+                            name={`keep-${item._id}`}
+                            checked={keepGers === p.gersId}
+                            disabled={busyId === item._id}
+                            onChange={() =>
+                              setKeepGersByQueue((prev) => ({
+                                ...prev,
+                                [String(item._id)]: p.gersId,
+                              }))
+                            }
+                          />
+                          <span>
+                            <strong>{p.name}</strong>
+                            <br />
+                            {p.street || "(no street)"}
+                            {p.city ? `, ${p.city}` : ""}
+                            <br />
+                            <em>{p.status}</em>
+                          </span>
+                        </label>
+                      ))}
+                      {(!a || !b) && (
+                        <p className="admin-dup-missing">
+                          One or both places could not be loaded (may already be
+                          dismissed).
+                        </p>
+                      )}
+                    </div>
+                    <div className="admin-dup-actions">
+                      <button
+                        type="button"
+                        className="admin-btn"
+                        disabled={busyId === item._id || !a || !b}
+                        onClick={() => resolveDuplicate(item._id, "merge")}
+                      >
+                        Merge (keep selected)
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-btn secondary"
+                        disabled={busyId === item._id}
+                        onClick={() =>
+                          resolveDuplicate(item._id, "keep_separate")
+                        }
+                      >
+                        Keep separate
+                      </button>
+                    </div>
+                  </li>
+                );
+              }
+              return (
+                <li key={item._id} className="admin-queue-other">
+                  <strong>{item.type}</strong> — {item.reason}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       <section className="admin-tools-card">
