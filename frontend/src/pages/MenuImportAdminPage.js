@@ -8,6 +8,10 @@ import {
   FOOD_TYPES,
   SIZE_OPTIONS,
 } from "../utils/standardizedOptions";
+import {
+  MENU_UPLOAD_ACCEPT,
+  normalizeMenuUploadFiles,
+} from "../utils/menuUploadFiles";
 import "../styles/AdminTools.css";
 import "../styles/MenuImportAdminPage.css";
 
@@ -33,6 +37,7 @@ function MenuImportAdminPage() {
   const [error, setError] = useState("");
   const [loadingQueue, setLoadingQueue] = useState(true);
   const [scanning, setScanning] = useState(false);
+  const [preparingFiles, setPreparingFiles] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [todoItems, setTodoItems] = useState([]);
   const [loadingTodo, setLoadingTodo] = useState(true);
@@ -158,33 +163,71 @@ function MenuImportAdminPage() {
     }));
   };
 
-  const onFilesChange = (e) => {
-    const list = Array.from(e.target.files || []).filter((f) =>
-      /^image\/(jpeg|jpg|png)$/i.test(f.type)
-    );
-    setFiles(list);
+  const onFilesChange = async (e) => {
+    const input = e.target;
+    const selected = Array.from(input.files || []);
+    setError("");
+    setMessage("");
+    if (!selected.length) {
+      setFiles([]);
+      return;
+    }
+    setPreparingFiles(true);
+    try {
+      const { files: normalized, warning, rejected } =
+        await normalizeMenuUploadFiles(selected);
+      if (rejected.length) {
+        setError(
+          `Unsupported file type (use JPEG, PNG, WebP, HEIC, or PDF): ${rejected.join(
+            ", "
+          )}`
+        );
+      }
+      if (warning) setMessage(warning);
+      setFiles(normalized);
+      if (!normalized.length && !rejected.length) {
+        setError("No usable menu files selected.");
+      }
+    } catch (err) {
+      setFiles([]);
+      setError(err.message || "Could not read selected files.");
+    } finally {
+      setPreparingFiles(false);
+      // Allow re-selecting the same file after conversion errors
+      if (input) input.value = "";
+    }
   };
 
   const uploadImages = async (fileList) => {
     const { data } = await axios.post("/uploads/photos/presign", {
-      files: fileList.map((f) => ({ fileName: f.name, contentType: f.type })),
+      files: fileList.map((f) => ({
+        fileName: f.name,
+        contentType: f.type || "image/jpeg",
+      })),
       prefix: "menus",
     });
     const uploads = data.uploads || [];
     const images = [];
     for (let i = 0; i < fileList.length; i++) {
       const presigned = uploads[i];
-      await fetch(presigned.uploadUrl, {
+      const contentType =
+        presigned.contentType || fileList[i].type || "image/jpeg";
+      const putRes = await fetch(presigned.uploadUrl, {
         method: "PUT",
         headers: {
-          "Content-Type": presigned.contentType || fileList[i].type || "image/jpeg",
+          "Content-Type": contentType,
         },
         body: fileList[i],
       });
+      if (!putRes.ok) {
+        throw new Error(
+          `Upload failed for ${fileList[i].name || "file"} (${putRes.status})`
+        );
+      }
       images.push({
         key: presigned.key,
         imageBucket: presigned.imageBucket,
-        contentType: presigned.contentType || fileList[i].type || "image/jpeg",
+        contentType,
       });
     }
     return images;
@@ -198,7 +241,7 @@ function MenuImportAdminPage() {
       return;
     }
     if (!files.length) {
-      setError("Add at least one menu photo (JPEG or PNG).");
+      setError("Add at least one menu photo or PDF (JPEG, PNG, WebP, HEIC, or PDF).");
       return;
     }
 
@@ -358,8 +401,8 @@ function MenuImportAdminPage() {
       <header className="admin-tools-header">
         <h1>Menu import</h1>
         <p>
-          Upload menu photos, assign a restaurant, then verify AI-extracted
-          adds and price updates before they go live.
+          Upload menu photos or PDFs, assign a restaurant, then verify
+          AI-extracted adds and price updates before they go live.
         </p>
         <div className="admin-tools-nav">
           <Link to="/admin/places">Places</Link>
@@ -513,17 +556,25 @@ function MenuImportAdminPage() {
           </div>
         )}
 
-        <label className="menu-import-label">Menu photos (JPEG/PNG)</label>
+        <label className="menu-import-label">
+          Menu photos or PDF (JPEG, PNG, WebP, HEIC, PDF)
+        </label>
         <input
           type="file"
-          accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+          accept={MENU_UPLOAD_ACCEPT}
           multiple
-          disabled={scanning}
+          disabled={scanning || preparingFiles}
           onChange={onFilesChange}
         />
-        {files.length > 0 && (
+        {preparingFiles && (
           <p className="menu-import-file-hint">
-            {files.length} file{files.length === 1 ? "" : "s"} selected
+            Preparing files (converting PDF/HEIC if needed)…
+          </p>
+        )}
+        {files.length > 0 && !preparingFiles && (
+          <p className="menu-import-file-hint">
+            {files.length} image{files.length === 1 ? "" : "s"} ready to upload
+            (PDFs and HEIC are converted to JPEG pages automatically)
           </p>
         )}
 
@@ -531,7 +582,7 @@ function MenuImportAdminPage() {
           <button
             type="button"
             className="admin-btn"
-            disabled={scanning}
+            disabled={scanning || preparingFiles}
             onClick={handleScan}
           >
             {scanning ? "Uploading & scanning…" : "Upload & scan"}

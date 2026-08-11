@@ -26,6 +26,21 @@ async function streamToBuffer(body) {
   return Buffer.concat(chunks);
 }
 
+const VISION_MIME = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
+function normalizeVisionMime(contentType) {
+  const raw = String(contentType || "").toLowerCase().split(";")[0].trim();
+  if (raw === "image/jpg") return "image/jpeg";
+  if (VISION_MIME.has(raw)) return raw;
+  return null;
+}
+
 async function loadImageAsDataUrl(image) {
   if (!s3) {
     throw new Error("AWS_REGION is not configured for menu image reads");
@@ -38,7 +53,22 @@ async function loadImageAsDataUrl(image) {
   );
   const buf = await streamToBuffer(out.Body);
   const contentType = image.contentType || out.ContentType || "image/jpeg";
-  const mime = contentType.startsWith("image/") ? contentType : "image/jpeg";
+  const lower = String(contentType).toLowerCase();
+  if (lower.includes("pdf") || image.key?.toLowerCase().endsWith(".pdf")) {
+    const err = new Error(
+      "PDF menus must be converted to images before scanning. Re-upload with the updated menu import page."
+    );
+    err.code = "UNSUPPORTED_MENU_FILE";
+    throw err;
+  }
+  const mime = normalizeVisionMime(contentType);
+  if (!mime) {
+    const err = new Error(
+      `Unsupported menu file type "${contentType}". Use JPEG, PNG, WebP, HEIC, or PDF.`
+    );
+    err.code = "UNSUPPORTED_MENU_FILE";
+    throw err;
+  }
   return `data:${mime};base64,${buf.toString("base64")}`;
 }
 

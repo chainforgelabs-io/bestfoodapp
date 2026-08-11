@@ -514,16 +514,44 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ message: "Restaurant not found" });
     }
 
+    const allowedMenuMime = new Set([
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ]);
     const normalizedImages = images.map((img, idx) => {
       if (!img?.key || !img?.imageBucket) {
         throw Object.assign(new Error(`images[${idx}] needs key and imageBucket`), {
           code: "VALIDATION",
         });
       }
+      let contentType = String(img.contentType || "image/jpeg")
+        .toLowerCase()
+        .split(";")[0]
+        .trim();
+      if (contentType === "image/jpg") contentType = "image/jpeg";
+      if (contentType === "application/pdf") {
+        throw Object.assign(
+          new Error(
+            "PDF must be converted to images before create. Re-select the PDF in the menu import UI."
+          ),
+          { code: "VALIDATION" }
+        );
+      }
+      if (!allowedMenuMime.has(contentType)) {
+        throw Object.assign(
+          new Error(
+            `Unsupported menu content type "${contentType}". Use JPEG, PNG, WebP, HEIC, or PDF.`
+          ),
+          { code: "VALIDATION" }
+        );
+      }
       return {
         key: String(img.key).trim(),
         imageBucket: String(img.imageBucket).trim(),
-        contentType: img.contentType || "image/jpeg",
+        contentType,
       };
     });
 
