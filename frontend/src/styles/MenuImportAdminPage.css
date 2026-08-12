@@ -115,14 +115,35 @@
 
 .menu-import-fields {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 10px;
+  align-items: start;
 }
 
 .menu-import-fields label {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.menu-import-dropdown-field {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.menu-import-dropdown-field:focus-within {
+  z-index: 5;
+}
+
+.menu-import-dropdown-field .standardized-dropdown {
+  width: 100%;
+}
+
+.menu-import-dropdown-field .dropdown-label {
   font-size: 0.85rem;
   font-weight: 600;
   color: #555;

@@ -13,6 +13,8 @@ function StandardizedDropdown({
   disabled = false,
   allowMultiple = false,
   maxHeight = "200px",
+  /** Optional: persist a new custom option (e.g. to Mongo). Return canonical value. */
+  onAddCustom = null,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,6 +23,7 @@ function StandardizedDropdown({
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customInputValue, setCustomInputValue] = useState("");
   const [customOptions, setCustomOptions] = useState([]);
+  const [savingCustom, setSavingCustom] = useState(false);
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
   const customInputRef = useRef(null);
@@ -125,25 +128,52 @@ function StandardizedDropdown({
     }
   };
 
-  const handleCustomSubmit = () => {
+  const handleCustomSubmit = async () => {
     const trimmedValue = customInputValue.trim();
-    if (trimmedValue && !allOptions.includes(trimmedValue)) {
-      // Add to custom options
-      setCustomOptions((prev) => [...prev, trimmedValue]);
+    if (!trimmedValue || savingCustom) return;
 
-      // Select the new custom option
+    const alreadyListed = allOptions.some(
+      (opt) =>
+        opt !== "Add +" && opt.toLowerCase() === trimmedValue.toLowerCase()
+    );
+
+    try {
+      setSavingCustom(true);
+      let finalValue = trimmedValue;
+
+      if (typeof onAddCustom === "function") {
+        const persisted = await onAddCustom(trimmedValue);
+        if (persisted) finalValue = persisted;
+      } else if (!alreadyListed) {
+        setCustomOptions((prev) => [...prev, trimmedValue]);
+      } else {
+        const match = allOptions.find(
+          (opt) =>
+            opt !== "Add +" &&
+            opt.toLowerCase() === trimmedValue.toLowerCase()
+        );
+        finalValue = match || trimmedValue;
+      }
+
       if (allowMultiple) {
         const currentValues = value || [];
-        onChange([...currentValues, trimmedValue]);
+        if (!currentValues.includes(finalValue)) {
+          onChange([...currentValues, finalValue]);
+        }
       } else {
-        onChange(trimmedValue);
+        onChange(finalValue);
         setIsOpen(false);
         setSearchTerm("");
       }
-    }
 
-    setShowCustomInput(false);
-    setCustomInputValue("");
+      setShowCustomInput(false);
+      setCustomInputValue("");
+    } catch (err) {
+      console.error("Failed to add custom option", err);
+      // Keep the custom input open so the user can retry / edit
+    } finally {
+      setSavingCustom(false);
+    }
   };
 
   const handleRemoveTag = (tagToRemove) => {
@@ -262,9 +292,9 @@ function StandardizedDropdown({
                     type="button"
                     className="custom-submit-btn"
                     onClick={handleCustomSubmit}
-                    disabled={!customInputValue.trim()}
+                    disabled={!customInputValue.trim() || savingCustom}
                   >
-                    Add
+                    {savingCustom ? "Saving…" : "Add"}
                   </button>
                   <button
                     type="button"

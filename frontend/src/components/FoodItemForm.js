@@ -5,17 +5,12 @@ import Notification from "./Notification";
 import EditFoodItemModal from "./EditFoodItemModal";
 import SuccessOverlay from "./SuccessOverlay";
 import StandardizedDropdown from "./StandardizedDropdown";
-import {
-  FOOD_CATEGORIES,
-  FOOD_TYPES,
-  FOOD_SUBTYPES,
-  DIETARY_TAGS,
-  SIZE_OPTIONS,
-} from "../utils/standardizedOptions";
+import { DIETARY_TAGS, SIZE_OPTIONS } from "../utils/standardizedOptions";
 import {
   matchFoodItem,
   guessFoodClassification,
 } from "../utils/receiptAutofill";
+import useFoodTaxonomy from "../hooks/useFoodTaxonomy";
 import "../styles/FoodItemForm.css";
 
 function FoodItemForm({
@@ -24,6 +19,7 @@ function FoodItemForm({
   existingFoodItems = [],
   receiptItems = [],
 }) {
+  const { categories, typesFor, subtypesFor, addOption } = useFoodTaxonomy();
   const [foodItem, setFoodItem] = useState({
     name: "",
     category: "",
@@ -324,15 +320,8 @@ function FoodItemForm({
     onFoodItemsUpdated(updatedFoodItems);
   };
 
-  // Get available types based on selected category
-  const getAvailableTypes = () => {
-    return foodItem.category ? FOOD_TYPES[foodItem.category] || [] : [];
-  };
-
-  // Get available subtypes based on selected type
-  const getAvailableSubtypes = () => {
-    return foodItem.type ? FOOD_SUBTYPES[foodItem.type] || [] : [];
-  };
+  const getAvailableTypes = () => typesFor(foodItem.category);
+  const getAvailableSubtypes = () => subtypesFor(foodItem.type);
 
   return (
     <div className="food-item-form">
@@ -502,9 +491,12 @@ function FoodItemForm({
             <StandardizedDropdown
               label="Category"
               placeholder="Select food category"
-              options={FOOD_CATEGORIES}
+              options={categories}
               value={foodItem.category}
               onChange={(value) => handleDropdownChange("category", value)}
+              onAddCustom={async (value) =>
+                addOption({ kind: "category", value, parent: "" })
+              }
               required={true}
             />
 
@@ -516,6 +508,13 @@ function FoodItemForm({
               options={getAvailableTypes()}
               value={foodItem.type}
               onChange={(value) => handleDropdownChange("type", value)}
+              onAddCustom={async (value) =>
+                addOption({
+                  kind: "type",
+                  value,
+                  parent: foodItem.category,
+                })
+              }
               disabled={!foodItem.category}
               required={true}
             />
@@ -528,6 +527,13 @@ function FoodItemForm({
               options={getAvailableSubtypes()}
               value={foodItem.subType}
               onChange={(value) => handleDropdownChange("subType", value)}
+              onAddCustom={async (value) =>
+                addOption({
+                  kind: "subType",
+                  value,
+                  parent: foodItem.type,
+                })
+              }
               disabled={!foodItem.type}
             />
 

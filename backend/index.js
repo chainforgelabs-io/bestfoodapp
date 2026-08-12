@@ -105,6 +105,9 @@ app.use("/api/seo", seoAdminRoutes);
 const menuImportRoutes = require("./routes/menuImport");
 app.use("/api/menu-imports", menuImportRoutes);
 
+const foodTaxonomyRoutes = require("./routes/foodTaxonomy");
+app.use("/api/food-taxonomy", foodTaxonomyRoutes);
+
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;
 mongoose

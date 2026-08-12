@@ -147,7 +147,7 @@ async function findSameNameSiblings(restaurantId) {
 }
 
 async function applyChange(change, adminUser) {
-  const validated = validateProposed(change.proposed);
+  const validated = await validateProposed(change.proposed);
   if (!validated.ok) {
     const err = new Error(validated.message);
     err.code = "VALIDATION";
@@ -391,7 +391,7 @@ router.patch("/changes/:changeId", async (req, res) => {
       typeof change.proposed?.toObject === "function"
         ? change.proposed.toObject()
         : change.proposed;
-    const validated = validateProposed({
+    const validated = await validateProposed({
       ...current,
       ...(req.body.proposed || req.body),
     });
@@ -455,7 +455,7 @@ router.post("/changes/:changeId/approve", async (req, res) => {
 
     // Allow last-second edits in the same approve call
     if (req.body?.proposed) {
-      const validated = validateProposed(req.body.proposed);
+      const validated = await validateProposed(req.body.proposed);
       if (!validated.ok) {
         return res.status(400).json({ message: validated.message });
       }

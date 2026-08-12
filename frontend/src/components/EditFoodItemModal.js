@@ -3,16 +3,12 @@ import ReactDOM from "react-dom";
 import axios from "../api/axios";
 import Notification from "./Notification";
 import StandardizedDropdown from "./StandardizedDropdown";
-import {
-  FOOD_CATEGORIES,
-  FOOD_TYPES,
-  FOOD_SUBTYPES,
-  DIETARY_TAGS,
-  SIZE_OPTIONS,
-} from "../utils/standardizedOptions";
+import { DIETARY_TAGS, SIZE_OPTIONS } from "../utils/standardizedOptions";
+import useFoodTaxonomy from "../hooks/useFoodTaxonomy";
 import "../styles/EditFoodItemModal.css";
 
 function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
+  const { categories, typesFor, subtypesFor, addOption } = useFoodTaxonomy();
   const [editedFoodItem, setEditedFoodItem] = useState({
     name: "",
     category: "",
@@ -67,17 +63,8 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
     }
   };
 
-  // Get available types based on selected category
-  const getAvailableTypes = () => {
-    return editedFoodItem.category
-      ? FOOD_TYPES[editedFoodItem.category] || []
-      : [];
-  };
-
-  // Get available subtypes based on selected type
-  const getAvailableSubtypes = () => {
-    return editedFoodItem.type ? FOOD_SUBTYPES[editedFoodItem.type] || [] : [];
-  };
+  const getAvailableTypes = () => typesFor(editedFoodItem.category);
+  const getAvailableSubtypes = () => subtypesFor(editedFoodItem.type);
 
   const handleSave = async () => {
     if (
@@ -230,9 +217,12 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
           <StandardizedDropdown
             label="Category"
             placeholder="Select food category"
-            options={FOOD_CATEGORIES}
+            options={categories}
             value={editedFoodItem.category}
             onChange={(value) => handleDropdownChange("category", value)}
+            onAddCustom={async (value) =>
+              addOption({ kind: "category", value, parent: "" })
+            }
             required={true}
           />
 
@@ -246,6 +236,13 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
             options={getAvailableTypes()}
             value={editedFoodItem.type}
             onChange={(value) => handleDropdownChange("type", value)}
+            onAddCustom={async (value) =>
+              addOption({
+                kind: "type",
+                value,
+                parent: editedFoodItem.category,
+              })
+            }
             disabled={!editedFoodItem.category}
             required={true}
           />
@@ -258,6 +255,13 @@ function EditFoodItemModal({ isOpen, onClose, foodItem, onFoodItemUpdated }) {
             options={getAvailableSubtypes()}
             value={editedFoodItem.subType}
             onChange={(value) => handleDropdownChange("subType", value)}
+            onAddCustom={async (value) =>
+              addOption({
+                kind: "subType",
+                value,
+                parent: editedFoodItem.type,
+              })
+            }
             disabled={!editedFoodItem.type}
           />
 

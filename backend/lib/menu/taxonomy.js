@@ -271,7 +271,13 @@ function coerceMenuItem(raw) {
   };
 }
 
-function validateProposed(proposed) {
+async function validateProposed(proposed) {
+  const {
+    getMergedTaxonomy,
+    isAllowedType,
+    isAllowedSubType,
+  } = require("./foodTaxonomyStore");
+
   if (!proposed || typeof proposed !== "object") {
     return { ok: false, message: "proposed fields required" };
   }
@@ -279,14 +285,29 @@ function validateProposed(proposed) {
   if (!name) return { ok: false, message: "name is required" };
 
   const category = String(proposed.category || "").trim();
-  if (!FOOD_CATEGORIES.includes(category)) {
+  const { categories } = await getMergedTaxonomy();
+  const canonicalCategory =
+    categories.find((c) => c.toLowerCase() === category.toLowerCase()) || null;
+  if (!canonicalCategory) {
     return { ok: false, message: "invalid category" };
   }
 
   const type = String(proposed.type || "").trim();
-  const allowed = FOOD_TYPES[category] || [];
-  if (!allowed.includes(type)) {
-    return { ok: false, message: "invalid type for category" };
+  if (!(await isAllowedType(canonicalCategory, type))) {
+    return {
+      ok: false,
+      message:
+        type === "Add +"
+          ? "Pick or create a real type (Add + is not a type)"
+          : "invalid type for category",
+    };
+  }
+
+  const subTypeRaw = proposed.subType
+    ? String(proposed.subType).trim().slice(0, 80)
+    : "";
+  if (!(await isAllowedSubType(type, subTypeRaw))) {
+    return { ok: false, message: "invalid subtype" };
   }
 
   let price;
@@ -311,11 +332,9 @@ function validateProposed(proposed) {
     ok: true,
     value: {
       name: name.slice(0, 120),
-      category,
+      category: canonicalCategory,
       type,
-      subType: proposed.subType
-        ? String(proposed.subType).trim().slice(0, 80)
-        : undefined,
+      subType: subTypeRaw || undefined,
       price,
       sizeOptions,
       tags: Array.isArray(proposed.tags)

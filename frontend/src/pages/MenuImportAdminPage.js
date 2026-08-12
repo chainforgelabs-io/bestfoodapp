@@ -3,17 +3,16 @@ import { Link } from "react-router-dom";
 import axios from "../api/axios";
 import SEO from "../components/SEO";
 import CitySearch from "../components/CitySearch";
-import {
-  FOOD_CATEGORIES,
-  FOOD_TYPES,
-  SIZE_OPTIONS,
-} from "../utils/standardizedOptions";
+import { SIZE_OPTIONS } from "../utils/standardizedOptions";
 import {
   MENU_UPLOAD_ACCEPT,
   normalizeMenuUploadFiles,
 } from "../utils/menuUploadFiles";
+import StandardizedDropdown from "../components/StandardizedDropdown";
+import useFoodTaxonomy from "../hooks/useFoodTaxonomy";
 import "../styles/AdminTools.css";
 import "../styles/MenuImportAdminPage.css";
+import "../styles/StandardizedDropdown.css";
 
 const emptyLocation = { city: "", province: "", country: "" };
 
@@ -25,6 +24,12 @@ function formatPrice(value) {
 }
 
 function MenuImportAdminPage() {
+  const {
+    categories,
+    typesFor,
+    subtypesFor,
+    addOption,
+  } = useFoodTaxonomy();
   const [location, setLocation] = useState(emptyLocation);
   const [restaurantQuery, setRestaurantQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -621,7 +626,8 @@ function MenuImportAdminPage() {
           <ul className="menu-import-queue">
             {queue.map((item) => {
               const proposed = proposedFor(item);
-              const types = FOOD_TYPES[proposed.category] || ["Add +"];
+              const typeOptions = typesFor(proposed.category);
+              const subtypeOptions = subtypesFor(proposed.type);
               const priceChanged =
                 item.action === "update" &&
                 Number(item.existing?.price) !== Number(proposed.price);
@@ -653,6 +659,13 @@ function MenuImportAdminPage() {
                     </p>
                   )}
 
+                  {proposed.type === "Add +" && (
+                    <p className="menu-import-error" style={{ marginTop: 8 }}>
+                      Type is unset — pick an existing type or use Add + to
+                      create one before approving.
+                    </p>
+                  )}
+
                   <div className="menu-import-fields">
                     <label>
                       Name
@@ -664,55 +677,85 @@ function MenuImportAdminPage() {
                         }
                       />
                     </label>
-                    <label>
-                      Category
-                      <select
-                        className="menu-import-input"
+                    <div className="menu-import-dropdown-field">
+                      <StandardizedDropdown
+                        label="Category"
+                        placeholder="Select category"
+                        options={categories}
                         value={proposed.category || ""}
-                        onChange={(e) => {
-                          const category = e.target.value;
-                          const nextTypes = FOOD_TYPES[category] || ["Add +"];
+                        onChange={(category) => {
+                          const nextTypes = typesFor(category);
                           updateEdit(item._id, {
                             category,
                             type: nextTypes.includes(proposed.type)
                               ? proposed.type
-                              : nextTypes[0],
+                              : "",
+                            subType: "",
                           });
                         }}
-                      >
-                        {FOOD_CATEGORIES.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Type
-                      <select
-                        className="menu-import-input"
-                        value={proposed.type || ""}
-                        onChange={(e) =>
-                          updateEdit(item._id, { type: e.target.value })
+                        onAddCustom={async (value) =>
+                          addOption({
+                            kind: "category",
+                            value,
+                            parent: "",
+                          })
                         }
-                      >
-                        {types.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Subtype
-                      <input
-                        className="menu-import-input"
+                        required
+                      />
+                    </div>
+                    <div className="menu-import-dropdown-field">
+                      <StandardizedDropdown
+                        label="Type"
+                        placeholder={
+                          proposed.category
+                            ? "Select type"
+                            : "Select category first"
+                        }
+                        options={typeOptions}
+                        value={
+                          proposed.type === "Add +"
+                            ? ""
+                            : proposed.type || ""
+                        }
+                        onChange={(type) =>
+                          updateEdit(item._id, { type, subType: "" })
+                        }
+                        onAddCustom={async (value) =>
+                          addOption({
+                            kind: "type",
+                            value,
+                            parent: proposed.category,
+                          })
+                        }
+                        disabled={!proposed.category}
+                        required
+                      />
+                    </div>
+                    <div className="menu-import-dropdown-field">
+                      <StandardizedDropdown
+                        label="Subtype"
+                        placeholder={
+                          proposed.type && proposed.type !== "Add +"
+                            ? "Select subtype"
+                            : "Select type first"
+                        }
+                        options={subtypeOptions}
                         value={proposed.subType || ""}
-                        onChange={(e) =>
-                          updateEdit(item._id, { subType: e.target.value })
+                        onChange={(subType) =>
+                          updateEdit(item._id, { subType })
+                        }
+                        onAddCustom={async (value) =>
+                          addOption({
+                            kind: "subType",
+                            value,
+                            parent: proposed.type,
+                          })
+                        }
+                        disabled={
+                          !proposed.type || proposed.type === "Add +"
                         }
                       />
-                    </label>
+                    </div>
                     <label>
                       Price
                       <input
