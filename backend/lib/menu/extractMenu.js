@@ -2,6 +2,7 @@
  * Extract structured menu items from S3 images via xAI Grok vision.
  */
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+const sharp = require("sharp");
 const {
   taxonomyPromptBlock,
   coerceMenuItem,
@@ -9,8 +10,11 @@ const {
 
 const REGION = process.env.AWS_REGION;
 const XAI_API_KEY = process.env.XAI_API_KEY;
-const XAI_MODEL = process.env.XAI_MODEL || "grok-2-vision-1212";
+// grok-2-vision-1212 was deprecated 2026-02-28; grok-4.5 is the current vision chat model.
+const XAI_MODEL = process.env.XAI_MODEL || "grok-4.5";
 const XAI_BASE = process.env.XAI_BASE_URL || "https://api.x.ai/v1";
+const MAX_IMAGE_EDGE = Number(process.env.XAI_MENU_MAX_EDGE || 2048);
+const JPEG_QUALITY = Number(process.env.XAI_MENU_JPEG_QUALITY || 85);
 
 const s3 = REGION ? new S3Client({ region: REGION }) : null;
 
@@ -26,7 +30,7 @@ async function streamToBuffer(body) {
   return Buffer.concat(chunks);
 }
 
-const VISION_MIME = new Set([
+const LOADABLE_MIME = new Set([
   "image/jpeg",
   "image/jpg",
   "image/png",
@@ -34,11 +38,44 @@ const VISION_MIME = new Set([
   "image/gif",
 ]);
 
-function normalizeVisionMime(contentType) {
+function normalizeLoadableMime(contentType) {
   const raw = String(contentType || "").toLowerCase().split(";")[0].trim();
   if (raw === "image/jpg") return "image/jpeg";
-  if (VISION_MIME.has(raw)) return raw;
+  if (LOADABLE_MIME.has(raw)) return raw;
   return null;
+}
+
+function formatXaiError(data, status, bodyText) {
+  const parts = [
+    data?.error?.message,
+    typeof data?.error === "string" ? data.error : null,
+    data?.message,
+    data?.error?.code ? `code=${data.error.code}` : null,
+    data?.error?.type ? `type=${data.error.type}` : null,
+  ].filter(Boolean);
+  if (parts.length) return parts.join(" — ");
+  if (bodyText && bodyText.length < 400) return bodyText;
+  return `xAI request failed (${status})`;
+}
+
+/**
+ * xAI image understanding accepts JPEG/PNG only (max 20MiB).
+ * Re-encode everything to a bounded JPEG for reliable vision calls.
+ */
+async function toVisionJpegDataUrl(buf) {
+  let pipeline = sharp(buf, { failOn: "none" }).rotate();
+  const meta = await pipeline.metadata();
+  const longest = Math.max(meta.width || 0, meta.height || 0);
+  if (longest > MAX_IMAGE_EDGE) {
+    pipeline = pipeline.resize({
+      width: MAX_IMAGE_EDGE,
+      height: MAX_IMAGE_EDGE,
+      fit: "inside",
+      withoutEnlargement: true,
+    });
+  }
+  const jpeg = await pipeline.jpeg({ quality: JPEG_QUALITY, mozjpeg: true }).toBuffer();
+  return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
 }
 
 async function loadImageAsDataUrl(image) {
@@ -61,15 +98,28 @@ async function loadImageAsDataUrl(image) {
     err.code = "UNSUPPORTED_MENU_FILE";
     throw err;
   }
-  const mime = normalizeVisionMime(contentType);
+  const mime = normalizeLoadableMime(contentType);
   if (!mime) {
-    const err = new Error(
-      `Unsupported menu file type "${contentType}". Use JPEG, PNG, WebP, HEIC, or PDF.`
-    );
-    err.code = "UNSUPPORTED_MENU_FILE";
-    throw err;
+    // Still try sharp decode (handles some mislabeled uploads)
+    try {
+      return await toVisionJpegDataUrl(buf);
+    } catch {
+      const err = new Error(
+        `Unsupported menu file type "${contentType}". Use JPEG, PNG, WebP, HEIC, or PDF.`
+      );
+      err.code = "UNSUPPORTED_MENU_FILE";
+      throw err;
+    }
   }
-  return `data:${mime};base64,${buf.toString("base64")}`;
+  try {
+    return await toVisionJpegDataUrl(buf);
+  } catch (err) {
+    const wrapped = new Error(
+      `Could not prepare menu image for scanning: ${err.message || "decode failed"}`
+    );
+    wrapped.code = "UNSUPPORTED_MENU_FILE";
+    throw wrapped;
+  }
 }
 
 function buildPrompt(imageKeys) {
@@ -114,6 +164,28 @@ function parseAiJson(text) {
   }
 }
 
+function extractTextFromResponsesApi(data) {
+  if (typeof data?.output_text === "string" && data.output_text.trim()) {
+    return data.output_text;
+  }
+  const chunks = [];
+  for (const item of data?.output || []) {
+    for (const part of item?.content || []) {
+      if (
+        (part?.type === "output_text" || part?.type === "text") &&
+        typeof part.text === "string"
+      ) {
+        chunks.push(part.text);
+      }
+    }
+  }
+  if (chunks.length) return chunks.join("\n");
+  // Chat-completions-shaped fallback
+  const legacy = data?.choices?.[0]?.message?.content;
+  if (typeof legacy === "string") return legacy;
+  return null;
+}
+
 async function callGrokVision({ dataUrls, imageKeys }) {
   if (!XAI_API_KEY) {
     const err = new Error(
@@ -123,15 +195,18 @@ async function callGrokVision({ dataUrls, imageKeys }) {
     throw err;
   }
 
-  const content = [
-    { type: "text", text: buildPrompt(imageKeys) },
+  const prompt = buildPrompt(imageKeys);
+  // Prefer Responses API (current xAI image-understanding path).
+  const inputContent = [
+    { type: "input_text", text: prompt },
     ...dataUrls.map((url) => ({
-      type: "image_url",
-      image_url: { url, detail: "high" },
+      type: "input_image",
+      image_url: url,
+      detail: "high",
     })),
   ];
 
-  const res = await fetch(`${XAI_BASE}/chat/completions`, {
+  const res = await fetch(`${XAI_BASE}/responses`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -139,8 +214,9 @@ async function callGrokVision({ dataUrls, imageKeys }) {
     },
     body: JSON.stringify({
       model: XAI_MODEL,
-      temperature: 0.1,
-      messages: [{ role: "user", content }],
+      // Avoid server-side history storage when sending images (xAI guidance).
+      store: false,
+      input: [{ role: "user", content: inputContent }],
     }),
   });
 
@@ -151,19 +227,25 @@ async function callGrokVision({ dataUrls, imageKeys }) {
   } catch {
     const err = new Error(`xAI returned non-JSON (${res.status})`);
     err.code = "XAI_FAILED";
-    throw err;
-  }
-
-  if (!res.ok) {
-    const msg =
-      data?.error?.message || data?.message || `xAI request failed (${res.status})`;
-    const err = new Error(msg);
-    err.code = "XAI_FAILED";
     err.status = res.status;
     throw err;
   }
 
-  const text = data?.choices?.[0]?.message?.content;
+  if (!res.ok) {
+    console.error("xAI menu scan error", {
+      status: res.status,
+      model: XAI_MODEL,
+      imageCount: dataUrls.length,
+      body: data,
+    });
+    const err = new Error(formatXaiError(data, res.status, bodyText));
+    err.code = "XAI_FAILED";
+    err.status = res.status;
+    err.details = data;
+    throw err;
+  }
+
+  const text = extractTextFromResponsesApi(data);
   if (!text) {
     const err = new Error("xAI returned no content");
     err.code = "XAI_FAILED";
