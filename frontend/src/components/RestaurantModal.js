@@ -2,11 +2,8 @@ import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import axios from "../api/axios";
 import StandardizedDropdown from "./StandardizedDropdown";
-import {
-  RESTAURANT_TYPES,
-  CUISINE_TYPES,
-  AMBIANCE_OPTIONS,
-} from "../utils/standardizedOptions";
+import { RESTAURANT_TYPES, AMBIANCE_OPTIONS } from "../utils/standardizedOptions";
+import useFoodTaxonomy from "../hooks/useFoodTaxonomy";
 import "../styles/RestaurantModal.css";
 
 function RestaurantModal({
@@ -16,6 +13,7 @@ function RestaurantModal({
   onRestaurantAdded,
   initialName = "",
 }) {
+  const { cuisines, addOption } = useFoodTaxonomy();
   const [restaurantData, setRestaurantData] = useState({
     name: "",
     type: "",
@@ -230,9 +228,12 @@ function RestaurantModal({
           <StandardizedDropdown
             label="Cuisine Types"
             placeholder="Select cuisine types"
-            options={CUISINE_TYPES}
+            options={cuisines}
             value={restaurantData.cuisine}
             onChange={(value) => handleDropdownChange("cuisine", value)}
+            onAddCustom={async (value) =>
+              addOption({ kind: "cuisine", value })
+            }
             allowMultiple={true}
             required={true}
           />

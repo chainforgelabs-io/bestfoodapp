@@ -18,7 +18,7 @@ router.get("/", async (_req, res) => {
   }
 });
 
-// POST /api/food-taxonomy — admin creates a new category/type/subType option
+// POST /api/food-taxonomy — admin creates a new category/type/subType/cuisine option
 router.post("/", protect, admin, async (req, res) => {
   try {
     const { kind, value, parent } = req.body || {};

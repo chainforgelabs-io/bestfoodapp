@@ -20,6 +20,7 @@ const RESTAURANT_TYPES = new Set([
 
 const CUISINE_TYPES = new Set([
   "American",
+  "Canadian",
   "BBQ",
   "Breakfast",
   "Cajun & Creole",
@@ -127,7 +128,7 @@ const PRIMARY_MAP = {
     cuisine: "South American",
   },
   american_restaurant: { type: "Casual Dining", cuisine: "American" },
-  canadian_restaurant: { type: "Casual Dining", cuisine: "American" },
+  canadian_restaurant: { type: "Casual Dining", cuisine: "Canadian" },
   italian_restaurant: { type: "Casual Dining", cuisine: "Italian" },
   french_restaurant: { type: "Casual Dining", cuisine: "French" },
   greek_restaurant: { type: "Casual Dining", cuisine: "Greek" },

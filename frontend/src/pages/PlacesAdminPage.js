@@ -2,13 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "../api/axios";
 import SEO from "../components/SEO";
-import {
-  RESTAURANT_TYPES,
-  CUISINE_TYPES,
-} from "../utils/standardizedOptions";
+import StandardizedDropdown from "../components/StandardizedDropdown";
+import useFoodTaxonomy from "../hooks/useFoodTaxonomy";
+import { RESTAURANT_TYPES, CUISINE_TYPES } from "../utils/standardizedOptions";
 import "../styles/AdminTools.css";
-
-const CUISINE_SET = new Set(CUISINE_TYPES);
+import "../styles/StandardizedDropdown.css";
 
 function emptyDraft() {
   return {
@@ -26,23 +24,38 @@ function emptyDraft() {
   };
 }
 
-function coerceCuisines(list) {
+function coerceCuisines(list, allowedList = CUISINE_TYPES) {
   const raw = Array.isArray(list) ? list : list ? [list] : [];
-  const allowed = raw
-    .map((c) => String(c || "").trim())
-    .filter((c) => CUISINE_SET.has(c));
-  if (allowed.length) return allowed;
-  // Backend may return "Other" which isn't in the UI chip list
-  return ["American"];
+  const allowedByKey = new Map(
+    (allowedList || []).map((c) => [String(c).toLowerCase(), c])
+  );
+  const out = [];
+  const seen = new Set();
+  for (const item of raw) {
+    const trimmed = String(item || "").trim();
+    if (!trimmed || trimmed === "Add +") continue;
+    const canonical = allowedByKey.get(trimmed.toLowerCase());
+    if (!canonical) continue;
+    const key = canonical.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(canonical);
+  }
+  if (out.length) return out;
+  const hadOther = raw.some(
+    (c) => String(c || "").trim().toLowerCase() === "other"
+  );
+  if (hadOther) return ["American"];
+  return [];
 }
 
-function draftFromPreview(place, preview = {}) {
+function draftFromPreview(place, preview = {}, allowedCuisines = CUISINE_TYPES) {
   return {
     name: preview.name || place.name || "",
     type: RESTAURANT_TYPES.includes(preview.type)
       ? preview.type
       : RESTAURANT_TYPES[0],
-    cuisine: coerceCuisines(preview.cuisine),
+    cuisine: coerceCuisines(preview.cuisine, allowedCuisines),
     website: preview.website || "",
     address: {
       street: preview.address?.street || "",
@@ -55,6 +68,7 @@ function draftFromPreview(place, preview = {}) {
 }
 
 function PlacesAdminPage() {
+  const { cuisines, addOption } = useFoodTaxonomy();
   const [batches, setBatches] = useState([]);
   const [settings, setSettings] = useState(null);
   const [selectedBatchId, setSelectedBatchId] = useState(null);
@@ -86,12 +100,12 @@ function PlacesAdminPage() {
       const ids = new Set(items.map((i) => String(i.place._id)));
       for (const item of items) {
         const id = String(item.place._id);
-        const fromPreview = draftFromPreview(item.place, item.preview || {});
+        const fromPreview = draftFromPreview(item.place, item.preview || {}, cuisines);
         if (!next[id]) {
           next[id] = fromPreview;
         } else {
           // Keep admin edits, but always ensure cuisine is a valid non-empty set
-          const cuisine = coerceCuisines(next[id].cuisine);
+          const cuisine = coerceCuisines(next[id].cuisine, cuisines);
           next[id] = {
             ...fromPreview,
             ...next[id],
@@ -132,7 +146,7 @@ function PlacesAdminPage() {
       }
       return next;
     });
-  }, []);
+  }, [cuisines]);
 
   const loadQueue = useCallback(async () => {
     const { data } = await axios.get("/places/queue");
@@ -235,16 +249,6 @@ function PlacesAdminPage() {
     }));
   };
 
-  const toggleCuisine = (placeId, cuisine) => {
-    const key = String(placeId);
-    const draft = drafts[key] || emptyDraft();
-    const current = draft.cuisine || [];
-    const next = current.includes(cuisine)
-      ? current.filter((c) => c !== cuisine)
-      : [...current, cuisine];
-    updateDraft(key, { cuisine: next });
-  };
-
   const toggleSibling = (placeId, siblingId) => {
     const key = String(placeId);
     const sid = String(siblingId);
@@ -292,7 +296,7 @@ function PlacesAdminPage() {
     });
     try {
       const draft = drafts[key] || emptyDraft();
-      const cuisine = coerceCuisines(draft.cuisine);
+      const cuisine = coerceCuisines(draft.cuisine, cuisines);
       if (!draft.name?.trim()) {
         focusStagedCard(key, "Name is required");
         return;
@@ -545,19 +549,22 @@ function PlacesAdminPage() {
                     </label>
                   </div>
                   <div className="admin-staged-cuisine">
-                    <span className="admin-staged-cuisine-label">Cuisine</span>
-                    <div className="admin-staged-cuisine-chips">
-                      {CUISINE_TYPES.map((c) => (
-                        <label key={c} className="admin-cuisine-chip">
-                          <input
-                            type="checkbox"
-                            checked={(draft.cuisine || []).includes(c)}
-                            onChange={() => toggleCuisine(placeKey, c)}
-                          />
-                          {c}
-                        </label>
-                      ))}
-                    </div>
+                    <StandardizedDropdown
+                      label="Cuisine Types"
+                      placeholder="Select one or more cuisines"
+                      options={cuisines}
+                      value={draft.cuisine || []}
+                      onChange={(value) =>
+                        updateDraft(placeKey, {
+                          cuisine: Array.isArray(value) ? value : [],
+                        })
+                      }
+                      onAddCustom={async (value) =>
+                        addOption({ kind: "cuisine", value })
+                      }
+                      allowMultiple
+                      required
+                    />
                   </div>
                   {siblings.length > 0 && (
                     <div className="admin-place-siblings">

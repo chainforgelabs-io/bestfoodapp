@@ -18,6 +18,7 @@ export const RESTAURANT_TYPES = [
 export const CUISINE_TYPES = [
   // The Americas
   "American",
+  "Canadian",
   "BBQ",
   "Breakfast",
   "Cajun & Creole",

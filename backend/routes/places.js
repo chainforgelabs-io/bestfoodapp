@@ -15,6 +15,7 @@ const {
   promotePlace,
   buildStagePreview,
 } = require("../lib/places");
+const { isAllowedCuisine } = require("../lib/menu/foodTaxonomyStore");
 
 const router = express.Router();
 
@@ -244,6 +245,20 @@ router.post("/staged/:placeId/verify", protect, admin, async (req, res) => {
     let cuisine = body.cuisine;
     if (typeof cuisine === "string") cuisine = [cuisine];
     if (!Array.isArray(cuisine) || !cuisine.length) cuisine = preview.cuisine;
+    const allowedCuisine = [];
+    for (const raw of cuisine || []) {
+      const val = String(raw || "").trim();
+      if (!val || val === "Add +") continue;
+      if (val === "Other" || (await isAllowedCuisine(val))) {
+        if (!allowedCuisine.some((c) => c.toLowerCase() === val.toLowerCase())) {
+          allowedCuisine.push(val);
+        }
+      }
+    }
+    if (!allowedCuisine.length) {
+      return res.status(400).json({ message: "Select at least one cuisine" });
+    }
+    cuisine = allowedCuisine;
     const website =
       body.website !== undefined ? String(body.website || "").trim() : preview.website;
     const address = {

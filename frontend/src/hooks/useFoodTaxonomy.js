@@ -4,6 +4,7 @@ import {
   FOOD_CATEGORIES,
   FOOD_TYPES,
   FOOD_SUBTYPES,
+  CUISINE_TYPES,
 } from "../utils/standardizedOptions";
 
 function mergeUnique(base = [], extras = []) {
@@ -30,6 +31,7 @@ export default function useFoodTaxonomy() {
   const [categories, setCategories] = useState(FOOD_CATEGORIES);
   const [typesByCategory, setTypesByCategory] = useState(FOOD_TYPES);
   const [extraSubtypes, setExtraSubtypes] = useState({});
+  const [cuisines, setCuisines] = useState(CUISINE_TYPES);
   const [loading, setLoading] = useState(true);
 
   const applyTaxonomy = useCallback((taxonomy) => {
@@ -43,6 +45,9 @@ export default function useFoodTaxonomy() {
     if (taxonomy.subtypes && typeof taxonomy.subtypes === "object") {
       setExtraSubtypes(taxonomy.subtypes);
     }
+    if (Array.isArray(taxonomy.cuisines) && taxonomy.cuisines.length) {
+      setCuisines(taxonomy.cuisines);
+    }
   }, []);
 
   const refresh = useCallback(async () => {
@@ -55,6 +60,7 @@ export default function useFoodTaxonomy() {
       setCategories(FOOD_CATEGORIES);
       setTypesByCategory(FOOD_TYPES);
       setExtraSubtypes({});
+      setCuisines(CUISINE_TYPES);
     } finally {
       setLoading(false);
     }
@@ -102,6 +108,7 @@ export default function useFoodTaxonomy() {
     categories,
     typesFor,
     subtypesFor,
+    cuisines,
     addOption,
     refresh,
     loading,

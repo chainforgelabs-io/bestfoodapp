@@ -3,6 +3,7 @@
  */
 const FoodTaxonomyOption = require("../../models/FoodTaxonomyOption");
 const { FOOD_CATEGORIES, FOOD_TYPES } = require("./taxonomy");
+const { CUISINE_TYPES: STATIC_CUISINE_TYPES } = require("../places/categoryMap");
 
 function mergeUnique(base = [], extras = []) {
   const seen = new Set();
@@ -26,6 +27,7 @@ async function loadDbOptions() {
   const categories = [];
   const types = {};
   const subtypes = {};
+  const cuisines = [];
   for (const row of rows) {
     if (row.kind === "category") {
       categories.push(row.value);
@@ -37,9 +39,11 @@ async function loadDbOptions() {
       const parent = row.parent || "";
       if (!subtypes[parent]) subtypes[parent] = [];
       subtypes[parent].push(row.value);
+    } else if (row.kind === "cuisine") {
+      cuisines.push(row.value);
     }
   }
-  return { categories, types, subtypes };
+  return { categories, types, subtypes, cuisines };
 }
 
 /**
@@ -65,7 +69,9 @@ async function getMergedTaxonomy() {
     subtypes[typeName] = mergeUnique(list, []);
   }
 
-  return { categories, types, subtypes };
+  const cuisines = mergeUnique(STATIC_CUISINE_TYPES, db.cuisines);
+
+  return { categories, types, subtypes, cuisines };
 }
 
 async function isAllowedType(category, type) {
@@ -92,6 +98,20 @@ async function isAllowedSubType(_type, subType) {
   return String(subType).trim().length > 0;
 }
 
+async function isAllowedCuisine(cuisine) {
+  if (!cuisine || cuisine === "Add +") return false;
+  const key = String(cuisine).toLowerCase();
+  if (STATIC_CUISINE_TYPES.some((c) => c.toLowerCase() === key)) {
+    return true;
+  }
+  const found = await FoodTaxonomyOption.findOne({
+    kind: "cuisine",
+    parentKey: "",
+    valueKey: key,
+  }).lean();
+  return Boolean(found);
+}
+
 function normalizeValue(value) {
   return String(value || "")
     .trim()
@@ -111,8 +131,8 @@ async function createTaxonomyOption({ kind, value, parent, userId }) {
     err.code = "VALIDATION";
     throw err;
   }
-  if (!["category", "type", "subType"].includes(kind)) {
-    const err = new Error("kind must be category, type, or subType");
+  if (!["category", "type", "subType", "cuisine"].includes(kind)) {
+    const err = new Error("kind must be category, type, subType, or cuisine");
     err.code = "VALIDATION";
     throw err;
   }
@@ -155,6 +175,13 @@ async function createTaxonomyOption({ kind, value, parent, userId }) {
     }
   } else if (kind === "category") {
     const hit = FOOD_CATEGORIES.find(
+      (c) => c.toLowerCase() === normalized.toLowerCase()
+    );
+    if (hit) {
+      return { option: { kind, value: hit, parent: "" }, created: false };
+    }
+  } else if (kind === "cuisine") {
+    const hit = STATIC_CUISINE_TYPES.find(
       (c) => c.toLowerCase() === normalized.toLowerCase()
     );
     if (hit) {
@@ -208,6 +235,7 @@ module.exports = {
   getMergedTaxonomy,
   isAllowedType,
   isAllowedSubType,
+  isAllowedCuisine,
   createTaxonomyOption,
   mergeUnique,
   withAddPlus,

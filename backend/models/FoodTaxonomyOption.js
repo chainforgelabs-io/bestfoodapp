@@ -7,11 +7,12 @@ const mongoose = require("mongoose");
  * kind=category → parent unused
  * kind=type → parent is category name
  * kind=subType → parent is type name
+ * kind=cuisine → parent unused
  */
 const foodTaxonomyOptionSchema = new mongoose.Schema({
   kind: {
     type: String,
-    enum: ["category", "type", "subType"],
+    enum: ["category", "type", "subType", "cuisine"],
     required: true,
   },
   value: {

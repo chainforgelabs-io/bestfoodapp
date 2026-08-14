@@ -4,12 +4,13 @@ import { useNavigate, useLocation } from "react-router-dom";
 import StandardizedDropdown from "../components/StandardizedDropdown";
 import {
   RESTAURANT_TYPES,
-  CUISINE_TYPES,
   AMBIANCE_OPTIONS,
 } from "../utils/standardizedOptions";
+import useFoodTaxonomy from "../hooks/useFoodTaxonomy";
 import SEO from "../components/SEO";
 
 function AddRestaurantPage() {
+  const { cuisines, addOption } = useFoodTaxonomy();
   const { state } = useLocation();
   const { formData } = state || {};
   const locationData = formData?.location || {
@@ -140,9 +141,12 @@ function AddRestaurantPage() {
         <StandardizedDropdown
           label="Cuisine Types"
           placeholder="Select cuisine types"
-          options={CUISINE_TYPES}
+          options={cuisines}
           value={restaurantData.cuisine}
           onChange={(value) => handleDropdownChange("cuisine", value)}
+          onAddCustom={async (value) =>
+            addOption({ kind: "cuisine", value })
+          }
           allowMultiple={true}
           required={true}
         />

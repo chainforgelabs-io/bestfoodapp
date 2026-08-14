@@ -221,6 +221,12 @@
   padding: 8px 10px;
 }
 
+.admin-staged-cuisine {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 12px;
+}
+
 .admin-staged-cuisine-label {
   display: block;
   font-size: 0.85rem;
