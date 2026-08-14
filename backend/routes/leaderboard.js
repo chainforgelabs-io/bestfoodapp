@@ -233,9 +233,6 @@ const calculateBestCities = async () => {
         $sort: { avgScore: -1 },
       },
       {
-        $limit: 10,
-      },
-      {
         $project: {
           _id: { $concat: ["city_", "$_id.city", "_", "$_id.province"] },
           name: { $concat: ["$_id.city", ", ", "$_id.province"] },

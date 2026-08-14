@@ -14,6 +14,7 @@ import "../styles/LeaderboardsPage.css";
 const SITE_URL = "https://bestfoodapp.com";
 const MIN_TYPED_BOARD = 7;
 const MIN_CITY_RESTAURANTS = 5;
+const CITY_BOARD_CAP = 10;
 const HERO_KEYS = new Set([
   "bestCities",
   "bestRestaurants",
@@ -116,9 +117,13 @@ function itemHref(item, type) {
 function getBoardItems(category, globalLeaderboards) {
   const raw = globalLeaderboards[category.key] || [];
   if (category.type === "cities") {
-    return raw.filter(
+    const eligible = raw.filter(
       (city) => Number(city.restaurantCount) >= MIN_CITY_RESTAURANTS
     );
+    if (eligible.length > CITY_BOARD_CAP) {
+      return eligible.slice(0, CITY_BOARD_CAP);
+    }
+    return raw;
   }
   return raw;
 }
