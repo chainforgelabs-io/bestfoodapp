@@ -55,7 +55,7 @@ export const generateSeoMeta = (city, province, country, page = "home") => {
     },
     leaderboards: {
       title: `${city} Food Leaderboards | Top Restaurants & Food Rankings`,
-      description: `See the top-ranked restaurants and food items in ${location}. Compare ratings and discover what locals consider the best dining options.`,
+      description: `See the top dishes and restaurants in ${location}. Compare ratings and discover what locals rank highest.`,
       keywords: `${city} food rankings, best restaurants ${city}, top food ${city}, ${city} leaderboards, ${province} food`,
     },
   };

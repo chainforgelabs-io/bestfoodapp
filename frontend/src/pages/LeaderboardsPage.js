@@ -1,23 +1,133 @@
 // src/pages/LeaderboardsPage.js
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import axios from "../api/axios";
-import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { Link, useNavigate } from "react-router-dom";
 import SEO from "../components/SEO";
 import CitySearch from "../components/CitySearch";
 import { useCityFromUrl } from "../hooks/useCityFromUrl";
 import { generateSeoMeta, generateCityUrl } from "../utils/cityUtils";
-import { restaurantKey } from "../utils/restaurantUrls";
+import { restaurantPath } from "../utils/restaurantUrls";
 import { Compass, Building2, Store, Crown } from "lucide-react";
 import { getCategoryIcon } from "../utils/categoryIcon";
-import "../styles/LeaderboardsPage.css"; // Import your CSS file for styling
+import "../styles/LeaderboardsPage.css";
 
-// Fixed lucide icons for the non-category section headers.
+const SITE_URL = "https://bestfoodapp.com";
+const MIN_TYPED_BOARD = 7;
+const MIN_CITY_RESTAURANTS = 5;
+const HERO_KEYS = new Set([
+  "bestCities",
+  "bestRestaurants",
+  "bestOverallFood",
+]);
+
 const FIXED_HEADER_ICONS = {
   bestCities: Building2,
   bestRestaurants: Store,
   bestOverallFood: Crown,
 };
+
+const GLOBAL_CATEGORIES = [
+  { key: "bestCities", title: "Best Cities", category: null, type: "cities" },
+  {
+    key: "bestRestaurants",
+    title: "Best Restaurants",
+    category: null,
+    type: "restaurants",
+  },
+  {
+    key: "bestOverallFood",
+    title: "Best Overall Food",
+    category: null,
+    type: "overall",
+  },
+  { key: "bestBurgers", title: "Best Burgers", category: "Burger", type: "food-items" },
+  { key: "bestPizza", title: "Best Pizza", category: "Pizza", type: "food-items" },
+  { key: "bestTacos", title: "Best Tacos", category: "Tacos", type: "food-items" },
+  { key: "bestBurritos", title: "Best Burritos", category: "Burrito", type: "food-items" },
+  { key: "bestHotDogs", title: "Best Hot Dogs", category: "Hot Dog", type: "food-items" },
+  { key: "bestFries", title: "Best Fries", category: "Fries", type: "food-items" },
+  { key: "bestDesserts", title: "Best Desserts", category: "Desserts", type: "food-items" },
+  { key: "bestAmerican", title: "Best American", category: "American", type: "cuisine" },
+  { key: "bestItalian", title: "Best Italian", category: "Italian", type: "cuisine" },
+  { key: "bestVietnamese", title: "Best Vietnamese", category: "Vietnamese", type: "cuisine" },
+  { key: "bestMexican", title: "Best Mexican", category: "Mexican", type: "cuisine" },
+  { key: "bestBreakfastFood", title: "Best Breakfast Food", category: "Breakfast", type: "cuisine" },
+  { key: "bestAsian", title: "Best Asian", category: "Asian", type: "cuisine" },
+];
+
+const BOARD_SECTIONS = [
+  { id: "places", title: "Places", keys: ["bestCities", "bestRestaurants"] },
+  {
+    id: "dishes",
+    title: "Dishes",
+    keys: [
+      "bestOverallFood",
+      "bestBurgers",
+      "bestPizza",
+      "bestTacos",
+      "bestBurritos",
+      "bestHotDogs",
+      "bestFries",
+      "bestDesserts",
+    ],
+  },
+  {
+    id: "cuisines",
+    title: "Cuisines",
+    keys: [
+      "bestAmerican",
+      "bestItalian",
+      "bestVietnamese",
+      "bestMexican",
+      "bestBreakfastFood",
+      "bestAsian",
+    ],
+  },
+];
+
+function visiblePrice(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function itemDisplayName(item, type) {
+  if (type === "cities") return item.name;
+  return item.name || item.foodItem?.name || "Unknown Item";
+}
+
+function itemHref(item, type) {
+  if (type === "cities") {
+    if (item.city && item.province && item.country) {
+      return generateCityUrl(
+        item.city,
+        item.province,
+        item.country,
+        "/leaderboards"
+      );
+    }
+    return null;
+  }
+  if (type === "food-items" || type === "overall") {
+    return restaurantPath(item.foodItem?.restaurant || item.restaurant);
+  }
+  return restaurantPath(item);
+}
+
+function getBoardItems(category, globalLeaderboards) {
+  const raw = globalLeaderboards[category.key] || [];
+  if (category.type === "cities") {
+    return raw.filter(
+      (city) => Number(city.restaurantCount) >= MIN_CITY_RESTAURANTS
+    );
+  }
+  return raw;
+}
+
+function shouldShowBoard(category, items) {
+  if (!items.length) return false;
+  if (HERO_KEYS.has(category.key)) return true;
+  return items.length >= MIN_TYPED_BOARD;
+}
 
 // API base URL is now handled by the configured axios instance
 
@@ -32,7 +142,6 @@ function LeaderboardsPage() {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [globalLeaderboards, setGlobalLeaderboards] = useState({});
   const [loading, setLoading] = useState(false);
-  const [categoryLoading, setCategoryLoading] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [resetKey, setResetKey] = useState(0); // Key to trigger city search reset
 
@@ -59,11 +168,11 @@ function LeaderboardsPage() {
           "leaderboards"
         )
       : {
-          title: "Food Leaderboards | Top Restaurants & Food Rankings",
+          title: "Best restaurants and dishes | Food leaderboards",
           description:
-            "See the highest-rated restaurants and food items across cities. Compare rankings and discover the best dining experiences.",
+            "Rankings of the best restaurants and dishes by blended expert and community scores. Pick a city for local leaderboards.",
           keywords:
-            "food leaderboards, restaurant rankings, best food, top restaurants",
+            "food leaderboards, restaurant rankings, best dishes, top restaurants",
         };
 
   // Dynamic categories from database
@@ -95,7 +204,7 @@ function LeaderboardsPage() {
           "Hot Dog",
           "Fried Rice",
           "Fries",
-          "Churro",
+          "Desserts",
         ];
 
   const cuisineTypes =
@@ -117,126 +226,16 @@ function LeaderboardsPage() {
           "Fast Food",
         ];
 
-  // Enhanced global leaderboard categories with new additions
-  const globalCategories = [
-    // Location categories
-    {
-      key: "bestCities",
-      title: "Best Cities",
-      category: null,
-      type: "cities",
-    },
-
-    // Restaurant categories
-    {
-      key: "bestRestaurants",
-      title: "Best Restaurants",
-      category: null,
-      type: "restaurants",
-    },
-    {
-      key: "bestOverallFood",
-      title: "Best Overall Food",
-      category: null,
-      type: "overall",
-    },
-
-    // Food item categories
-    {
-      key: "bestBurgers",
-      title: "Best Burgers",
-      category: "Burger",
-      type: "food-items",
-    },
-    {
-      key: "bestPizza",
-      title: "Best Pizza",
-      category: "Pizza",
-      type: "food-items",
-    },
-    {
-      key: "bestTacos",
-      title: "Best Tacos",
-      category: "Tacos",
-      type: "food-items",
-    },
-    {
-      key: "bestBurritos",
-      title: "Best Burritos",
-      category: "Burrito",
-      type: "food-items",
-    },
-    {
-      key: "bestHotDogs",
-      title: "Best Hot Dogs",
-      category: "Hot Dog",
-      type: "food-items",
-    },
-    {
-      key: "bestFries",
-      title: "Best Fries",
-      category: "Fries",
-      type: "food-items",
-    },
-    {
-      key: "bestDesserts",
-      title: "Best Desserts",
-      category: "Churro",
-      type: "food-items",
-    },
-
-    // Cuisine categories
-    {
-      key: "bestAmerican",
-      title: "Best American",
-      category: "American",
-      type: "cuisine",
-    },
-    {
-      key: "bestItalian",
-      title: "Best Italian",
-      category: "Italian",
-      type: "cuisine",
-    },
-    {
-      key: "bestVietnamese",
-      title: "Best Vietnamese",
-      category: "Vietnamese",
-      type: "cuisine",
-    },
-    {
-      key: "bestMexican",
-      title: "Best Mexican",
-      category: "Mexican",
-      type: "cuisine",
-    },
-    {
-      key: "bestBreakfastFood",
-      title: "Best Breakfast Food",
-      category: "Breakfast Food",
-      type: "cuisine",
-    },
-    {
-      key: "bestAsian",
-      title: "Best Asian",
-      category: "Asian",
-      type: "cuisine",
-    },
-  ];
-
   // OPTIMIZED: Fetch global leaderboards using new backend API (replaces the massive function)
   const fetchGlobalLeaderboards = async () => {
     setLoading(true);
     try {
-      console.log("Fetching optimized global leaderboards...");
       const response = await axios.get(`/leaderboards/global`);
       setGlobalLeaderboards(response.data);
-      console.log("Global leaderboards loaded successfully:", response.data);
     } catch (error) {
       console.error("Error fetching global leaderboards:", error);
-      // Set empty arrays for all categories on error
       const emptyLeaderboards = {};
-      globalCategories.forEach((cat) => {
+      GLOBAL_CATEGORIES.forEach((cat) => {
         emptyLeaderboards[cat.key] = [];
       });
       setGlobalLeaderboards(emptyLeaderboards);
@@ -494,65 +493,115 @@ function LeaderboardsPage() {
     }
   };
 
-  // Navigation handlers — prefer slug when the object is passed
-  const handleRestaurantClick = (restaurantOrId) => {
-    const key =
-      typeof restaurantOrId === "object" && restaurantOrId !== null
-        ? restaurantKey(restaurantOrId)
-        : restaurantOrId;
-    if (key) navigate(`/restaurant/${key}`);
-  };
+  const visibleGlobalBoards = useMemo(() => {
+    return GLOBAL_CATEGORIES.map((category) => {
+      const items = getBoardItems(category, globalLeaderboards);
+      return { category, items, show: shouldShowBoard(category, items) };
+    }).filter((board) => board.show);
+  }, [globalLeaderboards]);
 
-  const handleCityClick = (city) => {
-    if (city && city.city && city.province && city.country) {
-      // Navigate to leaderboards page with city URL
-      const cityUrl = generateCityUrl(
-        city.city,
-        city.province,
-        city.country,
+  const canonicalUrl = selectedCity?.city
+    ? `${SITE_URL}${generateCityUrl(
+        selectedCity.city,
+        selectedCity.province,
+        selectedCity.country,
         "/leaderboards"
-      );
-      navigate(cityUrl);
+      )}`
+    : `${SITE_URL}/leaderboards`;
+
+  const pageHeading = getTitle();
+
+  const jsonLd = useMemo(() => {
+    const breadcrumbs = [
+      { name: "Home", url: `${SITE_URL}/` },
+      { name: "Leaderboards", url: `${SITE_URL}/leaderboards` },
+    ];
+    if (selectedCity?.city) {
+      breadcrumbs.push({
+        name: `${selectedCity.city} leaderboards`,
+        url: canonicalUrl,
+      });
     }
-  };
 
-  const handleFoodItemClick = (item) => {
-    const restaurant =
-      item.foodItem?.restaurant || item.restaurant || null;
-    const key = restaurantKey(restaurant);
-    if (key) navigate(`/restaurant/${key}`);
-  };
+    const breadcrumbList = {
+      "@type": "BreadcrumbList",
+      itemListElement: breadcrumbs.map((crumb, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: crumb.name,
+        item: crumb.url,
+      })),
+    };
 
-  const itemListJsonLd =
-    Array.isArray(leaderboardData) && leaderboardData.length > 0
-      ? {
-          "@context": "https://schema.org",
+    const collectionPage = {
+      "@type": ["WebPage", "CollectionPage"],
+      name: selectedCity?.city
+        ? `Food leaderboards in ${selectedCity.city}`
+        : "Food leaderboards",
+      description: seoMeta.description,
+      url: canonicalUrl,
+    };
+
+    const lists = [];
+    if (selectedCity) {
+      if (Array.isArray(leaderboardData) && leaderboardData.length > 0) {
+        lists.push({
           "@type": "ItemList",
-          name: seoMeta.title,
-          itemListElement: leaderboardData.slice(0, 20).map((item, index) => {
-            const name =
-              item.name ||
-              item.restaurant?.name ||
-              item.foodItem?.name ||
-              `Entry ${index + 1}`;
-            const restaurantSlug =
-              item.restaurant?.slug ||
-              item.foodItem?.restaurant?.slug ||
-              item.restaurant?._id ||
-              item.foodItem?.restaurant?._id ||
-              item.restaurant ||
-              item.foodItem?.restaurant;
+          name: pageHeading,
+          url: canonicalUrl,
+          itemListElement: leaderboardData.slice(0, 10).map((item, index) => {
+            const href = itemHref(
+              item,
+              activeCategory === "food-items" ? "food-items" : "restaurants"
+            );
             return {
               "@type": "ListItem",
               position: index + 1,
-              name,
-              url: restaurantSlug
-                ? `https://bestfoodapp.com/restaurant/${restaurantSlug}`
-                : undefined,
+              name: itemDisplayName(item, activeCategory),
+              url: href && href !== "/" ? `${SITE_URL}${href}` : undefined,
             };
           }),
-        }
-      : undefined;
+        });
+      }
+    } else {
+      visibleGlobalBoards.forEach(({ category, items }) => {
+        lists.push({
+          "@type": "ItemList",
+          name: category.title,
+          url: canonicalUrl,
+          itemListElement: items.map((item, index) => {
+            const href = itemHref(item, category.type);
+            return {
+              "@type": "ListItem",
+              position: index + 1,
+              name: itemDisplayName(item, category.type),
+              url: href && href !== "/" ? `${SITE_URL}${href}` : undefined,
+            };
+          }),
+        });
+      });
+    }
+
+    return {
+      "@context": "https://schema.org",
+      "@graph": [collectionPage, breadcrumbList, ...lists],
+    };
+  }, [
+    selectedCity,
+    canonicalUrl,
+    seoMeta.description,
+    leaderboardData,
+    activeCategory,
+    visibleGlobalBoards,
+    pageHeading,
+  ]);
+
+  const cityItemHref = (item) => {
+    if (activeCategory === "food-items") {
+      return restaurantPath(item.foodItem?.restaurant || item.restaurant);
+    }
+    return restaurantPath(item);
+  };
 
   return (
     <div className="leaderboards-page">
@@ -560,21 +609,15 @@ function LeaderboardsPage() {
         title={seoMeta.title}
         description={seoMeta.description}
         keywords={seoMeta.keywords}
-        canonicalUrl={
-          selectedCity?.city
-            ? `https://bestfoodapp.com${generateCityUrl(
-                selectedCity.city,
-                selectedCity.province,
-                selectedCity.country,
-                "/leaderboards"
-              )}`
-            : "https://bestfoodapp.com/leaderboards"
-        }
-        jsonLd={itemListJsonLd}
+        canonicalUrl={canonicalUrl}
+        jsonLd={jsonLd}
       />
       <div className="leaderboards-header">
-        <h1 className="page-title">🏆 Food Leaderboards</h1>
-        <p className="page-subtitle">Discover the best food in your city</p>
+        <h1 className="page-title">Food leaderboards</h1>
+        <p className="page-subtitle">
+          Rankings of the best dishes and restaurants by blended expert and
+          community scores. Choose a city for local boards.
+        </p>
       </div>
 
       {/* City Search Section */}
@@ -678,7 +721,7 @@ function LeaderboardsPage() {
 
       {/* Results Section */}
       <div className="results-section">
-        <h2 className="results-title">{getTitle()}</h2>
+        {selectedCity && <h2 className="results-title">{getTitle()}</h2>}
 
         {loading ? (
           <div className="loading-container">
@@ -688,20 +731,14 @@ function LeaderboardsPage() {
         ) : selectedCity ? (
           // City-specific results
           filteredData.length > 0 ? (
-            <div className="leaderboard-grid">
-              {filteredData.map((item, index) => (
-                <div
-                  key={item._id || item.foodItem?._id || index}
-                  className={`leaderboard-card ${index < 3 ? "top-three" : ""}`}
-                  onClick={() => {
-                    if (activeCategory === "restaurants") {
-                      handleRestaurantClick(item);
-                    } else if (activeCategory === "food-items") {
-                      handleFoodItemClick(item);
-                    }
-                  }}
-                  style={{ cursor: "pointer" }}
-                >
+            <ol className="leaderboard-grid">
+              {filteredData.map((item, index) => {
+                const href = cityItemHref(item);
+                const price = visiblePrice(
+                  item.price || item.foodItem?.price
+                );
+                const card = (
+                  <>
                   <div className="rank-badge">
                     <span className="rank-icon">{getRankIcon(index)}</span>
                   </div>
@@ -739,23 +776,37 @@ function LeaderboardsPage() {
                         <span className="score-label">Score</span>
                       </div>
 
-                      {item.price && (
+                      {price != null && (
                         <div className="price-info">
                           <span className="price-label">Price:</span>
-                          <span className="price-value">${item.price}</span>
+                          <span className="price-value">${price}</span>
                         </div>
                       )}
                     </div>
 
                     {item.address && (
                       <p className="address-info">
-                        📍 {item.address.street}, {item.address.city}
+                        {item.address.street}, {item.address.city}
                       </p>
                     )}
                   </div>
-                </div>
-              ))}
-            </div>
+                  </>
+                );
+                const className = `leaderboard-card ${index < 3 ? "top-three" : ""}`;
+                const key = item._id || item.foodItem?._id || index;
+                return (
+                  <li key={key}>
+                    {href && href !== "/" ? (
+                      <Link to={href} className={className}>
+                        {card}
+                      </Link>
+                    ) : (
+                      <div className={className}>{card}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
           ) : (
             <div className="no-results">
               <div className="no-results-icon">🔍</div>
@@ -770,200 +821,158 @@ function LeaderboardsPage() {
               <div className="prompt-icon">
                 <Compass size={20} strokeWidth={2} aria-hidden />
               </div>
-              <h3>Ready to explore?</h3>
-              <p>
-                Check out our global top food rankings, or select a city above
-                for local leaderboards!
+              <p className="global-intro-lead">
+                Global rankings of top dishes and restaurants. Select a city
+                above for local leaderboards.
               </p>
             </div>
 
-            <div className="global-grid">
-              {globalCategories.map((category) => {
-                const HeaderIcon =
-                  FIXED_HEADER_ICONS[category.key] ||
-                  getCategoryIcon(category.category);
-                return (
-                  <div key={category.key} className="global-category-card">
-                    <h4
-                      className="global-category-title"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                      }}
-                    >
-                      <HeaderIcon size={20} strokeWidth={2} aria-hidden />
-                      <span>{category.title}</span>
-                    </h4>
-                  <div className="global-items-list">
-                    {categoryLoading[category.key] ? (
-                      <div className="category-loading">
-                        <div className="mini-spinner"></div>
-                        <p>Loading...</p>
-                      </div>
-                    ) : globalLeaderboards[category.key]?.length > 0 ? (
-                      globalLeaderboards[category.key].map((item, index) => (
-                        <div
-                          key={`${category.key}-${item._id || index}`}
-                          className="global-item"
-                          onClick={() => {
-                            if (category.type === "cities") {
-                              handleCityClick(item);
-                            } else if (category.type === "food-items") {
-                              handleFoodItemClick(item);
-                            } else if (
-                              category.type === "restaurants" ||
-                              category.type === "cuisine"
-                            ) {
-                              handleRestaurantClick(item);
-                            } else if (category.type === "overall") {
-                              // For overall food items, navigate to restaurant
-                              handleFoodItemClick(item);
-                            }
-                          }}
-                          style={{ cursor: "pointer" }}
+            {BOARD_SECTIONS.map((section) => {
+              const boards = section.keys
+                .map((key) =>
+                  visibleGlobalBoards.find((b) => b.category.key === key)
+                )
+                .filter(Boolean);
+              if (!boards.length) return null;
+              return (
+                <section
+                  key={section.id}
+                  className="global-board-section"
+                  aria-labelledby={`board-section-${section.id}`}
+                >
+                  <h2
+                    id={`board-section-${section.id}`}
+                    className="global-section-title"
+                  >
+                    {section.title}
+                  </h2>
+                  <div className="global-grid">
+                    {boards.map(({ category, items }) => {
+                      const HeaderIcon =
+                        FIXED_HEADER_ICONS[category.key] ||
+                        getCategoryIcon(category.category);
+                      return (
+                        <article
+                          key={category.key}
+                          className="global-category-card"
                         >
-                          <span className="global-rank">{index + 1}.</span>
-                          <div className="global-item-info">
-                            <div
-                              className={`global-item-header ${
-                                category.type === "cities"
-                                  ? "cities-layout"
-                                  : ""
-                              }`}
-                            >
-                              <span className="global-item-name">
-                                {category.type === "cities"
-                                  ? item.name
-                                  : item.name ||
-                                    item.foodItem?.name ||
-                                    "Unknown Item"}
-                              </span>
-                              <span className="global-item-score">
-                                {category.type === "cities"
-                                  ? getScore(item) === "N/A"
-                                    ? `N/A (${item.restaurantCount} restaurants)`
-                                    : `${getScore(item)}/100 (${
-                                        item.restaurantCount
-                                      } restaurants)`
-                                  : getScore(item) === "N/A"
-                                  ? "N/A"
-                                  : `${getScore(item)}/100`}
-                              </span>
-                            </div>
-
-                            {/* Show additional details for food items */}
-                            {category.type === "food-items" && (
-                              <>
-                                <div className="global-extra-info">
-                                  {(item.foodItem?.restaurant?.name ||
-                                    item.restaurant?.name) && (
-                                    <span className="global-restaurant">
-                                      <Store
-                                        size={14}
-                                        strokeWidth={2}
-                                        aria-hidden
-                                        style={{
-                                          verticalAlign: "-0.15em",
-                                          marginRight: 4,
-                                        }}
-                                      />
-                                      {item.foodItem?.restaurant?.name ||
-                                        item.restaurant?.name}
-                                    </span>
-                                  )}
-                                  {(item.foodItem?.price || item.price) && (
-                                    <span className="global-price">
-                                      ${item.foodItem?.price || item.price}
-                                    </span>
-                                  )}
-                                </div>
-                                {(item.foodItem?.restaurant?.address ||
-                                  item.restaurant?.address) && (
-                                  <div className="global-address-row">
-                                    <span className="global-address">
-                                      📍{" "}
-                                      {item.foodItem?.restaurant?.address
-                                        ?.street ||
-                                      item.restaurant?.address?.street
-                                        ? `${
-                                            item.foodItem?.restaurant?.address
-                                              ?.street ||
-                                            item.restaurant?.address?.street
-                                          }, `
-                                        : ""}
-                                      {item.foodItem?.restaurant?.address
-                                        ?.city ||
-                                        item.restaurant?.address?.city}
-                                    </span>
-                                  </div>
-                                )}
-                              </>
-                            )}
-
-                            {/* Show additional details for overall food items */}
-                            {category.type === "overall" && (
-                              <>
-                                <div className="global-extra-info">
-                                  {item.restaurant?.name && (
-                                    <span className="global-restaurant">
-                                      <Store
-                                        size={14}
-                                        strokeWidth={2}
-                                        aria-hidden
-                                        style={{
-                                          verticalAlign: "-0.15em",
-                                          marginRight: 4,
-                                        }}
-                                      />
-                                      {item.restaurant.name}
-                                    </span>
-                                  )}
-                                  {item.price && (
-                                    <span className="global-price">
-                                      ${item.price}
-                                    </span>
-                                  )}
-                                </div>
-                                {item.restaurant?.address && (
-                                  <div className="global-address-row">
-                                    <span className="global-address">
-                                      📍{" "}
-                                      {item.restaurant.address.street
-                                        ? `${item.restaurant.address.street}, `
-                                        : ""}
-                                      {item.restaurant.address.city}
-                                    </span>
-                                  </div>
-                                )}
-                              </>
-                            )}
-
-                            {/* Show address for restaurants and cuisine categories */}
-                            {(category.type === "restaurants" ||
-                              category.type === "cuisine") &&
-                              item.address && (
-                                <div className="global-extra-info">
-                                  <span className="global-address">
-                                    📍{" "}
-                                    {item.address.street
-                                      ? `${item.address.street}, `
-                                      : ""}
-                                    {item.address.city}
+                          <h3 className="global-category-title">
+                            <HeaderIcon size={20} strokeWidth={2} aria-hidden />
+                            <span>{category.title}</span>
+                          </h3>
+                          <ol className="global-items-list">
+                            {items.map((item, index) => {
+                              const href = itemHref(item, category.type);
+                              const price = visiblePrice(
+                                item.foodItem?.price || item.price
+                              );
+                              const address =
+                                item.foodItem?.restaurant?.address ||
+                                item.restaurant?.address ||
+                                item.address;
+                              const restaurantName =
+                                item.foodItem?.restaurant?.name ||
+                                item.restaurant?.name;
+                              const rowClass = `global-item${
+                                href && href !== "/" ? " global-item-link" : ""
+                              }`;
+                              const body = (
+                                <>
+                                  <span className="global-rank">
+                                    {index + 1}.
                                   </span>
-                                </div>
-                              )}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="no-global-items">No items yet</p>
-                    )}
+                                  <div className="global-item-info">
+                                    <div
+                                      className={`global-item-header ${
+                                        category.type === "cities"
+                                          ? "cities-layout"
+                                          : ""
+                                      }`}
+                                    >
+                                      <span className="global-item-name">
+                                        {itemDisplayName(item, category.type)}
+                                      </span>
+                                      <span className="global-item-score">
+                                        {category.type === "cities"
+                                          ? getScore(item) === "N/A"
+                                            ? `N/A (${item.restaurantCount} restaurants)`
+                                            : `${getScore(item)}/100 (${
+                                                item.restaurantCount
+                                              } restaurants)`
+                                          : getScore(item) === "N/A"
+                                          ? "N/A"
+                                          : `${getScore(item)}/100`}
+                                      </span>
+                                    </div>
+                                    {(category.type === "food-items" ||
+                                      category.type === "overall") && (
+                                      <>
+                                        <div className="global-extra-info">
+                                          {restaurantName && (
+                                            <span className="global-restaurant">
+                                              <Store
+                                                size={14}
+                                                strokeWidth={2}
+                                                aria-hidden
+                                              />
+                                              {restaurantName}
+                                            </span>
+                                          )}
+                                          {price != null && (
+                                            <span className="global-price">
+                                              ${price}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {address && (
+                                          <div className="global-address-row">
+                                            <span className="global-address">
+                                              {address.street
+                                                ? `${address.street}, `
+                                                : ""}
+                                              {address.city}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </>
+                                    )}
+                                    {(category.type === "restaurants" ||
+                                      category.type === "cuisine") &&
+                                      item.address && (
+                                        <div className="global-extra-info">
+                                          <span className="global-address">
+                                            {item.address.street
+                                              ? `${item.address.street}, `
+                                              : ""}
+                                            {item.address.city}
+                                          </span>
+                                        </div>
+                                      )}
+                                  </div>
+                                </>
+                              );
+                              return (
+                                <li
+                                  key={`${category.key}-${item._id || index}`}
+                                >
+                                  {href && href !== "/" ? (
+                                    <Link to={href} className={rowClass}>
+                                      {body}
+                                    </Link>
+                                  ) : (
+                                    <div className="global-item">{body}</div>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ol>
+                        </article>
+                      );
+                    })}
                   </div>
-                  </div>
-                );
-              })}
-            </div>
+                </section>
+              );
+            })}
           </div>
         )}
       </div>

@@ -257,12 +257,12 @@ const calculateBestCities = async () => {
 };
 
 // Calculate best food items by type
-const calculateBestFoodItems = async (foodType) => {
+const calculateBestFoodItems = async (foodType, matchField = "type") => {
   try {
     const foodItems = await FoodItem.aggregate([
       {
         $match: {
-          type: foodType,
+          [matchField]: foodType,
           $or: [{ adminScore: { $gt: 0 } }, { communityScore: { $gt: 0 } }],
         },
       },
@@ -573,7 +573,7 @@ router.get("/global", async (req, res) => {
       calculateBestFoodItems("Burrito"),
       calculateBestFoodItems("Hot Dog"),
       calculateBestFoodItems("Fries"),
-      calculateBestFoodItems("Churro"),
+      calculateBestFoodItems("Desserts", "category"),
       calculateBestCuisine("American"),
       calculateBestCuisine("Italian"),
       calculateBestCuisine("Vietnamese"),
