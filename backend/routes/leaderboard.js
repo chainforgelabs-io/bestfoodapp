@@ -760,6 +760,26 @@ router.get("/categories", async (req, res) => {
   }
 });
 
+// GET /api/leaderboards/public-boards — eligible typed ranking URLs for a city (or global)
+router.get("/public-boards", async (req, res) => {
+  try {
+    const { getEligibleTypeSlugs } = require("../lib/seo/publicRankings");
+    const city = String(req.query.city || "").trim();
+    const location = city
+      ? {
+          city,
+          province: String(req.query.province || "").trim(),
+          country: String(req.query.country || "").trim(),
+        }
+      : null;
+    const boards = await getEligibleTypeSlugs(location);
+    res.json({ boards });
+  } catch (error) {
+    console.error("Error fetching public boards:", error);
+    res.status(500).json({ error: "Failed to fetch public boards" });
+  }
+});
+
 // GET /api/leaderboards/filtered - Advanced filtering for city-specific data
 router.get("/filtered", async (req, res) => {
   try {
@@ -943,6 +963,10 @@ router.get("/filtered", async (req, res) => {
         ...(foodType &&
           foodType !== "All" && {
             type: { $regex: new RegExp(foodType, "i") },
+          }),
+        ...(req.query.itemCategory &&
+          req.query.itemCategory !== "All" && {
+            category: { $regex: new RegExp(req.query.itemCategory, "i") },
           }),
         ...(subType &&
           subType !== "All" && {

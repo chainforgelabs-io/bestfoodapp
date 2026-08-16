@@ -115,6 +115,33 @@ function itemListSchema(items, { name, url } = {}) {
   };
 }
 
+function rankingReviewNodes(items, asOf) {
+  return (items || [])
+    .filter((item) => Number.isFinite(Number(item.score)) && Number(item.score) > 0)
+    .map((item) => {
+      const published = item.reviewDate || asOf;
+      return {
+        "@type": "Review",
+        datePublished: published
+          ? new Date(published).toISOString()
+          : undefined,
+        reviewRating: {
+          "@type": "Rating",
+          ratingValue: Number(item.score),
+          bestRating: 100,
+          worstRating: 0,
+        },
+        itemReviewed: {
+          "@type": item.restaurantName ? "MenuItem" : "Restaurant",
+          name: item.restaurantName
+            ? `${item.name} at ${item.restaurantName}`
+            : item.name,
+          url: item.url ? absoluteUrl(item.url) : undefined,
+        },
+      };
+    });
+}
+
 function breadcrumbSchema(crumbs) {
   return {
     "@context": "https://schema.org",
@@ -137,4 +164,5 @@ module.exports = {
   reviewSchema,
   itemListSchema,
   breadcrumbSchema,
+  rankingReviewNodes,
 };

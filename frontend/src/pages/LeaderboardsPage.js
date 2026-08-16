@@ -1,12 +1,17 @@
 // src/pages/LeaderboardsPage.js
 import React, { useMemo, useState, useEffect } from "react";
 import axios from "../api/axios";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import SEO from "../components/SEO";
 import CitySearch from "../components/CitySearch";
 import { useCityFromUrl } from "../hooks/useCityFromUrl";
 import { generateSeoMeta, generateCityUrl } from "../utils/cityUtils";
 import { restaurantPath } from "../utils/restaurantUrls";
+import {
+  resolveTypeSlug,
+  headingForBoard,
+  slugForValue,
+} from "../utils/rankingSlugs";
 import { Compass, Building2, Store, Crown } from "lucide-react";
 import { getCategoryIcon } from "../utils/categoryIcon";
 import "../styles/LeaderboardsPage.css";
@@ -138,6 +143,8 @@ function shouldShowBoard(category, items) {
 
 function LeaderboardsPage() {
   const navigate = useNavigate();
+  const { typeSlug } = useParams();
+  const typedBoard = useMemo(() => resolveTypeSlug(typeSlug), [typeSlug]);
 
   // State management
   const [activeCategory, setActiveCategory] = useState("restaurants");
@@ -163,22 +170,31 @@ function LeaderboardsPage() {
     }
   }, [hasUrlCity, cityFromUrl]);
 
+  const pageQueryTitle = typedBoard
+    ? headingForBoard(typedBoard, selectedCity?.city)
+    : null;
+
   // Generate SEO meta tags
-  const seoMeta =
-    selectedCity && selectedCity.city
-      ? generateSeoMeta(
-          selectedCity.city,
-          selectedCity.province,
-          selectedCity.country,
-          "leaderboards"
-        )
-      : {
-          title: "Best restaurants and dishes | Food leaderboards",
-          description:
-            "Rankings of the best restaurants and dishes by blended expert and community scores. Pick a city for local leaderboards.",
-          keywords:
-            "food leaderboards, restaurant rankings, best dishes, top restaurants",
-        };
+  const seoMeta = pageQueryTitle
+    ? {
+        title: `${pageQueryTitle} | Best Food App`,
+        description: `${pageQueryTitle} ranked by blended expert and community scores. Dish-level ratings out of 100.`,
+        keywords: `${pageQueryTitle}, food rankings, best dishes`,
+      }
+    : selectedCity && selectedCity.city
+    ? generateSeoMeta(
+        selectedCity.city,
+        selectedCity.province,
+        selectedCity.country,
+        "leaderboards"
+      )
+    : {
+        title: "Best restaurants and dishes | Food leaderboards",
+        description:
+          "Rankings of the best restaurants and dishes by blended expert and community scores. Pick a city for local leaderboards.",
+        keywords:
+          "food leaderboards, restaurant rankings, best dishes, top restaurants",
+      };
 
   // Dynamic categories from database
   const [availableCategories, setAvailableCategories] = useState({
@@ -287,9 +303,13 @@ function LeaderboardsPage() {
       };
 
       // Add specific filtering based on category
-      if (activeCategory === "food-items" && selectedFoodCategory !== "All") {
+      if (typedBoard?.matchField === "category") {
+        params.itemCategory = typedBoard.value;
+      } else if (
+        activeCategory === "food-items" &&
+        selectedFoodCategory !== "All"
+      ) {
         params.foodType = selectedFoodCategory;
-        // Could add subType filtering here if needed
       } else if (
         (activeCategory === "restaurants" || activeCategory === "cuisines") &&
         selectedCuisine !== "All"
@@ -387,9 +407,23 @@ function LeaderboardsPage() {
     fetchAvailableCategories();
   }, [selectedCity]); // Fetch categories when city changes
 
+  // Apply typed board from /best/:typeSlug or 4-segment city URL
+  useEffect(() => {
+    if (!typedBoard) return;
+    if (typedBoard.kind === "cuisine") {
+      setActiveCategory("cuisines");
+      setCuisine(typedBoard.value);
+      setSelectedFoodCategory("All");
+    } else {
+      setActiveCategory("food-items");
+      setSelectedFoodCategory(typedBoard.value);
+      setCuisine("All");
+    }
+  }, [typedBoard]);
+
   // Initial cleanup on component mount
   useEffect(() => {
-    // Ensure clean state on page load
+    if (typedBoard) return;
     setCuisine("All");
     setSelectedFoodCategory("All");
     setActiveCategory("restaurants");
@@ -397,12 +431,14 @@ function LeaderboardsPage() {
 
   // Reset selectors to "All" when category changes
   useEffect(() => {
+    if (typedBoard) return;
     setCuisine("All");
     setSelectedFoodCategory("All");
   }, [activeCategory]);
 
   // Reset selectors to "All" when city changes
   useEffect(() => {
+    if (typedBoard) return;
     setCuisine("All");
     setSelectedFoodCategory("All");
   }, [selectedCity]);
@@ -410,7 +446,18 @@ function LeaderboardsPage() {
   // Handle city selection
   const handleCitySelect = (city) => {
     setSelectedCity(city);
-    updateUrlWithCity(city.city, city.province, city.country);
+    if (typeSlug) {
+      navigate(
+        `${generateCityUrl(
+          city.city,
+          city.province,
+          city.country,
+          "/leaderboards"
+        )}/${typeSlug}`
+      );
+    } else {
+      updateUrlWithCity(city.city, city.province, city.country);
+    }
   };
 
   // Reset city like home page
@@ -423,7 +470,9 @@ function LeaderboardsPage() {
     setSelectedFoodCategory("All");
     setResetKey((prevKey) => prevKey + 1);
     // Navigate back to leaderboards without city params
-    navigate("/leaderboards", { replace: true });
+    navigate(typeSlug ? `/best/${typeSlug}` : "/leaderboards", {
+      replace: true,
+    });
   };
 
   // Filter data based on search term
@@ -434,13 +483,14 @@ function LeaderboardsPage() {
 
   // Get title based on active category
   const getTitle = () => {
+    if (pageQueryTitle) return pageQueryTitle;
     if (!selectedCity) return "Global Food Leaderboards";
 
     switch (activeCategory) {
       case "restaurants":
         return selectedCuisine === "All"
-          ? `Top 10 Restaurants in ${selectedCity.city}`
-          : `Top 10 ${selectedCuisine} Restaurants in ${selectedCity.city}`;
+          ? `Best restaurants in ${selectedCity.city}`
+          : `Best ${selectedCuisine} restaurants in ${selectedCity.city}`;
       case "food-items":
         return selectedFoodCategory === "All"
           ? `Top 10 Food Items in ${selectedCity.city}`
@@ -499,19 +549,31 @@ function LeaderboardsPage() {
   };
 
   const visibleGlobalBoards = useMemo(() => {
-    return GLOBAL_CATEGORIES.map((category) => {
+    const boards = GLOBAL_CATEGORIES.map((category) => {
       const items = getBoardItems(category, globalLeaderboards);
       return { category, items, show: shouldShowBoard(category, items) };
     }).filter((board) => board.show);
-  }, [globalLeaderboards]);
+    if (!typedBoard || selectedCity) return boards;
+    return boards.filter((b) => {
+      if (typedBoard.kind === "cuisine") {
+        return b.category.type === "cuisine" && b.category.category === typedBoard.value;
+      }
+      return (
+        (b.category.type === "food-items" || b.category.type === "overall") &&
+        b.category.category === typedBoard.value
+      );
+    });
+  }, [globalLeaderboards, typedBoard, selectedCity]);
 
-  const canonicalUrl = selectedCity?.city
+  const canonicalUrl = typedBoard && !selectedCity?.city
+    ? `${SITE_URL}/best/${typedBoard.slug}`
+    : selectedCity?.city
     ? `${SITE_URL}${generateCityUrl(
         selectedCity.city,
         selectedCity.province,
         selectedCity.country,
         "/leaderboards"
-      )}`
+      )}${typedBoard ? `/${typedBoard.slug}` : ""}`
     : `${SITE_URL}/leaderboards`;
 
   const pageHeading = getTitle();
@@ -524,6 +586,17 @@ function LeaderboardsPage() {
     if (selectedCity?.city) {
       breadcrumbs.push({
         name: `${selectedCity.city} leaderboards`,
+        url: `${SITE_URL}${generateCityUrl(
+          selectedCity.city,
+          selectedCity.province,
+          selectedCity.country,
+          "/leaderboards"
+        )}`,
+      });
+    }
+    if (typedBoard) {
+      breadcrumbs.push({
+        name: pageQueryTitle,
         url: canonicalUrl,
       });
     }
@@ -540,9 +613,10 @@ function LeaderboardsPage() {
 
     const collectionPage = {
       "@type": ["WebPage", "CollectionPage"],
-      name: selectedCity?.city
-        ? `Food leaderboards in ${selectedCity.city}`
-        : "Food leaderboards",
+      name: pageQueryTitle
+        || (selectedCity?.city
+          ? `Food leaderboards in ${selectedCity.city}`
+          : "Food leaderboards"),
       description: seoMeta.description,
       url: canonicalUrl,
     };
@@ -599,6 +673,8 @@ function LeaderboardsPage() {
     activeCategory,
     visibleGlobalBoards,
     pageHeading,
+    pageQueryTitle,
+    typedBoard,
   ]);
 
   const cityItemHref = (item) => {
@@ -618,10 +694,16 @@ function LeaderboardsPage() {
         jsonLd={jsonLd}
       />
       <div className="leaderboards-header">
-        <h1 className="page-title">Food leaderboards</h1>
+        <h1 className="page-title">
+          {pageQueryTitle ||
+            (selectedCity ? getTitle() : "Food leaderboards")}
+        </h1>
         <p className="page-subtitle">
           Rankings of the best dishes and restaurants by blended expert and
-          community scores. Choose a city for local boards.
+          community scores
+          {selectedCity?.city ? ` in ${selectedCity.city}` : ""}. Scores are
+          out of 100.{" "}
+          <Link to="/scoring-criteria">How scores are calculated</Link>.
         </p>
       </div>
 
@@ -648,7 +730,7 @@ function LeaderboardsPage() {
       </div>
 
       {/* Category Selection and Sub-category Selection - only show when city is selected */}
-      {selectedCity && (
+      {selectedCity && !typedBoard && (
         <>
           <div className="category-section">
             <h3 className="section-title">Choose Category</h3>
@@ -863,7 +945,20 @@ function LeaderboardsPage() {
                         >
                           <h3 className="global-category-title">
                             <HeaderIcon size={20} strokeWidth={2} aria-hidden />
-                            <span>{category.title}</span>
+                            {category.category ? (
+                              <Link
+                                to={`/best/${slugForValue(
+                                  category.category,
+                                  category.type === "cuisine"
+                                    ? "cuisine"
+                                    : "food"
+                                )}`}
+                              >
+                                {category.title}
+                              </Link>
+                            ) : (
+                              <span>{category.title}</span>
+                            )}
                           </h3>
                           <ol className="global-items-list">
                             {items.map((item, index) => {

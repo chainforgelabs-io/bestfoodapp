@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "../api/axios";
-import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { Link, useNavigate } from "react-router-dom";
 import SEO from "../components/SEO";
 import CitySearch from "../components/CitySearch"; // Adjust the path if necessary
 import { useCityFromUrl } from "../hooks/useCityFromUrl";
-import { generateSeoMeta } from "../utils/cityUtils";
+import { generateSeoMeta, generateCityUrl } from "../utils/cityUtils";
 import { restaurantPath } from "../utils/restaurantUrls";
 import "../styles/HomePage.css";
 import Logo from "../assets/logo.png"; // Import your logo here
@@ -24,6 +23,7 @@ function HomePage() {
   const [restaurantSearchTerm, setRestaurantSearchTerm] = useState(""); // Restaurant search term
   const [restaurantScores, setRestaurantScores] = useState({}); // Holds the restaurant scores
   const [suggestions, setSuggestions] = useState([]);
+  const [publicBoards, setPublicBoards] = useState([]);
   const navigate = useNavigate(); // For navigation
 
   // Use custom hook for URL-based city detection
@@ -54,6 +54,23 @@ function HomePage() {
       setActiveFilter("Restaurants");
     }
   }, [hasUrlCity, citySelected]);
+
+  useEffect(() => {
+    if (!citySelected?.city) {
+      setPublicBoards([]);
+      return;
+    }
+    axios
+      .get("/leaderboards/public-boards", {
+        params: {
+          city: citySelected.city,
+          province: citySelected.province,
+          country: citySelected.country,
+        },
+      })
+      .then(({ data }) => setPublicBoards(data.boards || []))
+      .catch(() => setPublicBoards([]));
+  }, [citySelected]);
 
   // Update URL when city is selected manually
   const handleCitySelect = (selectedCity) => {
@@ -417,6 +434,16 @@ function HomePage() {
         title={seoMeta.title}
         description={seoMeta.description}
         keywords={seoMeta.keywords}
+        canonicalUrl={
+          citySelected?.city
+            ? `https://bestfoodapp.com${generateCityUrl(
+                citySelected.city,
+                citySelected.province,
+                citySelected.country,
+                "/city"
+              )}`
+            : "https://bestfoodapp.com/"
+        }
       />
       {!hasSearched ? (
         <>
@@ -447,6 +474,31 @@ function HomePage() {
             Find the best food in {citySelected.city}, {citySelected.province},{" "}
             {citySelected.country}
           </h1>
+          <nav className="home-rank-links" aria-label="City rankings">
+            <Link
+              to={generateCityUrl(
+                citySelected.city,
+                citySelected.province,
+                citySelected.country,
+                "/leaderboards"
+              )}
+            >
+              Best restaurants in {citySelected.city}
+            </Link>
+            {publicBoards.map((board) => (
+              <Link
+                key={board.slug}
+                to={`${generateCityUrl(
+                  citySelected.city,
+                  citySelected.province,
+                  citySelected.country,
+                  "/leaderboards"
+                )}/${board.slug}`}
+              >
+                {board.heading}
+              </Link>
+            ))}
+          </nav>
 
           <form onSubmit={handleSearch} className="search-form">
             <input

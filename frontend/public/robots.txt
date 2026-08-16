@@ -14,5 +14,8 @@ Disallow: /add-restaurant
 # Sitemap (served dynamically by api/sitemap.js)
 Sitemap: https://bestfoodapp.com/sitemap.xml
 
+# LLM-oriented site summary
+# https://bestfoodapp.com/llms.txt
+
 # Crawl-delay
 Crawl-delay: 1

@@ -54,6 +54,14 @@ function App() {
 
               {/* Leaderboard city routes */}
               <Route
+                path="/best/:typeSlug"
+                element={<LeaderboardsPage />}
+              />
+              <Route
+                path="/leaderboards/:cityName/:province/:country/:typeSlug"
+                element={<LeaderboardsPage />}
+              />
+              <Route
                 path="/leaderboards/:cityName"
                 element={<LeaderboardsPage />}
               />

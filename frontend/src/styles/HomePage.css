@@ -230,6 +230,26 @@
   background: linear-gradient(135deg, #f0f4ff, #f9f9fc);
 }
 
+.home-rank-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 16px;
+  max-width: 720px;
+  margin: 0 auto 28px;
+}
+
+.home-rank-links a {
+  color: #3b5bfd;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.home-rank-links a:hover {
+  text-decoration: underline;
+}
+
 /* Filter section - Prevent overflow */
 .filter-section {
   display: flex;

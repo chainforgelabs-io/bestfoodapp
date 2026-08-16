@@ -497,6 +497,16 @@
   gap: 8px;
 }
 
+.global-category-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.global-category-title a:hover {
+  color: #3b5bfd;
+  text-decoration: underline;
+}
+
 .global-items-list {
   display: flex;
   flex-direction: column;

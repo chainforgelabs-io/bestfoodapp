@@ -8,6 +8,8 @@ const Review = require("../../models/Review");
 const Address = require("../../models/Address");
 const City = require("../../models/City");
 const { absoluteUrl, SITE_URL } = require("./schema");
+const { getEligibleTypeSlugs } = require("./publicRankings");
+const { kebabSlug } = require("./rankingSlugs");
 
 function xmlEscape(str) {
   return String(str)
@@ -125,14 +127,15 @@ async function buildSitemapXml() {
 
   const cities = await citiesWithReviews();
   for (const city of cities) {
-    const provinceSlug = String(city.province || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
+    const provinceSlug = kebabSlug(city.province || "");
     const countrySlug = "canada";
+    const locName = city.name || city.slug;
     const path = provinceSlug
       ? `/city/${city.slug}/${provinceSlug}/${countrySlug}`
       : `/city/${city.slug}`;
+    const lbPath = provinceSlug
+      ? `/leaderboards/${city.slug}/${provinceSlug}/${countrySlug}`
+      : `/leaderboards/${city.slug}`;
     entries.push(
       urlEntry(absoluteUrl(path), {
         lastmod: now,
@@ -141,15 +144,47 @@ async function buildSitemapXml() {
       })
     );
     entries.push(
-      urlEntry(
-        absoluteUrl(
-          provinceSlug
-            ? `/leaderboards/${city.slug}/${provinceSlug}/${countrySlug}`
-            : `/leaderboards/${city.slug}`
-        ),
-        { lastmod: now, changefreq: "weekly", priority: "0.8" }
-      )
+      urlEntry(absoluteUrl(lbPath), {
+        lastmod: now,
+        changefreq: "weekly",
+        priority: "0.8",
+      })
     );
+
+    try {
+      const loc = {
+        city: locName,
+        province: city.province || "",
+        country: "Canada",
+      };
+      const typed = await getEligibleTypeSlugs(loc);
+      for (const board of typed) {
+        entries.push(
+          urlEntry(absoluteUrl(`${lbPath}/${board.slug}`), {
+            lastmod: now,
+            changefreq: "weekly",
+            priority: "0.85",
+          })
+        );
+      }
+    } catch (err) {
+      console.error("sitemap city boards", city.slug, err.message);
+    }
+  }
+
+  try {
+    const globalTyped = await getEligibleTypeSlugs(null);
+    for (const board of globalTyped) {
+      entries.push(
+        urlEntry(absoluteUrl(`/best/${board.slug}`), {
+          lastmod: now,
+          changefreq: "daily",
+          priority: "0.85",
+        })
+      );
+    }
+  } catch (err) {
+    console.error("sitemap global boards", err.message);
   }
 
   const restaurants = await restaurantsWithReviews();

@@ -1,0 +1,25 @@
+# Best Food App
+
+Best Food App publishes city-scoped restaurant and dish rankings. Scores are blended expert and community ratings at the dish level, out of 100.
+
+- Home: https://bestfoodapp.com/
+- Sitemap: https://bestfoodapp.com/sitemap.xml
+- Scoring method: https://bestfoodapp.com/scoring-criteria
+
+## Ranking URL patterns
+
+Use these canonical paths. Query-string variants are not canonical.
+
+- Best restaurants in a city: /leaderboards/{city}/{province}/{country}
+  Example: https://bestfoodapp.com/leaderboards/saskatoon/saskatchewan/canada
+- Best {type} in a city: /leaderboards/{city}/{province}/{country}/{typeSlug}
+  Example: https://bestfoodapp.com/leaderboards/saskatoon/saskatchewan/canada/burgers
+- Best {type} globally (no city): /best/{typeSlug}
+  Example: https://bestfoodapp.com/best/burgers
+- Restaurant with scored dishes and reviews: /restaurant/{slug}
+
+Stable type slugs include burgers, pizza, tacos, burritos, hot-dogs, fries, desserts, plus cuisine slugs such as italian, american, vietnamese, mexican, breakfast, and asian. Unknown dish types use kebab-case of the food type.
+
+Typed ranking pages are published when a board has at least 7 scored items. Rankings update as new scored reviews are published; the sitemap lists currently eligible URLs.
+
+Reviews canonicalize to the restaurant page, not a separate /review URL.
