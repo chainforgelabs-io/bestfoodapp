@@ -7,6 +7,11 @@ const mongoose = require("mongoose");
 const Restaurant = require("../models/Restaurant");
 const FoodItem = require("../models/FoodItem");
 const Address = require("../models/Address");
+const {
+  cityNormalizeExpr,
+  countryNormalizeExpr,
+  provinceNormalizeExpr,
+} = require("../lib/places/addressNormalize");
 
 const router = express.Router();
 
@@ -206,11 +211,18 @@ const calculateBestCities = async () => {
         },
       },
       {
+        $addFields: {
+          normCity: cityNormalizeExpr("$address.city"),
+          normProvince: provinceNormalizeExpr("$address.province"),
+          normCountry: countryNormalizeExpr("$address.country"),
+        },
+      },
+      {
         $group: {
           _id: {
-            city: "$address.city",
-            province: "$address.province",
-            country: "$address.country",
+            city: "$normCity",
+            province: "$normProvince",
+            country: "$normCountry",
           },
           restaurants: {
             $push: {

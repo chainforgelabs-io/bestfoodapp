@@ -28,6 +28,7 @@ const restaurantSchema = new mongoose.Schema({
   brandName: { type: String, default: null }, // chain grouping later; one record per location
   countryCode: { type: String, default: "ca" },
   website: { type: String, default: null },
+  menuTodoSkippedAt: { type: Date, default: null },
   // Only set when coordinates exist — bare { type: "Point" } breaks 2dsphere.
   location: {
     type: { type: String, enum: ["Point"] },

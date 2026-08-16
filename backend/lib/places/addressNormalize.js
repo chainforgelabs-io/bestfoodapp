@@ -106,11 +106,76 @@ function provinceSearchPattern(province) {
   return `^(${alts.join("|")})$`;
 }
 
+function mongoTrimLower(field) {
+  return { $toLower: { $trim: { input: { $ifNull: [field, ""] } } } };
+}
+
+function mongoTrim(field) {
+  return { $trim: { input: { $ifNull: [field, ""] } } };
+}
+
+function cityNormalizeExpr(field) {
+  return mongoTrim(field);
+}
+
+function countryNormalizeExpr(field) {
+  return {
+    $let: {
+      vars: { lower: mongoTrimLower(field), trimmed: mongoTrim(field) },
+      in: {
+        $switch: {
+          branches: [
+            {
+              case: { $in: ["$$lower", ["", "ca", "can", "canada"]] },
+              then: "Canada",
+            },
+            {
+              case: {
+                $in: [
+                  "$$lower",
+                  ["us", "usa", "united states", "united states of america"],
+                ],
+              },
+              then: "United States",
+            },
+          ],
+          default: "$$trimmed",
+        },
+      },
+    },
+  };
+}
+
+function provinceNormalizeExpr(field) {
+  const branches = [];
+  Object.entries(PROVINCE_CODE_TO_NAME).forEach(([code, name]) => {
+    branches.push({ case: { $eq: ["$$lower", code] }, then: name });
+    branches.push({
+      case: { $eq: ["$$lower", name.toLowerCase()] },
+      then: name,
+    });
+  });
+  return {
+    $let: {
+      vars: { lower: mongoTrimLower(field), trimmed: mongoTrim(field) },
+      in: {
+        $switch: {
+          branches,
+          default: "$$trimmed",
+        },
+      },
+    },
+  };
+}
+
 module.exports = {
   normalizeCountry,
   normalizeProvince,
   normalizeAddressFields,
   countrySearchPattern,
   provinceSearchPattern,
+  cityNormalizeExpr,
+  countryNormalizeExpr,
+  provinceNormalizeExpr,
   PROVINCE_CODE_TO_NAME,
 };

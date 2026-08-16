@@ -195,6 +195,24 @@
   color: #777;
 }
 
+.menu-import-todo-address {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.menu-import-todo-sibling {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2a7a3a;
+}
+
+.menu-import-todo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .menu-import-siblings {
   margin-top: 14px;
   padding: 12px;

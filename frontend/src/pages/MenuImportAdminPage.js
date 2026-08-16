@@ -16,6 +16,11 @@ import "../styles/StandardizedDropdown.css";
 
 const emptyLocation = { city: "", province: "", country: "" };
 
+function formatAddressLine(addr) {
+  if (!addr) return "";
+  return [addr.street, addr.city].filter(Boolean).join(", ");
+}
+
 function formatPrice(value) {
   if (value == null || value === "") return "—";
   const n = Number(value);
@@ -46,9 +51,12 @@ function MenuImportAdminPage() {
   const [busyId, setBusyId] = useState(null);
   const [todoItems, setTodoItems] = useState([]);
   const [loadingTodo, setLoadingTodo] = useState(true);
+  const [skippingId, setSkippingId] = useState(null);
   const [siblings, setSiblings] = useState([]);
   const [selectedSiblingIds, setSelectedSiblingIds] = useState([]);
   const [loadingSiblings, setLoadingSiblings] = useState(false);
+  const [updateQuery, setUpdateQuery] = useState("");
+  const [updateSuggestions, setUpdateSuggestions] = useState([]);
   const newImportRef = React.useRef(null);
 
   const loadQueue = useCallback(async () => {
@@ -102,6 +110,15 @@ function MenuImportAdminPage() {
     setSelectedRestaurant(restaurant);
     setRestaurantQuery(restaurant.name);
     setSuggestions([]);
+    setUpdateQuery("");
+    setUpdateSuggestions([]);
+    if (restaurant.address?.city) {
+      setLocation({
+        city: restaurant.address.city,
+        province: restaurant.address.province || "",
+        country: restaurant.address.country || "Canada",
+      });
+    }
     loadSiblings(restaurant._id);
   };
 
@@ -109,9 +126,29 @@ function MenuImportAdminPage() {
     selectRestaurant({
       _id: item.restaurantId,
       name: item.name,
+      address: item.address,
     });
     setMessage(`Selected ${item.name} for menu upload`);
     newImportRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const skipTodoRestaurant = async (item) => {
+    const place = formatAddressLine(item.address);
+    const ok = window.confirm(
+      `Remove ${item.name}${place ? ` (${place})` : ""} from the menu to-do list? The restaurant stays in the app.`
+    );
+    if (!ok) return;
+    setSkippingId(item.restaurantId);
+    setError("");
+    try {
+      await axios.post(`/menu-imports/todo/${item.restaurantId}/skip`);
+      await loadTodo();
+      setMessage(`Removed ${item.name} from the menu to-do list`);
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not remove from to-do");
+    } finally {
+      setSkippingId(null);
+    }
   };
 
   const toggleSibling = (id) => {
@@ -158,6 +195,25 @@ function MenuImportAdminPage() {
     }, 250);
     return () => clearTimeout(handle);
   }, [location, restaurantQuery]);
+
+  useEffect(() => {
+    const q = updateQuery.trim();
+    if (q.length < 2) {
+      setUpdateSuggestions([]);
+      return;
+    }
+    const handle = setTimeout(async () => {
+      try {
+        const { data } = await axios.get("/menu-imports/restaurants", {
+          params: { q },
+        });
+        setUpdateSuggestions(data.items || []);
+      } catch (err) {
+        console.error(err);
+      }
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [updateQuery]);
 
   const proposedFor = (item) => edits[item._id] || item.proposed;
 
@@ -432,30 +488,103 @@ function MenuImportAdminPage() {
           <p>All tracked restaurants have complete verified menus.</p>
         ) : (
           <ul className="menu-import-todo-list">
-            {todoItems.map((item) => (
-              <li key={item.restaurantId}>
-                <div className="menu-import-todo-main">
-                  <strong>{item.name}</strong>
-                  <span className="menu-import-todo-state">
-                    {todoStateLabel(item.state)}
-                  </span>
-                  <span className="menu-import-todo-meta">
-                    {item.foodItemCount} food item
-                    {item.foodItemCount === 1 ? "" : "s"}
-                    {item.pendingChangeCount > 0
-                      ? ` · ${item.pendingChangeCount} pending`
-                      : ""}
-                    {item.sources?.includes("places_verified")
-                      ? " · from places"
-                      : ""}
-                  </span>
-                </div>
+            {todoItems.map((item) => {
+              const addressLine = formatAddressLine(item.address);
+              const siblingLine = item.siblingMenu
+                ? formatAddressLine(item.siblingMenu)
+                : "";
+              return (
+                <li key={item.restaurantId}>
+                  <div className="menu-import-todo-main">
+                    <strong>{item.name}</strong>
+                    {addressLine ? (
+                      <span className="menu-import-todo-address">
+                        {addressLine}
+                      </span>
+                    ) : null}
+                    <span className="menu-import-todo-state">
+                      {todoStateLabel(item.state)}
+                    </span>
+                    {item.siblingMenu ? (
+                      <span className="menu-import-todo-sibling">
+                        Menu already uploaded
+                        {siblingLine ? ` at ${siblingLine}` : ""}
+                      </span>
+                    ) : null}
+                    <span className="menu-import-todo-meta">
+                      {item.foodItemCount} food item
+                      {item.foodItemCount === 1 ? "" : "s"}
+                      {item.pendingChangeCount > 0
+                        ? ` · ${item.pendingChangeCount} pending`
+                        : ""}
+                      {item.sources?.includes("places_verified")
+                        ? " · from places"
+                        : ""}
+                    </span>
+                  </div>
+                  <div className="menu-import-todo-actions">
+                    <button
+                      type="button"
+                      className="admin-btn secondary"
+                      onClick={() => selectTodoRestaurant(item)}
+                    >
+                      Upload menu
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn danger"
+                      disabled={skippingId === item.restaurantId}
+                      onClick={() => skipTodoRestaurant(item)}
+                    >
+                      {skippingId === item.restaurantId
+                        ? "Removing…"
+                        : "Remove"}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section className="admin-tools-card">
+        <h2>Update existing menu</h2>
+        <p style={{ color: "#666", marginTop: 0 }}>
+          Search restaurants that already have a menu uploaded so you can scan
+          an updated menu for that location.
+        </p>
+        <label className="menu-import-label">Restaurant name</label>
+        <input
+          type="text"
+          className="menu-import-input"
+          placeholder="Search uploaded restaurants…"
+          value={updateQuery}
+          disabled={scanning}
+          onChange={(e) => {
+            setUpdateQuery(e.target.value);
+            setSelectedRestaurant(null);
+          }}
+        />
+        {updateSuggestions.length > 0 && (
+          <ul className="menu-import-suggestions">
+            {updateSuggestions.map((r) => (
+              <li key={r._id}>
                 <button
                   type="button"
-                  className="admin-btn secondary"
-                  onClick={() => selectTodoRestaurant(item)}
+                  onClick={() => {
+                    selectRestaurant(r);
+                    setMessage(`Selected ${r.name} to update menu`);
+                    newImportRef.current?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }}
                 >
-                  Upload menu
+                  {r.name}
+                  {formatAddressLine(r.address)
+                    ? ` — ${formatAddressLine(r.address)}`
+                    : ""}
                 </button>
               </li>
             ))}

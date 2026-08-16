@@ -303,7 +303,8 @@ router.get("/todo", async (req, res) => {
     const [restaurants, foodCounts, readyImports, pendingChanges] =
       await Promise.all([
         Restaurant.find({ _id: { $in: objectIds } })
-          .select("name type cuisine slug gersId")
+          .select("name type cuisine slug gersId menuTodoSkippedAt address")
+          .populate("address", "street city province")
           .lean(),
         FoodItem.aggregate([
           { $match: { restaurant: { $in: objectIds } } },
@@ -336,9 +337,29 @@ router.get("/todo", async (req, res) => {
       readyImports.map((r) => r.restaurant.toString())
     );
 
+    const withMenuByName = new Map();
+    for (const restaurant of restaurants) {
+      const id = restaurant._id.toString();
+      const foodItemCount = foodCountMap.get(id) || 0;
+      const hasImport = hasReadyImport.has(id);
+      if (!hasImport && foodItemCount === 0) continue;
+      const key = String(restaurant.name || "").trim().toLowerCase();
+      if (!key) continue;
+      const current = withMenuByName.get(key);
+      if (!current || foodItemCount > current.foodItemCount) {
+        withMenuByName.set(key, {
+          restaurantId: restaurant._id,
+          street: restaurant.address?.street || "",
+          city: restaurant.address?.city || "",
+          foodItemCount,
+        });
+      }
+    }
+
     const items = [];
     for (const restaurant of restaurants) {
       const id = restaurant._id.toString();
+      if (restaurant.menuTodoSkippedAt) continue;
       const foodItemCount = foodCountMap.get(id) || 0;
       const pendingChangeCount = pendingMap.get(id) || 0;
       const hasImport = hasReadyImport.has(id);
@@ -356,17 +377,30 @@ router.get("/todo", async (req, res) => {
         state = "has_items_no_import";
       }
 
+      const nameKey = String(restaurant.name || "").trim().toLowerCase();
+      const sibling = withMenuByName.get(nameKey);
+      const siblingMenu =
+        sibling && sibling.restaurantId.toString() !== id ? sibling : null;
+
       items.push({
         restaurantId: restaurant._id,
         name: restaurant.name,
         type: restaurant.type,
         cuisine: restaurant.cuisine,
         slug: restaurant.slug,
+        address: restaurant.address
+          ? {
+              street: restaurant.address.street || "",
+              city: restaurant.address.city || "",
+              province: restaurant.address.province || "",
+            }
+          : null,
         foodItemCount,
         pendingChangeCount,
         hasImport,
         state,
         sources,
+        siblingMenu,
       });
     }
 
@@ -374,6 +408,94 @@ router.get("/todo", async (req, res) => {
     res.json({ items });
   } catch (err) {
     console.error("menu-imports todo", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/menu-imports/todo/:restaurantId/skip — hide from to-do; keep restaurant
+router.post("/todo/:restaurantId/skip", async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    if (!mongoose.isValidObjectId(restaurantId)) {
+      return res.status(400).json({ message: "Invalid restaurant id" });
+    }
+    const restaurant = await Restaurant.findByIdAndUpdate(
+      restaurantId,
+      { menuTodoSkippedAt: new Date(), updatedAt: new Date() },
+      { new: true }
+    ).select("_id name menuTodoSkippedAt");
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found" });
+    }
+    res.json({ ok: true, restaurantId: restaurant._id });
+  } catch (err) {
+    console.error("menu-imports todo skip", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/menu-imports/restaurants?q= — restaurants that already have a menu
+router.get("/restaurants", async (req, res) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    if (q.length < 2) {
+      return res.json({ items: [] });
+    }
+
+    const [readyIds, foodIds] = await Promise.all([
+      MenuImport.distinct("restaurant", { status: "ready" }),
+      FoodItem.distinct("restaurant"),
+    ]);
+    const eligible = [
+      ...new Set(
+        [...readyIds, ...foodIds].map((id) => id && id.toString()).filter(Boolean)
+      ),
+    ]
+      .filter((id) => mongoose.isValidObjectId(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
+
+    if (!eligible.length) {
+      return res.json({ items: [] });
+    }
+
+    const filter = {
+      _id: { $in: eligible },
+      name: new RegExp(escapeRegex(q), "i"),
+    };
+
+    const city = String(req.query.city || "").trim();
+    if (city) {
+      const addresses = await Address.find({
+        city: new RegExp(`^${escapeRegex(city)}$`, "i"),
+      })
+        .select("_id")
+        .lean();
+      filter.address = { $in: addresses.map((a) => a._id) };
+    }
+
+    const restaurants = await Restaurant.find(filter)
+      .select("name address slug")
+      .populate("address", "street city province country")
+      .limit(20)
+      .lean();
+
+    res.json({
+      items: restaurants.map((r) => ({
+        _id: r._id,
+        name: r.name,
+        slug: r.slug,
+        address: r.address
+          ? {
+              street: r.address.street || "",
+              city: r.address.city || "",
+              province: r.address.province || "",
+              country: r.address.country || "",
+            }
+          : null,
+      })),
+    });
+  } catch (err) {
+    console.error("menu-imports restaurants search", err);
     res.status(500).json({ message: "Server error" });
   }
 });
