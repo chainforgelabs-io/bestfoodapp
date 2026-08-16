@@ -123,7 +123,7 @@ function getBoardItems(category, globalLeaderboards) {
     if (eligible.length > CITY_BOARD_CAP) {
       return eligible.slice(0, CITY_BOARD_CAP);
     }
-    return raw;
+    return raw.slice(0, CITY_BOARD_CAP);
   }
   return raw;
 }
