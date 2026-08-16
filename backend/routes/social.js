@@ -18,6 +18,7 @@ const {
   hasRealPhoto,
   pickSourcePhoto,
   isStaged,
+  isPosted,
   ensureSocialPost,
 } = require("../lib/social/reviewHelpers");
 const { getPublisher } = require("../lib/social/publishers");
@@ -294,13 +295,23 @@ function mapReviewToQueueItem(review, settings) {
     reviewId: review._id,
     foodItemId: foodItem?._id || review.foodItem,
     itemName: foodItem?.name || "Unknown item",
+    category: foodItem?.category || "",
+    type: foodItem?.type || "",
+    subType: foodItem?.subType || "",
     restaurantName: restaurant?.name || "Unknown restaurant",
+    street: restaurant?.address?.street || "",
     city: restaurant?.address?.city || "",
+    province: restaurant?.address?.province || "",
+    country: restaurant?.address?.country || "",
     score: Math.round(review.score || 0),
     reviewDate: review.reviewDate,
+    purchaseDate: review.purchaseDate || null,
     photos: review.photos || [],
     hasRealPhoto: hasRealPhoto(review),
     isStaged: isStaged(review, settings.stagingThreshold),
+    comment: review.comment || "",
+    tags: review.tags || [],
+    price: foodItem?.price ?? null,
     socialPost: serializeSocialPost(review.socialPost),
   };
 }
@@ -356,7 +367,10 @@ function shapeAggReview(doc) {
     _id: doc._id,
     score: doc.score,
     reviewDate: doc.reviewDate,
+    purchaseDate: doc.purchaseDate,
     photos: doc.photos,
+    comment: doc.comment,
+    tags: doc.tags,
     socialPost: doc.socialPost,
     foodItem: doc.foodItemDoc
       ? {
@@ -364,13 +378,22 @@ function shapeAggReview(doc) {
           name: doc.foodItemDoc.name,
           category: doc.foodItemDoc.category,
           type: doc.foodItemDoc.type,
+          subType: doc.foodItemDoc.subType,
+          price: doc.foodItemDoc.price,
         }
       : doc.foodItem,
     restaurantId: doc.restaurantDoc
       ? {
           _id: doc.restaurantDoc._id,
           name: doc.restaurantDoc.name,
-          address: doc.addressDoc ? { city: doc.addressDoc.city } : undefined,
+          address: doc.addressDoc
+            ? {
+                street: doc.addressDoc.street,
+                city: doc.addressDoc.city,
+                province: doc.addressDoc.province,
+                country: doc.addressDoc.country,
+              }
+            : undefined,
         }
       : doc.restaurantId,
   };
@@ -614,6 +637,136 @@ router.get("/queue/filters", async (req, res) => {
   }
 });
 
+const EXPORT_MAX = 5000;
+const EXPORT_COLUMNS = [
+  "reviewId",
+  "itemName",
+  "category",
+  "type",
+  "subType",
+  "restaurantName",
+  "street",
+  "city",
+  "province",
+  "country",
+  "score",
+  "reviewDate",
+  "purchaseDate",
+  "hasPhoto",
+  "photoCount",
+  "staged",
+  "socialStatus",
+  "posted",
+  "comment",
+  "tags",
+  "price",
+];
+
+function csvCell(value) {
+  if (value == null || value === "") return "";
+  const s = String(value);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function isoDate(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+}
+
+function reviewToExportRow(review, settings) {
+  const item = mapReviewToQueueItem(review, settings);
+  return {
+    reviewId: String(item.reviewId),
+    itemName: item.itemName,
+    category: item.category,
+    type: item.type,
+    subType: item.subType,
+    restaurantName: item.restaurantName,
+    street: item.street,
+    city: item.city,
+    province: item.province,
+    country: item.country,
+    score: item.score,
+    reviewDate: isoDate(item.reviewDate),
+    purchaseDate: isoDate(item.purchaseDate),
+    hasPhoto: item.hasRealPhoto ? "yes" : "no",
+    photoCount: (item.photos || []).length,
+    staged: item.isStaged ? "yes" : "no",
+    socialStatus: item.socialPost?.status || "none",
+    posted: isPosted(review.socialPost) ? "yes" : "no",
+    comment: item.comment || "",
+    tags: Array.isArray(item.tags) ? item.tags.join("; ") : "",
+    price: item.price != null && item.price !== "" ? item.price : "",
+  };
+}
+
+function toCsv(rows) {
+  const header = EXPORT_COLUMNS.join(",");
+  const body = rows.map((row) =>
+    EXPORT_COLUMNS.map((col) => csvCell(row[col])).join(",")
+  );
+  return `\uFEFF${[header, ...body].join("\n")}`;
+}
+
+async function fetchAllFilteredReviews({
+  matchQuery,
+  postLookupMatch,
+  sort,
+  order,
+  uniqueBy,
+  limit,
+}) {
+  const pipeline = [{ $match: matchQuery }];
+  pipeline.push(...buildLookupStages());
+  if (hasPostLookupFilters(postLookupMatch)) {
+    pipeline.push({ $match: postLookupMatch });
+  }
+  if (uniqueBy === "foodItem") {
+    pipeline.push(
+      { $sort: { score: -1, reviewDate: -1, _id: -1 } },
+      { $group: { _id: "$foodItem", doc: { $first: "$$ROOT" } } },
+      { $replaceRoot: { newRoot: "$doc" } }
+    );
+  }
+  pipeline.push({ $sort: buildAggSortStage(sort, order) });
+  pipeline.push({ $limit: limit });
+  const docs = await Review.aggregate(pipeline);
+  return docs.map(shapeAggReview);
+}
+
+// GET /queue/export — CSV of all reviews matching current queue filters
+router.get("/queue/export", async (req, res) => {
+  try {
+    const settings = await SocialSettings.getOrCreate();
+    const { sort, order, uniqueBy } = parseQueueListParams(req);
+    const matchQuery = buildQueueMatch(req, settings);
+    const foodFilters = parseQueueFoodFilters(req);
+    const postLookupMatch = buildPostLookupMatch(foodFilters);
+    const reviews = await fetchAllFilteredReviews({
+      matchQuery,
+      postLookupMatch,
+      sort,
+      order,
+      uniqueBy,
+      limit: EXPORT_MAX,
+    });
+    const csv = toCsv(reviews.map((review) => reviewToExportRow(review, settings)));
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="social-reviews-${stamp}.csv"`
+    );
+    res.send(csv);
+  } catch (err) {
+    console.error("social queue export", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // GET /queue
 router.get("/queue", async (req, res) => {
   try {
@@ -664,11 +817,11 @@ router.get("/queue", async (req, res) => {
       const found = await Review.find(query)
         .sort({ reviewDate: dir, _id: dir })
         .limit(limit + 1)
-        .populate("foodItem", "name category type")
+        .populate("foodItem", "name category type subType price")
         .populate({
           path: "restaurantId",
           select: "name address",
-          populate: { path: "address", select: "city" },
+          populate: { path: "address", select: "city province country street" },
         })
         .lean();
 

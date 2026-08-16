@@ -98,6 +98,7 @@ function SocialUploadPage() {
   const [transformDirty, setTransformDirty] = useState(false);
   const [detailBusy, setDetailBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const [statsFilters, setStatsFilters] = useState({
     city: "",
@@ -414,6 +415,34 @@ function SocialUploadPage() {
     downloadImage(detailPhoto, name);
   };
 
+  const handleExtract = async () => {
+    try {
+      setExporting(true);
+      const params = buildQueueParams();
+      delete params.limit;
+      delete params.page;
+      delete params.cursor;
+      const { data } = await axios.get("/social/queue/export", {
+        params,
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `social-reviews-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setMessage("Downloaded filtered reviews");
+    } catch (err) {
+      console.error("Failed to extract social queue", err);
+      setMessage("Could not extract reviews");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const samplePreview =
     settingsDraft?.captionTemplate
       ?.replace(/{itemName}/g, "Double Cheese Burger")
@@ -642,6 +671,14 @@ function SocialUploadPage() {
               />
               Unique by food item
             </label>
+            <button
+              type="button"
+              className="social-btn secondary"
+              disabled={exporting || loading}
+              onClick={handleExtract}
+            >
+              {exporting ? "Extracting…" : "Extract CSV"}
+            </button>
           </div>
 
           {queueTotal !== null && (
@@ -693,6 +730,14 @@ function SocialUploadPage() {
                     <p className="social-queue-title">{item.itemName}</p>
                     <p className="social-queue-sub">
                       {item.restaurantName} · Score {item.score}
+                      {item.reviewDate
+                        ? ` · ${formatReviewDate(item.reviewDate)}`
+                        : ""}
+                    </p>
+                    <p className="social-queue-sub">
+                      {[item.category, item.type].filter(Boolean).join(" · ") ||
+                        "Uncategorized"}
+                      {item.hasRealPhoto ? " · Photo" : " · No photo"}
                     </p>
                     <div className="social-badge-row">
                       {item.isStaged && (
