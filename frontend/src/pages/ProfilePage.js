@@ -23,6 +23,8 @@ function ProfilePage() {
     restaurantCount: 0,
     cityCount: 0,
     avgScore: 0,
+    points: 0,
+    critic: null,
   });
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
@@ -514,6 +516,18 @@ function ProfilePage() {
                     Verified critic
                   </span>
                 )}
+                {stats.critic?.isCityCritic && user.role !== "admin" && (
+                  <span className="profile-verified-badge profile-city-critic">
+                    City critic
+                  </span>
+                )}
+                {stats.critic &&
+                  !stats.critic.isCityCritic &&
+                  stats.critic.reviewCount > 0 && (
+                    <span className="profile-contributor-badge">
+                      {stats.critic.title}
+                    </span>
+                  )}
               </div>
               {locationLine && (
                 <p className="profile-meta-line">{locationLine}</p>
@@ -585,7 +599,18 @@ function ProfilePage() {
               <span className="profile-stat-label">Avg score</span>
               <span className="profile-stat-value">{stats.avgScore}</span>
             </div>
+            <div className="profile-stat-card">
+              <span className="profile-stat-label">Points</span>
+              <span className="profile-stat-value">{stats.points || 0}</span>
+            </div>
           </div>
+          {stats.critic && !stats.critic.isCityCritic && (
+            <p className="profile-critic-progress">
+              {stats.critic.remaining} more review
+              {stats.critic.remaining === 1 ? "" : "s"} to reach the city critic
+              board.
+            </p>
+          )}
         </div>
 
         <div className="profile-controls">

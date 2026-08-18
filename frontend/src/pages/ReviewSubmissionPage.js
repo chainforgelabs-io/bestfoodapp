@@ -8,7 +8,7 @@ import SuccessOverlay from "../components/SuccessOverlay";
 import ImageCropModal from "../components/ImageCropModal";
 import axios from "../api/axios";
 import "../styles/ReviewSubmissionPage.css";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams, Link } from "react-router-dom";
 import SEO from "../components/SEO";
 import { matchRestaurant } from "../utils/receiptAutofill";
 
@@ -18,6 +18,13 @@ const receiptDateToInput = (value) => {
   if (!value) return "";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+};
+
+const todayInputDate = () => {
+  const d = new Date();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${month}-${day}`;
@@ -38,7 +45,9 @@ const receiptAddressToLocation = (parsed) => {
 
 function ReviewSubmissionPage() {
   const location = useLocation();
-  const [step, setStep] = useState(location.state?.step || 1); // Retain the current step
+  const [searchParams] = useSearchParams();
+  const restaurantIdFromQuery =
+    searchParams.get("restaurantId") || searchParams.get("restaurant");
 
   // Structured data read from the user's receipt (if they scanned one). Used
   // to autofill the restaurant, food items, and purchase date below.
@@ -61,14 +70,24 @@ function ReviewSubmissionPage() {
         province: "",
         country: "",
       },
-    restaurant: "",
-    foodItems: [],
+    restaurant:
+      location.state?.formData?.restaurant ||
+      location.state?.restaurantName ||
+      "",
+    restaurantId:
+      location.state?.formData?.restaurantId ||
+      location.state?.restaurantId ||
+      restaurantIdFromQuery ||
+      "",
+    address: location.state?.formData?.address || "",
+    foodItems: location.state?.formData?.foodItems || [],
     ratings: [],
     photos: [],
     purchaseDate: receiptDateToInput(
       location.state?.receiptParsed?.purchaseDate ||
         location.state?.formData?.receiptParsed?.purchaseDate
-    ),
+    ) || todayInputDate(),
+    comment: location.state?.formData?.comment || "",
     receiptId:
       location.state?.receiptId ||
       location.state?.formData?.receiptId ||
@@ -130,11 +149,58 @@ function ReviewSubmissionPage() {
     };
   }, [formData.receiptId, receiptDisplayUrl]);
 
+  const loadFoodItemsForRestaurant = async (restaurantId) => {
+    if (!restaurantId) return;
+    try {
+      const response = await axios.get(`/food-items/restaurant/${restaurantId}`);
+      setExistingFoodItems(response.data || []);
+    } catch (error) {
+      if (error.response?.status === 404) {
+        setExistingFoodItems([]);
+      } else {
+        console.error("Error fetching food items for the restaurant:", error);
+      }
+    }
+  };
+
+  // Prefill restaurant from query/state (restaurant page, map pin, receipt).
+  useEffect(() => {
+    const id = formData.restaurantId;
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!formData.restaurant) {
+          const { data } = await axios.get(`/restaurants/${id}`);
+          if (cancelled || !data) return;
+          setFormData((prev) => ({
+            ...prev,
+            restaurant: data.name || prev.restaurant,
+            restaurantId: data._id || id,
+            address: data.address?.street || prev.address,
+            location: {
+              city: data.address?.city || prev.location.city,
+              province: data.address?.province || prev.location.province,
+              country: data.address?.country || prev.location.country,
+            },
+          }));
+        }
+        await loadFoodItemsForRestaurant(id);
+      } catch (e) {
+        console.warn("Could not load restaurant", e?.message);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.restaurantId]);
+
   // Autofill the restaurant on Step 2 from the scanned receipt's vendor name.
   // If a confident match already exists we select it; otherwise we pre-fill the
   // search box with the vendor name so the user can pick it or add it as new.
   useEffect(() => {
-    if (step !== 2 || restaurantAutofilledRef.current) return;
+    if (restaurantAutofilledRef.current) return;
     const vendor = receiptParsed?.vendorName;
     if (!vendor) return;
     const { city, province, country } = formData.location;
@@ -176,7 +242,7 @@ function ReviewSubmissionPage() {
     return () => {
       cancelled = true;
     };
-  }, [step, receiptParsed, formData.location]);
+  }, [receiptParsed, formData.location]);
 
   // Handle clicking outside the suggestions dropdown to close it
   useEffect(() => {
@@ -197,80 +263,6 @@ function ReviewSubmissionPage() {
       document.removeEventListener("mousedown", handleOutsideClick);
     };
   }, [showSuggestions]);
-
-  // Validate Step 1
-  const validateStep1 = () => {
-    const newErrors = {};
-    if (!formData.location.city) newErrors.city = "City is required";
-    if (!formData.location.province)
-      newErrors.province = "Province is required";
-    if (!formData.location.country) newErrors.country = "Country is required";
-    return newErrors;
-  };
-
-  // Proceed to the next step
-  const handleNext = async () => {
-    if (step === 1) {
-      const validationErrors = validateStep1();
-      if (Object.keys(validationErrors).length === 0) {
-        console.log("Step 1 Data: ", formData);
-        setStep(step + 1); // Move to Step 2
-      } else {
-        setErrors(validationErrors); // Display validation errors if any
-      }
-    } else if (step === 2) {
-      console.log(`Step ${step} Data: `, formData);
-
-      // Check if restaurantId exists before pre-fetching food items
-      if (formData.restaurantId) {
-        try {
-          // Pre-fetch all food items for the selected restaurant
-          const response = await axios.get(
-            `/food-items/restaurant/${formData.restaurantId}`
-          );
-
-          // Store the fetched food items in existingFoodItems for search, keep formData.foodItems empty for selected items
-          setExistingFoodItems(response.data);
-
-          // Move to Step 3
-          setStep(step + 1);
-        } catch (error) {
-          console.error("Error fetching food items for the restaurant:", error);
-
-          // If 404 (no food items found), continue with empty array
-          if (error.response?.status === 404) {
-            console.log(
-              "No food items found for this restaurant - proceeding with empty list"
-            );
-            setExistingFoodItems([]); // Start with empty array for new restaurants
-            setFormData((prevData) => ({
-              ...prevData,
-              foodItems: [], // Start with empty array for new restaurants
-            }));
-            setStep(step + 1);
-          } else {
-            // For other errors, show an error message
-            setNotification({
-              isVisible: true,
-              message: "Error loading restaurant data. Please try again.",
-              type: "error",
-            });
-          }
-        }
-      } else {
-        console.error("Restaurant ID not found. Please select a restaurant.");
-      }
-    } else {
-      // For steps beyond Step 2, continue with form submission or next steps
-      console.log(`Step ${step} Data: `, formData);
-      setStep(step + 1);
-    }
-  };
-
-  // Go to the previous step
-  const handlePrevious = () => {
-    setStep(step - 1);
-  };
 
   // Update form data as each step progresses
   const handleUpdate = (newData) => {
@@ -295,13 +287,15 @@ function ReviewSubmissionPage() {
             type: restaurant.type || undefined,
           }
         );
+        const restaurantId = data.restaurantId;
         setFormData({
           ...formData,
           restaurant: restaurant.name,
-          restaurantId: data.restaurantId,
+          restaurantId,
           address:
             restaurant.displayStreet || restaurant.address?.street || "",
         });
+        await loadFoodItemsForRestaurant(restaurantId);
       } catch (err) {
         console.error("Promote place failed", err);
         alert(
@@ -316,6 +310,7 @@ function ReviewSubmissionPage() {
         restaurantId: restaurant._id,
         address: restaurant.displayStreet || restaurant.address?.street || "",
       });
+      await loadFoodItemsForRestaurant(restaurant._id);
     }
     setShowSuggestions(false);
   };
@@ -441,6 +436,7 @@ function ReviewSubmissionPage() {
       restaurantId: newRestaurant._id,
       address: newRestaurant.address?.street,
     }));
+    loadFoodItemsForRestaurant(newRestaurant._id);
 
     // Refresh the restaurant search to include the new restaurant
     if (formData.restaurant) {
@@ -621,14 +617,7 @@ function ReviewSubmissionPage() {
         return;
       }
 
-      if (!formData.purchaseDate) {
-        setNotification({
-          isVisible: true,
-          message: "Purchase date is required.",
-          type: "error",
-        });
-        return;
-      }
+      const purchaseDateValue = formData.purchaseDate || todayInputDate();
 
       const config = {
         headers: {
@@ -646,7 +635,7 @@ function ReviewSubmissionPage() {
         return `${month}-${day}-${year}`;
       };
 
-      const formattedPurchaseDate = formatDate(formData.purchaseDate);
+      const formattedPurchaseDate = formatDate(purchaseDateValue);
 
       // Make sure any photos that were selected/cropped but not yet uploaded
       // (the user may have skipped the "Upload Selected" button) get uploaded
@@ -691,7 +680,7 @@ function ReviewSubmissionPage() {
           restaurantId: formData.restaurantId,
           foodItem: foodItem._id,
           score: parseInt(rating),
-          comment: "",
+          comment: formData.comment || "",
           photos: photoUrls,
           tags: formData.tags || [],
           purchaseDate: formattedPurchaseDate,
@@ -706,7 +695,8 @@ function ReviewSubmissionPage() {
       });
 
       const results = await Promise.all(reviewPromises);
-      console.log("All reviews submitted:", results); // Debug log
+      const firstShare = results[0]?.data?.share || null;
+      const firstReviewId = results[0]?.data?._id || null;
 
       if (formData.receiptId) {
         try {
@@ -723,7 +713,12 @@ function ReviewSubmissionPage() {
         }
       }
 
-      navigate("/review-success");
+      navigate("/review-success", {
+        state: {
+          share: firstShare,
+          reviewId: firstReviewId,
+        },
+      });
     } catch (error) {
       console.error("Error submitting review:", error);
       console.error("Error response:", error.response?.data); // More detailed error
@@ -761,6 +756,19 @@ function ReviewSubmissionPage() {
     }
   };
 
+  const restaurantKnown = Boolean(formData.restaurantId);
+  const changeRestaurant = () => {
+    setFormData((prev) => ({
+      ...prev,
+      restaurant: "",
+      restaurantId: "",
+      address: "",
+      foodItems: [],
+      ratings: [],
+    }));
+    setExistingFoodItems([]);
+  };
+
   return (
     <div className="submission-container">
       <SEO
@@ -770,186 +778,36 @@ function ReviewSubmissionPage() {
       />
       <div className="form-section">
         <div className="form-header">
-          <h1 className="form-heading">Submit Your Review</h1>
+          <h1 className="form-heading">
+            {restaurantKnown ? "Rate a dish" : "Where did you eat?"}
+          </h1>
           <p className="form-subtitle">
-            Share your dining experience with the community
+            {restaurantKnown
+              ? "Pick a dish, score it, and add an optional photo."
+              : "Choose a city and restaurant, then rate a dish on one screen."}
           </p>
-
-          <div className="step-indicator">
-            <div
-              className={`step ${step >= 1 ? "active" : ""} ${
-                step > 1 ? "completed" : ""
-              }`}
-            >
-              <span className="step-number">1</span>
-              <span>Location</span>
-            </div>
-            <div
-              className={`step ${step >= 2 ? "active" : ""} ${
-                step > 2 ? "completed" : ""
-              }`}
-            >
-              <span className="step-number">2</span>
-              <span>Restaurant</span>
-            </div>
-            <div
-              className={`step ${step >= 3 ? "active" : ""} ${
-                step > 3 ? "completed" : ""
-              }`}
-            >
-              <span className="step-number">3</span>
-              <span>Food Items</span>
-            </div>
-            <div
-              className={`step ${step >= 4 ? "active" : ""} ${
-                step > 4 ? "completed" : ""
-              }`}
-            >
-              <span className="step-number">4</span>
-              <span>Ratings</span>
-            </div>
-            <div
-              className={`step ${step >= 5 ? "active" : ""} ${
-                step > 5 ? "completed" : ""
-              }`}
-            >
-              <span className="step-number">5</span>
-              <span>Photos</span>
-            </div>
-            <div className={`step ${step >= 6 ? "active" : ""}`}>
-              <span className="step-number">6</span>
-              <span>Review</span>
-            </div>
-          </div>
-
-          {/* Mobile step indicator */}
-          <div className="mobile-step-indicator">
-            <div className="mobile-step-track">
-              <div
-                className={`mobile-step-number ${
-                  step >= 1 ? (step > 1 ? "completed" : "active") : ""
-                }`}
-              >
-                1
-              </div>
-              <div
-                className={`mobile-step-divider ${step > 1 ? "completed" : ""}`}
-              ></div>
-              <div
-                className={`mobile-step-number ${
-                  step >= 2 ? (step > 2 ? "completed" : "active") : ""
-                }`}
-              >
-                2
-              </div>
-              <div
-                className={`mobile-step-divider ${step > 2 ? "completed" : ""}`}
-              ></div>
-              <div
-                className={`mobile-step-number ${
-                  step >= 3 ? (step > 3 ? "completed" : "active") : ""
-                }`}
-              >
-                3
-              </div>
-              <div
-                className={`mobile-step-divider ${step > 3 ? "completed" : ""}`}
-              ></div>
-              <div
-                className={`mobile-step-number ${
-                  step >= 4 ? (step > 4 ? "completed" : "active") : ""
-                }`}
-              >
-                4
-              </div>
-              <div
-                className={`mobile-step-divider ${step > 4 ? "completed" : ""}`}
-              ></div>
-              <div
-                className={`mobile-step-number ${
-                  step >= 5 ? (step > 5 ? "completed" : "active") : ""
-                }`}
-              >
-                5
-              </div>
-              <div
-                className={`mobile-step-divider ${step > 5 ? "completed" : ""}`}
-              ></div>
-              <div
-                className={`mobile-step-number ${step >= 6 ? "active" : ""}`}
-              >
-                6
-              </div>
-            </div>
-            <div className="mobile-step-text">
-              Step {step} of 6:{" "}
-              {step === 1
-                ? "Location"
-                : step === 2
-                ? "Restaurant"
-                : step === 3
-                ? "Food Items"
-                : step === 4
-                ? "Ratings"
-                : step === 5
-                ? "Photos"
-                : "Review"}
-            </div>
-          </div>
         </div>
 
         <div className="form-content">
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${(step / 6) * 100}%` }}
-            ></div>
-          </div>
-
           {formData.receiptId && (
-            <div
-              className="receipt-wizard-pill"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "10px 14px",
-                marginBottom: 16,
-                borderRadius: 10,
-                border: "1px solid #d4c4e8",
-                background: "linear-gradient(135deg, #faf7ff 0%, #f3edfa 100%)",
-              }}
-            >
+            <div className="verified-visit-pill">
               {receiptDisplayUrl && (
-                <img
-                  src={receiptDisplayUrl}
-                  alt=""
-                  style={{
-                    width: 56,
-                    height: 56,
-                    objectFit: "cover",
-                    borderRadius: 8,
-                    border: "1px solid #e0e0e0",
-                    flexShrink: 0,
-                  }}
-                />
+                <img src={receiptDisplayUrl} alt="" className="verified-visit-thumb" />
               )}
-              <div style={{ fontSize: 13, lineHeight: 1.4, color: "#444" }}>
-                <strong style={{ display: "block", marginBottom: 4 }}>
-                  Receipt attached
-                </strong>
-                {receiptParsed
-                  ? "We pre-filled what we could read from your receipt. Please review each field — everything is editable."
-                  : "Stored privately for your records — not shown on your public review."}
+              <div>
+                <strong>Verified visit</strong>
+                <span>
+                  Receipt attached privately — it is not shown on your public
+                  review.
+                </span>
               </div>
             </div>
           )}
 
-          {/* Step 1: Select Location */}
-          {step === 1 && (
+          {!restaurantKnown && (
             <div className="form-step active">
               <div className="form-group">
-                <label className="form-label">Select Your Location</label>
+                <label className="form-label">City</label>
                 <CitySearch
                   onSelectCity={(selectedCity) =>
                     setFormData({
@@ -961,81 +819,41 @@ function ReviewSubmissionPage() {
                       },
                     })
                   }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleNext();
-                    }
-                  }}
                 />
-              </div>
-
-              <div className="form-group">
-                <input
-                  type="text"
-                  placeholder="City"
-                  value={formData.location.city}
-                  className="form-input"
-                  readOnly
-                />
+                {(formData.location.city ||
+                  formData.location.province ||
+                  formData.location.country) && (
+                  <p className="form-hint">
+                    {formData.location.city}
+                    {formData.location.province
+                      ? `, ${formData.location.province}`
+                      : ""}
+                    {formData.location.country
+                      ? `, ${formData.location.country}`
+                      : ""}
+                  </p>
+                )}
                 {errors.city && (
                   <span className="form-error">{errors.city}</span>
                 )}
               </div>
 
               <div className="form-group">
-                <input
-                  type="text"
-                  placeholder="Province"
-                  value={formData.location.province}
-                  className="form-input"
-                  readOnly
-                />
-                {errors.province && (
-                  <span className="form-error">{errors.province}</span>
-                )}
-              </div>
-
-              <div className="form-group">
-                <input
-                  type="text"
-                  placeholder="Country"
-                  value={formData.location.country}
-                  className="form-input"
-                  readOnly
-                />
-                {errors.country && (
-                  <span className="form-error">{errors.country}</span>
-                )}
-              </div>
-
-              <div className="form-navigation">
-                <div></div>
-                <button onClick={handleNext} className="nav-button btn-primary">
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Select Restaurant */}
-          {step === 2 && (
-            <div className="form-step active">
-              <div className="form-group">
-                <label className="form-label">
-                  Select Restaurant for {formData.location.city},{" "}
-                  {formData.location.province}, {formData.location.country}
-                </label>
-
+                <label className="form-label">Restaurant</label>
                 <div className="search-input-container">
                   <input
                     type="text"
-                    placeholder="Search Restaurant"
+                    placeholder={
+                      formData.location.city
+                        ? "Search restaurant"
+                        : "Pick a city first"
+                    }
                     className="form-input"
                     value={formData.restaurant}
                     onChange={handleRestaurantSearch}
                     onKeyDown={handleKeyDown}
                     onFocus={handleRestaurantFocus}
+                    disabled={!formData.location.city}
                   />
                   {showSuggestions && restaurantSuggestions.length > 0 && (
                     <ul className="suggestions-dropdown">
@@ -1072,37 +890,57 @@ function ReviewSubmissionPage() {
                     </ul>
                   )}
                 </div>
-
-                {/* Add Restaurant Button */}
                 <div className="restaurant-options">
                   <button
                     type="button"
                     onClick={() => setShowRestaurantModal(true)}
                     className="add-restaurant-btn"
+                    disabled={!formData.location.city}
                   >
-                    <span>+</span> Can't find your restaurant? Add it here
+                    <span>+</span> Can't find it? Add the restaurant
                   </button>
                 </div>
-              </div>
-
-              <div className="form-navigation">
-                <button
-                  onClick={handlePrevious}
-                  className="nav-button btn-secondary"
-                >
-                  Previous
-                </button>
-                <button onClick={handleNext} className="nav-button btn-primary">
-                  Next
-                </button>
               </div>
             </div>
           )}
 
-          {/* Step 3: Add Food Items */}
-          {step === 3 && (
-            <div className="form-step active">
+          {restaurantKnown && (
+            <div className="form-step active quick-review">
+              <div className="quick-restaurant-bar">
+                <div>
+                  <strong>{formData.restaurant || "Selected restaurant"}</strong>
+                  {formData.location.city && (
+                    <span>
+                      {formData.location.city}
+                      {formData.location.province
+                        ? `, ${formData.location.province}`
+                        : ""}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="change-restaurant-btn"
+                  onClick={changeRestaurant}
+                >
+                  Change
+                </button>
+              </div>
+
+              {!formData.receiptId && (
+                <p className="optional-receipt-link">
+                  <Link
+                    to={`/submit-review/scan?restaurantId=${encodeURIComponent(
+                      formData.restaurantId
+                    )}`}
+                  >
+                    Optional: add a receipt for a verified visit
+                  </Link>
+                </p>
+              )}
+
               <div className="form-group">
+                <label className="form-label">Dish</label>
                 <FoodItemForm
                   restaurantId={formData.restaurantId}
                   onFoodItemsUpdated={(foodItems) =>
@@ -1113,70 +951,31 @@ function ReviewSubmissionPage() {
                 />
               </div>
 
-              <div className="form-navigation">
-                <button
-                  onClick={handlePrevious}
-                  className="nav-button btn-secondary"
-                >
-                  Previous
-                </button>
-                <button onClick={handleNext} className="nav-button btn-primary">
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Add Ratings */}
-          {step === 4 && (
-            <div className="form-step active">
-              <div className="form-group">
-                <label className="form-label">Rate Your Food Items</label>
-                <div className="food-ratings-container">
-                  {formData.foodItems.map((foodItem, index) => (
-                    <div key={index} className="food-rating-item">
-                      <RatingScale
-                        foodItemName={foodItem.name}
-                        onRatingChange={(rating) => {
-                          const updatedRatings = [...formData.ratings];
-                          updatedRatings[index] = rating;
-                          handleUpdate({ ratings: updatedRatings });
-                        }}
-                      />
-                    </div>
-                  ))}
+              {formData.foodItems.length > 0 && (
+                <div className="form-group">
+                  <label className="form-label">Score</label>
+                  <div className="food-ratings-container">
+                    {formData.foodItems.map((foodItem, index) => (
+                      <div key={foodItem._id || index} className="food-rating-item">
+                        <RatingScale
+                          foodItemName={foodItem.name}
+                          onRatingChange={(rating) => {
+                            const updatedRatings = [...formData.ratings];
+                            updatedRatings[index] = rating;
+                            handleUpdate({ ratings: updatedRatings });
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="form-navigation">
-                <button
-                  onClick={handlePrevious}
-                  className="nav-button btn-secondary"
-                >
-                  Previous
-                </button>
-                <button onClick={handleNext} className="nav-button btn-primary">
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Add Photos */}
-          {step === 5 && (
-            <div className="form-step active">
               <div className="form-group">
-                <label className="form-label">Upload Photos (Optional)</label>
-                <p
-                  className="form-hint"
-                  style={{
-                    fontSize: "0.85rem",
-                    color: "#666",
-                    margin: "0 0 10px",
-                  }}
-                >
+                <label className="form-label">Photo (optional)</label>
+                <p className="form-hint">
                   After choosing a photo, drag to move and pinch or scroll to
-                  zoom so it's framed just how you want.
+                  zoom so it's framed how you want.
                 </p>
                 <div className="photo-upload-container">
                   <input
@@ -1186,16 +985,6 @@ function ReviewSubmissionPage() {
                     className="form-input"
                     onChange={handleFilesSelected}
                   />
-                  <button
-                    type="button"
-                    className={`nav-button btn-secondary ${
-                      uploading ? "loading" : ""
-                    }`}
-                    onClick={handleUploadPhotos}
-                    disabled={uploading || selectedFiles.length === 0}
-                  >
-                    {uploading ? "Uploading..." : "Upload Selected"}
-                  </button>
                   <div
                     className="photo-previews"
                     style={{
@@ -1265,80 +1054,37 @@ function ReviewSubmissionPage() {
                 </div>
               </div>
 
-              <div className="form-navigation">
-                <button
-                  onClick={handlePrevious}
-                  className="nav-button btn-secondary"
-                >
-                  Previous
-                </button>
-                <button onClick={handleNext} className="nav-button btn-primary">
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 6: Confirm Review */}
-          {step === 6 && (
-            <div className="form-step active">
               <div className="form-group">
-                <label className="form-label">Review Your Submission</label>
-
-                <div className="summary-item">
-                  <strong>Location:</strong>{" "}
-                  {`${formData.location.city}, ${formData.location.province}, ${formData.location.country}`}
-                </div>
-
-                <div className="summary-item">
-                  <strong>Restaurant:</strong> {formData.restaurant}
-                </div>
-
-                <div className="summary-item">
-                  <strong>Food Items & Ratings:</strong>
-                  <ul>
-                    {formData.foodItems.map((item, index) => (
-                      <li key={index}>
-                        {item.name} - {item.category}
-                        {item.subCategory &&
-                          item.subCategory.trim() !== "" &&
-                          ` (${item.subCategory})`}
-                        , Price: ${item.price} -{" "}
-                        <strong>
-                          Rating: {formData.ratings[index] || "Not rated"}/100
-                        </strong>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Purchase Date:</label>
-                  <input
-                    type="date"
-                    value={formData.purchaseDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, purchaseDate: e.target.value })
-                    }
-                    required
-                    className="form-input"
-                  />
-                </div>
+                <label className="form-label" htmlFor="review-comment">
+                  Comment (optional)
+                </label>
+                <textarea
+                  id="review-comment"
+                  className="form-input"
+                  rows={3}
+                  placeholder="What stood out?"
+                  value={formData.comment || ""}
+                  onChange={(e) => handleUpdate({ comment: e.target.value })}
+                />
               </div>
 
               <div className="form-navigation">
                 <button
-                  onClick={handlePrevious}
-                  className="nav-button btn-secondary"
-                >
-                  Previous
-                </button>
-                <button
+                  type="button"
                   onClick={handleSubmit}
                   className="nav-button btn-success"
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting ||
+                    uploading ||
+                    !formData.foodItems.length ||
+                    formData.foodItems.some(
+                      (_, i) =>
+                        formData.ratings[i] == null ||
+                        formData.ratings[i] === ""
+                    )
+                  }
                 >
-                  {isSubmitting ? "Submitting..." : "Submit Review"}
+                  {isSubmitting ? "Submitting..." : "Submit review"}
                 </button>
               </div>
             </div>
@@ -1347,6 +1093,7 @@ function ReviewSubmissionPage() {
       </div>
 
       {/* Restaurant Modal */}
+
       <RestaurantModal
         isOpen={showRestaurantModal}
         onClose={() => setShowRestaurantModal(false)}

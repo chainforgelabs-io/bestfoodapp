@@ -156,6 +156,8 @@ function LeaderboardsPage() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [resetKey, setResetKey] = useState(0); // Key to trigger city search reset
+  const [cityCritics, setCityCritics] = useState([]);
+  const [criticThreshold, setCriticThreshold] = useState(10);
 
   // Use custom hook for URL-based city detection
   const { cityFromUrl, hasUrlCity, updateUrlWithCity } =
@@ -443,7 +445,32 @@ function LeaderboardsPage() {
     setSelectedFoodCategory("All");
   }, [selectedCity]);
 
-  // Handle city selection
+  useEffect(() => {
+    if (!selectedCity?.city) {
+      setCityCritics([]);
+      return;
+    }
+    let cancelled = false;
+    axios
+      .get("/leaderboards/critics", {
+        params: {
+          city: selectedCity.city,
+          province: selectedCity.province,
+          country: selectedCity.country,
+        },
+      })
+      .then(({ data }) => {
+        if (cancelled) return;
+        setCityCritics(data.critics || []);
+        setCriticThreshold(data.threshold || 10);
+      })
+      .catch(() => {
+        if (!cancelled) setCityCritics([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCity]);
   const handleCitySelect = (city) => {
     setSelectedCity(city);
     if (typeSlug) {
@@ -728,6 +755,33 @@ function LeaderboardsPage() {
           </div>
         )}
       </div>
+
+      {selectedCity?.city && (
+        <section className="city-critics-board" aria-label="City critics">
+          <h3 className="section-title">City critics</h3>
+          <p className="city-critics-copy">
+            {criticThreshold}+ reviews in {selectedCity.city} lists you here.
+          </p>
+          {cityCritics.length > 0 ? (
+            <ol className="city-critics-list">
+              {cityCritics.map((critic, index) => (
+                <li key={critic._id}>
+                  <span className="city-critic-rank">#{index + 1}</span>
+                  <Link to={`/users/${critic._id}`}>{critic.username}</Link>
+                  <span className="city-critic-meta">
+                    {critic.reviewCount} reviews · {critic.points} pts
+                  </span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="city-critics-empty">
+              No city critics yet. Leave {criticThreshold} reviews here to be
+              first.
+            </p>
+          )}
+        </section>
+      )}
 
       {/* Category Selection and Sub-category Selection - only show when city is selected */}
       {selectedCity && !typedBoard && (

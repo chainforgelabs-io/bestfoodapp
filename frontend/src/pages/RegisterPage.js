@@ -1,164 +1,102 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import axios from "../api/axios";
-import CitySearch from "../components/CitySearch";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import "../styles/RegisterPage.css";
 import SEO from "../components/SEO";
+import tokenUtils from "../utils/auth";
 
 function RegisterPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextPath = searchParams.get("next") || "/profile";
 
-  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
-    firstName: "", // Added
-    lastName: "", // Added
     password: "",
     confirmPassword: "",
-    dateOfBirth: "",
-    sex: "male",
-    city: "",
-    province: "",
-    country: "",
-    maritalStatus: "single",
-    occupation: "",
-    incomeRange: "<25k",
+    birthYear: "",
+    ageConfirmed: false,
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  const birthYears = useMemo(() => {
+    const now = new Date().getFullYear();
+    const years = [];
+    for (let y = now - 13; y >= now - 120; y -= 1) {
+      years.push(y);
+    }
+    return years;
+  }, []);
 
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
-
-  const validateStep1 = () => {
-    let newErrors = {};
-    if (!formData.username) {
-      newErrors.username = "Username is required";
-    } else if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password !== formData.confirmPassword) {
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.username.trim()) newErrors.username = "Username is required";
+    if (!formData.email.trim()) newErrors.email = "Email is required";
+    else if (!formData.email.includes("@"))
+      newErrors.email = "Enter a valid email";
+    if (!formData.password) newErrors.password = "Password is required";
+    else if (formData.password.length < 6)
+      newErrors.password = "Password must be at least 6 characters";
+    if (formData.password !== formData.confirmPassword)
       newErrors.confirmPassword = "Passwords do not match";
-    }
+    if (!formData.birthYear) newErrors.birthYear = "Birth year is required";
+    if (!formData.ageConfirmed)
+      newErrors.ageConfirmed = "Confirm you are 13 or older";
     return newErrors;
   };
 
-  const validateStep2 = () => {
-    let newErrors = {};
-    if (!formData.dateOfBirth) {
-      newErrors.dateOfBirth = "Date of birth is required";
-    } else if (!formData.city) {
-      newErrors.city = "City is required";
-    } else if (!formData.province) {
-      newErrors.province = "Province is required";
-    } else if (!formData.country) {
-      newErrors.country = "Country is required";
-    }
-    return newErrors;
-  };
-
-  const validateStep3 = () => {
-    let newErrors = {};
-    if (!formData.occupation) {
-      newErrors.occupation = "Occupation is required";
-    }
-    return newErrors;
-  };
-
-  const handleNext = async () => {
-    let validationErrors = {};
-    if (step === 1) {
-      validationErrors = validateStep1();
-      if (Object.keys(validationErrors).length === 0) {
-        try {
-          const response = await axios.post("/users/checkAvailability", {
-            username: formData.username,
-            email: formData.email,
-          });
-
-          if (response.status === 200) {
-            setStep((prev) => prev + 1);
-            setErrors({});
-          }
-        } catch (error) {
-          if (
-            error.response &&
-            error.response.data.message ===
-              "Username or email is already taken."
-          ) {
-            setErrors({ username: "Username or email is already taken." });
-          } else {
-            setErrors({
-              form: "An error occurred while checking availability.",
-            });
-          }
-        }
-      } else {
-        setErrors(validationErrors);
-      }
-    } else if (step === 2) {
-      validationErrors = validateStep2();
-      if (Object.keys(validationErrors).length === 0) {
-        setStep((prev) => prev + 1);
-        setErrors({});
-      } else {
-        setErrors(validationErrors);
-      }
-    }
-  };
-
-  const handlePrev = () => setStep((prev) => prev - 1);
+  const safeNext = (path) =>
+    path && path.startsWith("/") && !path.startsWith("//") ? path : "/profile";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let validationErrors = validateStep3();
+    const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
+    setIsSubmitting(true);
+    setErrors({});
     try {
-      const location = {
-        city: formData.city,
-        province: formData.province,
-        country: formData.country,
-      };
-
-      const registrationResponse = await axios.post("/users", {
-        ...formData,
-        location,
+      await axios.post("/users", {
+        username: formData.username.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        birthYear: Number(formData.birthYear),
+        ageConfirmed: true,
       });
-      console.log("Registration successful:", registrationResponse.data);
 
       const loginResponse = await axios.post("/auth/login", {
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password,
+        keepLoggedIn: true,
       });
 
-      console.log("Login response:", loginResponse.data);
-      localStorage.setItem("token", loginResponse.data.token);
-      navigate("/profile");
+      tokenUtils.setToken(loginResponse.data.token, true);
+      navigate(safeNext(nextPath));
     } catch (err) {
       console.error("Registration or login failed:", err);
       if (err.response && err.response.data.message) {
-        if (err.response.data.message.includes("username")) {
+        const msg = err.response.data.message;
+        if (msg.includes("username") && msg.includes("email")) {
+          setErrors({ username: "Username or email is already taken." });
+        } else if (msg.toLowerCase().includes("username")) {
           setErrors({ username: "Username is already taken." });
-        } else if (err.response.data.message.includes("email")) {
+        } else if (msg.toLowerCase().includes("email")) {
           setErrors({ email: "An account with this email already exists." });
         } else {
-          setErrors({ form: err.response.data.message });
+          setErrors({ form: msg });
         }
       } else {
         setErrors({ form: "Registration failed. Please try again." });
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -169,233 +107,147 @@ function RegisterPage() {
         description="Create an account to submit reviews and personalize your experience."
         noindex={true}
       />
-      <h2>Register</h2>
+      <h2>Create an account</h2>
 
-      {step === 1 && (
-        <form className="register-form">
-          <input
-            type="text"
-            placeholder="Username"
-            value={formData.username}
-            onChange={(e) =>
-              setFormData({ ...formData, username: e.target.value })
-            }
-            className="register-input"
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
-            className="register-input"
-          />
-          <input
-            type="text"
-            placeholder="First Name (Optional)"
-            value={formData.firstName}
-            onChange={(e) =>
-              setFormData({ ...formData, firstName: e.target.value })
-            }
-            className="register-input"
-          />
-          <input
-            type="text"
-            placeholder="Last Name (Optional)"
-            value={formData.lastName}
-            onChange={(e) =>
-              setFormData({ ...formData, lastName: e.target.value })
-            }
-            className="register-input"
-          />
-          <div className="password-container">
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              className="register-input password-input"
-            />
-            <button
-              type="button"
-              className="password-toggle"
-              onClick={togglePasswordVisibility}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              <i className={showPassword ? "fa fa-eye-slash" : "fa fa-eye"}></i>
-            </button>
-          </div>
-          <div className="password-container">
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder="Confirm Password"
-              value={formData.confirmPassword}
-              onChange={(e) =>
-                setFormData({ ...formData, confirmPassword: e.target.value })
-              }
-              className="register-input password-input"
-            />
-            <button
-              type="button"
-              className="password-toggle"
-              onClick={toggleConfirmPasswordVisibility}
-              aria-label={
-                showConfirmPassword
-                  ? "Hide confirm password"
-                  : "Show confirm password"
-              }
-            >
-              <i
-                className={
-                  showConfirmPassword ? "fa fa-eye-slash" : "fa fa-eye"
-                }
-              ></i>
-            </button>
-          </div>
-          {errors.username && (
-            <span className="error-text">{errors.username}</span>
-          )}
-          {errors.email && <span className="error-text">{errors.email}</span>}
-          {errors.password && (
-            <span className="error-text">{errors.password}</span>
-          )}
-          {errors.confirmPassword && (
-            <span className="error-text">{errors.confirmPassword}</span>
-          )}
-          {errors.submit && <span className="error-text">{errors.submit}</span>}
-          <button type="button" onClick={handleNext} className="register-btn">
-            Next
-          </button>
-        </form>
-      )}
+      <form onSubmit={handleSubmit} className="register-form">
+        <input
+          type="text"
+          placeholder="Username"
+          value={formData.username}
+          onChange={(e) =>
+            setFormData({ ...formData, username: e.target.value })
+          }
+          className="register-input"
+          autoComplete="username"
+        />
+        {errors.username && (
+          <span className="error-text">{errors.username}</span>
+        )}
 
-      {step === 2 && (
-        <form className="register-form">
-          <div className="input-group">
-            <label htmlFor="dateOfBirth" className="input-label">
-              Date of Birth
-            </label>
-            <input
-              id="dateOfBirth"
-              type="date"
-              placeholder="Date of Birth"
-              value={formData.dateOfBirth}
-              onChange={(e) =>
-                setFormData({ ...formData, dateOfBirth: e.target.value })
-              }
-              className="register-input"
-            />
-          </div>
-          <select
-            value={formData.sex}
-            onChange={(e) => setFormData({ ...formData, sex: e.target.value })}
-            className="register-input"
+        <input
+          type="email"
+          placeholder="Email"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          className="register-input"
+          autoComplete="email"
+        />
+        {errors.email && <span className="error-text">{errors.email}</span>}
+
+        <div className="password-container">
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={formData.password}
+            onChange={(e) =>
+              setFormData({ ...formData, password: e.target.value })
+            }
+            className="register-input password-input"
+            autoComplete="new-password"
+          />
+          <button
+            type="button"
+            className="password-toggle"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-          <CitySearch
-            onSelectCity={(selectedCity) =>
-              setFormData({
-                ...formData,
-                city: selectedCity.city,
-                province: selectedCity.province,
-                country: selectedCity.country,
-              })
-            }
-          />
-          <input
-            type="text"
-            placeholder="City"
-            value={formData.city}
-            className="register-input"
-            readOnly
-          />
-          <input
-            type="text"
-            placeholder="Province"
-            value={formData.province}
-            className="register-input"
-            readOnly
-          />
-          <input
-            type="text"
-            placeholder="Country"
-            value={formData.country}
-            className="register-input"
-            readOnly
-          />
-          {errors.dateOfBirth && (
-            <span className="error-text">{errors.dateOfBirth}</span>
-          )}
-          {errors.city && <span className="error-text">{errors.city}</span>}
-          {errors.province && (
-            <span className="error-text">{errors.province}</span>
-          )}
-          {errors.country && (
-            <span className="error-text">{errors.country}</span>
-          )}
-          <button type="button" onClick={handlePrev} className="register-btn">
-            Back
+            <i className={showPassword ? "fa fa-eye-slash" : "fa fa-eye"}></i>
           </button>
-          <button type="button" onClick={handleNext} className="register-btn">
-            Next
-          </button>
-        </form>
-      )}
+        </div>
+        {errors.password && (
+          <span className="error-text">{errors.password}</span>
+        )}
 
-      {step === 3 && (
-        <form onSubmit={handleSubmit} className="register-form">
-          <select
-            value={formData.maritalStatus}
+        <div className="password-container">
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="Confirm Password"
+            value={formData.confirmPassword}
             onChange={(e) =>
-              setFormData({ ...formData, maritalStatus: e.target.value })
+              setFormData({ ...formData, confirmPassword: e.target.value })
+            }
+            className="register-input password-input"
+            autoComplete="new-password"
+          />
+          <button
+            type="button"
+            className="password-toggle"
+            onClick={() => setShowConfirmPassword((v) => !v)}
+            aria-label={
+              showConfirmPassword ? "Hide confirm password" : "Show password"
+            }
+          >
+            <i
+              className={showConfirmPassword ? "fa fa-eye-slash" : "fa fa-eye"}
+            ></i>
+          </button>
+        </div>
+        {errors.confirmPassword && (
+          <span className="error-text">{errors.confirmPassword}</span>
+        )}
+
+        <div className="input-group">
+          <label htmlFor="birthYear" className="input-label">
+            Birth year
+          </label>
+          <select
+            id="birthYear"
+            value={formData.birthYear}
+            onChange={(e) =>
+              setFormData({ ...formData, birthYear: e.target.value })
             }
             className="register-input"
           >
-            <option value="single">Single</option>
-            <option value="married">Married</option>
-            <option value="divorced">Divorced</option>
-            <option value="widowed">Widowed</option>
+            <option value="">Select year</option>
+            {birthYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
           </select>
+        </div>
+        {errors.birthYear && (
+          <span className="error-text">{errors.birthYear}</span>
+        )}
+
+        <label className="age-confirm-row" htmlFor="ageConfirmed">
           <input
-            type="text"
-            placeholder="Occupation"
-            value={formData.occupation}
+            id="ageConfirmed"
+            type="checkbox"
+            checked={formData.ageConfirmed}
             onChange={(e) =>
-              setFormData({ ...formData, occupation: e.target.value })
+              setFormData({ ...formData, ageConfirmed: e.target.checked })
             }
-            className="register-input"
           />
-          <select
-            value={formData.incomeRange}
-            onChange={(e) =>
-              setFormData({ ...formData, incomeRange: e.target.value })
-            }
-            className="register-input"
-          >
-            <option value="<25k">{"<25k"}</option>
-            <option value="25k-50k">25k-50k</option>
-            <option value="50k-75k">50k-75k</option>
-            <option value="75k-100k">75k-100k</option>
-            <option value="100k-150k">100k-150k</option>
-            <option value=">150k">{">150k"}</option>
-          </select>
-          {errors.occupation && (
-            <span className="error-text">{errors.occupation}</span>
-          )}
-          <button type="button" onClick={handlePrev} className="register-btn">
-            Back
-          </button>
-          <button type="submit" className="register-btn">
-            Register
-          </button>
-        </form>
-      )}
+          <span>I confirm I am 13 or older</span>
+        </label>
+        {errors.ageConfirmed && (
+          <span className="error-text">{errors.ageConfirmed}</span>
+        )}
+
+        {errors.form && <span className="error-text">{errors.form}</span>}
+
+        <button
+          type="submit"
+          className="register-btn"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Creating account..." : "Create account"}
+        </button>
+      </form>
+
+      <p>
+        Already have an account?{" "}
+        <Link
+          to={
+            nextPath && nextPath !== "/profile"
+              ? `/login?next=${encodeURIComponent(nextPath)}`
+              : "/login"
+          }
+        >
+          Log in
+        </Link>
+      </p>
     </div>
   );
 }

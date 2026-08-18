@@ -12,6 +12,9 @@ const {
   countryNormalizeExpr,
   provinceNormalizeExpr,
 } = require("../lib/places/addressNormalize");
+const Review = require("../models/Review");
+const User = require("../models/User");
+const { CRITIC_REVIEW_THRESHOLD, criticStatus } = require("../lib/critic");
 
 const router = express.Router();
 
@@ -757,6 +760,86 @@ router.get("/categories", async (req, res) => {
   } catch (error) {
     console.error("Error fetching categories:", error);
     res.status(500).json({ error: "Failed to fetch categories" });
+  }
+});
+
+// GET /api/leaderboards/critics — users with 10+ reviews in a city
+router.get("/critics", async (req, res) => {
+  try {
+    const city = String(req.query.city || "").trim();
+    const province = String(req.query.province || "").trim();
+    const country = String(req.query.country || "").trim();
+    if (!city) {
+      return res.json({ critics: [], threshold: CRITIC_REVIEW_THRESHOLD });
+    }
+
+    const addressQuery = {
+      city: new RegExp(`^${city.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
+    };
+    if (province) {
+      addressQuery.province = new RegExp(
+        `^${province.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+        "i"
+      );
+    }
+    if (country) {
+      addressQuery.country = new RegExp(
+        `^${country.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+        "i"
+      );
+    }
+
+    const addresses = await Address.find(addressQuery).select("_id");
+    const restaurants = await Restaurant.find({
+      address: { $in: addresses.map((a) => a._id) },
+    }).select("_id");
+
+    const rows = await Review.aggregate([
+      {
+        $match: {
+          restaurantId: { $in: restaurants.map((r) => r._id) },
+        },
+      },
+      {
+        $group: {
+          _id: "$userId",
+          reviewCount: { $sum: 1 },
+        },
+      },
+      { $match: { reviewCount: { $gte: CRITIC_REVIEW_THRESHOLD } } },
+      { $sort: { reviewCount: -1 } },
+      { $limit: 25 },
+    ]);
+
+    const userIds = rows.map((r) => r._id);
+    const users = await User.find({ _id: { $in: userIds } })
+      .select("username profilePicture points")
+      .lean();
+    const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+
+    const critics = rows
+      .map((row) => {
+        const user = userMap.get(row._id.toString());
+        if (!user) return null;
+        return {
+          _id: user._id,
+          username: user.username,
+          profilePicture: user.profilePicture || "",
+          reviewCount: row.reviewCount,
+          points: user.points || 0,
+          critic: criticStatus(row.reviewCount, user.points || 0),
+        };
+      })
+      .filter(Boolean);
+
+    res.json({
+      critics,
+      threshold: CRITIC_REVIEW_THRESHOLD,
+      city,
+    });
+  } catch (error) {
+    console.error("Error fetching city critics:", error);
+    res.status(500).json({ error: "Failed to fetch city critics" });
   }
 });
 

@@ -4,9 +4,111 @@ const Review = require("../models/Review");
 const FoodItem = require("../models/FoodItem");
 const User = require("../models/User");
 const Receipt = require("../models/Receipt");
+const Restaurant = require("../models/Restaurant");
+const Address = require("../models/Address");
 const mongoose = require("mongoose");
 const { protect, optionalAuth } = require("../middleware/authMiddleware");
 const moment = require("moment");
+const { criticStatus } = require("../lib/critic");
+const { slugForValue, SLUG_BOARDS } = require("../lib/seo/rankingSlugs");
+
+function overallItemScore(item) {
+  const admin = Number(item.adminScore) || 0;
+  const community = Number(item.communityScore) || 0;
+  if (admin > 0 && community > 0) return (admin + community) / 2;
+  return admin || community || 0;
+}
+
+function boardLabelForType(type) {
+  const raw = String(type || "").trim();
+  if (!raw) return "dish";
+  const slug = slugForValue(raw, "food");
+  const board = SLUG_BOARDS[slug];
+  if (board?.title) return board.title;
+  return raw.toLowerCase();
+}
+
+function todayPurchaseDate() {
+  return moment().format("MM-DD-YYYY");
+}
+
+async function buildSharePayload(reviewDoc) {
+  const review = await Review.findById(reviewDoc._id || reviewDoc)
+    .populate({
+      path: "restaurantId",
+      populate: { path: "address" },
+    })
+    .populate("foodItem")
+    .populate("userId", "username points")
+    .lean();
+
+  if (!review) return null;
+
+  const foodItem = review.foodItem || {};
+  const restaurant = review.restaurantId || {};
+  const address = restaurant.address || {};
+  const city = address.city || "";
+  const dishName = foodItem.name || "this dish";
+  const score = Math.round(review.score || 0);
+  const boardLabel = boardLabelForType(foodItem.type);
+  const restaurantSlug = restaurant.slug || restaurant._id;
+  const shareUrl = restaurantSlug
+    ? `https://bestfoodapp.com/restaurant/${restaurantSlug}`
+    : "https://bestfoodapp.com";
+
+  let rank = 1;
+  let boardSize = 1;
+  if (foodItem.type && city) {
+    const addresses = await Address.find({
+      city: new RegExp(`^${String(city).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
+    }).select("_id");
+    const restaurants = await Restaurant.find({
+      address: { $in: addresses.map((a) => a._id) },
+    }).select("_id");
+    const peers = await FoodItem.find({
+      restaurant: { $in: restaurants.map((r) => r._id) },
+      type: new RegExp(`^${String(foodItem.type).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
+    }).select("adminScore communityScore");
+
+    const ranked = peers
+      .map((item) => ({
+        id: item._id.toString(),
+        score: overallItemScore(item),
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    boardSize = ranked.length || 1;
+    const idx = ranked.findIndex((row) => row.id === String(foodItem._id));
+    rank = idx >= 0 ? idx + 1 : 1;
+  }
+
+  const headline = city
+    ? `Your ${dishName} scored ${score} — #${rank} ${boardLabel} in ${city}`
+    : `Your ${dishName} scored ${score}`;
+
+  const reviewCount = await Review.countDocuments({ userId: review.userId?._id || review.userId });
+  const points = review.userId?.points || 0;
+
+  return {
+    reviewId: review._id,
+    dishName,
+    score,
+    restaurantName: restaurant.name || "",
+    restaurantSlug: restaurant.slug || null,
+    city,
+    province: address.province || "",
+    boardLabel,
+    rank,
+    boardSize,
+    headline,
+    shareText: `${headline} on Best Food App`,
+    shareUrl,
+    photoUrl: (review.photos && review.photos[0]) || null,
+    ogImageUrl: review.ogImageUrl || null,
+    verifiedVisit: Boolean(review.receiptId),
+    critic: criticStatus(reviewCount, points),
+  };
+}
 
 // Function to update food item scores
 async function updateScores(foodItemId) {
@@ -72,7 +174,8 @@ router.post("/", protect, async (req, res) => {
     const userRole = req.user.role;
 
     // Ensure purchaseDate is in the correct format (mm-dd-yyyy)
-    if (!moment(purchaseDate, "MM-DD-YYYY", true).isValid()) {
+    const purchaseDateValue = purchaseDate || todayPurchaseDate();
+    if (!moment(purchaseDateValue, "MM-DD-YYYY", true).isValid()) {
       return res
         .status(400)
         .json({ message: "Purchase date must be in mm-dd-yyyy format" });
@@ -104,7 +207,7 @@ router.post("/", protect, async (req, res) => {
       photos,
       tags,
       sizeOptions,
-      purchaseDate: moment(purchaseDate, "MM-DD-YYYY").toDate(), // Convert to a Date object
+      purchaseDate: moment(purchaseDateValue, "MM-DD-YYYY").toDate(), // Convert to a Date object
       receiptId: linkedReceipt ? linkedReceipt._id : undefined,
     });
 
@@ -154,7 +257,19 @@ router.post("/", protect, async (req, res) => {
       console.error("seo publish hook setup failed", seoErr);
     }
 
-    res.status(201).json(savedReview);
+    let share = null;
+    try {
+      share = await buildSharePayload(savedReview);
+    } catch (shareErr) {
+      console.error("buildSharePayload failed", shareErr);
+    }
+
+    res.status(201).json({
+      ...savedReview.toObject(),
+      share,
+      pointsAwarded: pointsToAdd,
+      critic: criticStatus(user.reviews.length, user.points),
+    });
   } catch (err) {
     console.error(err); // Log the error for debugging
     res.status(500).json({ message: "Server error" });
@@ -234,7 +349,21 @@ router.get("/feed", optionalAuth, async (req, res) => {
   }
 });
 
-// POST /api/reviews/:id/like
+// GET /api/reviews/:id/share — headline, rank, and share URLs for the success page
+router.get("/:id/share", optionalAuth, async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid review id" });
+    }
+    const share = await buildSharePayload(req.params.id);
+    if (!share) return res.status(404).json({ message: "Review not found" });
+    res.json(share);
+  } catch (err) {
+    console.error("review share", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Public single review (for related-reviews modules / SEO)
 router.get("/:id", async (req, res) => {
   try {

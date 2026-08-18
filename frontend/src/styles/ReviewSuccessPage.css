@@ -161,6 +161,40 @@
   margin: 0;
 }
 
+.success-share-card {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  margin: 0 auto 20px;
+  display: block;
+}
+
+.verified-visit-flag {
+  display: inline-block;
+  background: #eef8ee;
+  color: #2e7d32;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin: 0 0 16px;
+}
+
+.success-critic-status {
+  color: #666;
+  font-size: 0.95rem;
+  margin: 0 0 24px;
+}
+
+.success-home-link {
+  display: block;
+  width: 100%;
+  text-align: center;
+  color: #888;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 600px) {
   .success-content {

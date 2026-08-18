@@ -108,7 +108,7 @@ function Navbar() {
           </li>
           <li className="nav-item">
             <NavLink
-              to="/submit-review/scan"
+              to="/submit-review"
               className={({ isActive }) =>
                 isActive ? "nav-link active" : "nav-link"
               }

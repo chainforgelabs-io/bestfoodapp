@@ -1,20 +1,15 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import tokenUtils from "../utils/auth";
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = tokenUtils.isAuthenticated();
+  const location = useLocation();
 
-  // Log authentication status for debugging
-  if (!isAuthenticated) {
-    console.log("Access denied: User not authenticated");
-    const tokenInfo = tokenUtils.getTokenInfo();
-    if (tokenInfo) {
-      console.log("Token info:", tokenInfo);
-    }
-  }
+  if (isAuthenticated) return children;
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  const next = encodeURIComponent(location.pathname + location.search);
+  return <Navigate to={`/login?next=${next}`} replace />;
 };
 
 export default ProtectedRoute;

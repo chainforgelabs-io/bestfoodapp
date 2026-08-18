@@ -391,6 +391,27 @@
   font-size: 1.1rem;
 }
 
+.restaurant-review-cta {
+  margin: 0 0 24px;
+  text-align: center;
+}
+
+.review-dish-btn {
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #b08bd4, #9562d4);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(176, 139, 212, 0.3);
+}
+
+.review-dish-btn:hover {
+  background: linear-gradient(135deg, #9562d4, #8449c7);
+}
+
 /* Back Button */
 .back-button {
   padding: 14px 28px;

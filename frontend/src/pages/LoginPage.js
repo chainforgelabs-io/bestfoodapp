@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import axios from "../api/axios";
 import tokenUtils from "../utils/auth";
 import Notification from "../components/Notification";
@@ -10,7 +10,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [keepLoggedIn, setKeepLoggedIn] = useState(false);
+  const [keepLoggedIn, setKeepLoggedIn] = useState(true);
   const [error, setError] = useState("");
   const [forgotEmail, setForgotEmail] = useState("");
   const [isForgotPassword, setIsForgotPassword] = useState(false); // New state for forgot password
@@ -25,16 +25,16 @@ const LoginPage = () => {
   });
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextPath = searchParams.get("next");
+
+  const safeNext = (path) =>
+    path && path.startsWith("/") && !path.startsWith("//") ? path : "/profile";
 
   // Check if user is already logged in when component mounts
   useEffect(() => {
     if (tokenUtils.isAuthenticated()) {
-      console.log("User is already authenticated, redirecting to profile");
-      const tokenInfo = tokenUtils.getTokenInfo();
-      if (tokenInfo) {
-        console.log("Current token info:", tokenInfo);
-      }
-      navigate("/profile");
+      navigate(safeNext(nextPath));
     }
 
     // Add global debug function for production troubleshooting
@@ -132,28 +132,11 @@ const LoginPage = () => {
         });
       }
 
-      // Show success notification
       showNotification("Welcome back! Redirecting...", "success");
 
-      // Additional logging for debugging
-      if (keepLoggedIn) {
-        console.log("✅ Extended session enabled - token expires in 30 days");
-        console.log(
-          "localStorage keepLoggedIn:",
-          localStorage.getItem("keepLoggedIn")
-        );
-
-        // Additional debug info for production troubleshooting
-        const debugInfo = tokenUtils.getAuthDebugInfo();
-        console.log("🔍 Full auth debug info after login:", debugInfo);
-      } else {
-        console.log("⏰ Standard session - token expires in 1 hour");
-      }
-
-      // Delay navigation to show success message
       setTimeout(() => {
-        navigate("/profile");
-      }, 1500);
+        navigate(safeNext(nextPath));
+      }, 800);
     } catch (err) {
       console.error("Login failed:", err.response ? err.response.data : err);
 
@@ -366,7 +349,7 @@ const LoginPage = () => {
               />
               <div className="checkbox-custom"></div>
               <label htmlFor="keepLoggedIn" className="checkbox-label">
-                Keep me logged in (30 days)
+                Stay logged in
               </label>
             </div>
             <button
@@ -393,7 +376,14 @@ const LoginPage = () => {
           </p>
           <p>
             Don't have an account?{" "}
-            <Link to="/register" className="login-link">
+            <Link
+              to={
+                nextPath
+                  ? `/register?next=${encodeURIComponent(nextPath)}`
+                  : "/register"
+              }
+              className="login-link"
+            >
               Sign up here
             </Link>
           </p>

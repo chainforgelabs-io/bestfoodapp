@@ -19,16 +19,15 @@ router.post("/register", async (req, res) => {
     const user = new User({ email, password, username });
     await user.save();
 
-    // Generate JWT
+    const expirationTime = "30d";
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h", // Default to 1 hour for registration
+      expiresIn: expirationTime,
     });
 
-    // Respond with token and user info
     res.status(201).json({
       token,
       user: { id: user._id, email: user.email, username: user.username },
-      expiresIn: "1h",
+      expiresIn: expirationTime,
     });
   } catch (err) {
     console.error(err);
@@ -40,27 +39,20 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   const { email, password, keepLoggedIn } = req.body;
 
-  console.log("Login attempt:", { email, password });
-
   try {
-    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
-      console.log("User not found for email:", email);
       return res.status(400).json({ msg: "Invalid credentials" });
     }
 
-    console.log("User found:", user);
-
-    // Check if the password matches
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.log("Password does not match for user:", email);
       return res.status(400).json({ msg: "Invalid credentials" });
     }
 
-    // Generate JWT with different expiration times based on keepLoggedIn preference
-    const expirationTime = keepLoggedIn ? "30d" : "1h"; // 30 days if keep logged in, otherwise 1 hour
+    // Stay logged in by default. Only issue a 1-hour token when the client
+    // explicitly sends keepLoggedIn: false.
+    const expirationTime = keepLoggedIn === false ? "1h" : "30d";
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: expirationTime,
     });

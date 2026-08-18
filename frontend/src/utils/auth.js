@@ -21,7 +21,7 @@ export const tokenUtils = {
   },
 
   // Set token in localStorage with error handling and additional metadata
-  setToken: (token, keepLoggedIn = false) => {
+  setToken: (token, keepLoggedIn = true) => {
     try {
       localStorage.setItem("token", token);
       localStorage.setItem("tokenSetAt", Date.now().toString());

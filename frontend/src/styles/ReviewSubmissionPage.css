@@ -876,3 +876,78 @@
     margin-bottom: 10px;
   }
 }
+
+.verified-visit-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  border: 1px solid #c8e6c9;
+  background: #f1f8f1;
+}
+
+.verified-visit-pill strong {
+  display: block;
+  color: #2e7d32;
+  margin-bottom: 2px;
+}
+
+.verified-visit-pill span {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #444;
+}
+
+.verified-visit-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.quick-restaurant-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid #e8def4;
+  border-radius: 12px;
+  background: #faf7ff;
+}
+
+.quick-restaurant-bar strong {
+  display: block;
+  color: #333;
+}
+
+.quick-restaurant-bar span {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 2px;
+}
+
+.change-restaurant-btn {
+  background: transparent;
+  border: 1px solid #b08bd4;
+  color: #7a4fb3;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.optional-receipt-link {
+  margin: 0 0 18px;
+  font-size: 0.9rem;
+}
+
+.optional-receipt-link a {
+  color: #7a4fb3;
+}

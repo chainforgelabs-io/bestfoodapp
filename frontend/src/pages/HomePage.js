@@ -378,7 +378,7 @@ function HomePage() {
     if (!token) {
       navigate("/login"); // Redirect to login if not authenticated
     } else {
-      navigate("/submit-review/scan"); // Start with optional receipt, then full wizard
+      navigate("/submit-review");
     }
   };
 

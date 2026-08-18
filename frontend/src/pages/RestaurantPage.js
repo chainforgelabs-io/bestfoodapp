@@ -213,6 +213,20 @@ function RestaurantPage() {
           )}
       </div>
 
+      <div className="restaurant-review-cta">
+        <button
+          type="button"
+          className="review-dish-btn"
+          onClick={() =>
+            navigate(
+              `/submit-review?restaurantId=${restaurant._id || restaurantID}`
+            )
+          }
+        >
+          Review a dish here
+        </button>
+      </div>
+
       {/* Food Items Section */}
       <div className="food-items-section">
         <h2 className="section-title">Menu Items ({foodItems.length})</h2>

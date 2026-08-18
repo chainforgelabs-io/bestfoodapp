@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import axios from "../api/axios";
 import Notification from "../components/Notification";
 import SEO from "../components/SEO";
@@ -73,6 +73,13 @@ async function sha256HexOfFile(file) {
 
 function ReceiptScanLanding() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const restaurantIdFromQuery =
+    searchParams.get("restaurantId") ||
+    location.state?.restaurantId ||
+    location.state?.formData?.restaurantId ||
+    "";
   const fileInputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [file, setFile] = useState(null);
@@ -115,7 +122,13 @@ function ReceiptScanLanding() {
 
   const goManual = () => {
     clearSelection();
-    navigate("/submit-review");
+    navigate(
+      restaurantIdFromQuery
+        ? `/submit-review?restaurantId=${encodeURIComponent(
+            restaurantIdFromQuery
+          )}`
+        : "/submit-review"
+    );
   };
 
   const openPicker = () => {
@@ -263,6 +276,7 @@ function ReceiptScanLanding() {
           receiptId: receipt._id,
           receiptThumbUrl: thumb,
           receiptParsed,
+          restaurantId: restaurantIdFromQuery || undefined,
         },
       });
     } catch (err) {

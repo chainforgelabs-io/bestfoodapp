@@ -14,6 +14,7 @@ const { sendPasswordResetEmail } = require("../utils/emailService");
 const crypto = require("crypto");
 
 const bcrypt = require("bcryptjs");
+const { criticStatus } = require("../lib/critic");
 
 // Get all users (for debugging - remove in production)
 router.get("/", async (req, res) => {
@@ -29,25 +30,45 @@ router.get("/", async (req, res) => {
 // Get the current user's points (Protected: Only authenticated users can view their points)
 // Create a new user (Registration - no protection needed here)
 router.post("/", async (req, res) => {
-  console.log("Received request body:", req.body);
   try {
     const {
       username,
       email,
       password,
-      firstName, // Added field
-      lastName, // Added field
+      firstName,
+      lastName,
       profilePicture,
       bio,
+      birthYear,
+      ageConfirmed,
       dateOfBirth,
       sex,
-      location: { city, province, country },
+      location,
       incomeRange,
       maritalStatus,
       occupation,
     } = req.body;
 
-    // Check if the username or email is already taken
+    if (!username || !email || !password) {
+      return res.status(400).json({
+        message: "Username, email, and password are required.",
+      });
+    }
+
+    if (!ageConfirmed) {
+      return res.status(400).json({
+        message: "You must confirm you are 13 or older.",
+      });
+    }
+
+    const year = parseInt(birthYear, 10);
+    const nowYear = new Date().getFullYear();
+    if (!year || year < nowYear - 120 || year > nowYear - 13) {
+      return res.status(400).json({
+        message: "Enter a birth year that shows you are 13 or older.",
+      });
+    }
+
     const existingUser = await User.findOne({
       $or: [{ username }, { email }],
     });
@@ -58,30 +79,31 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Create a new user object, without hashing the password here
+    const loc = location || {};
     const user = new User({
       username,
       email,
       password,
-      firstName, // Optional field
-      lastName, // Optional field
+      firstName,
+      lastName,
       profilePicture,
       bio,
-      dateOfBirth,
-      sex,
+      dateOfBirth: dateOfBirth || new Date(year, 0, 1),
+      sex: sex || undefined,
       location: {
-        city,
-        province,
-        country,
+        city: loc.city || "",
+        province: loc.province || "",
+        country: loc.country || "",
       },
-      incomeRange,
-      maritalStatus,
-      occupation,
+      incomeRange: incomeRange || undefined,
+      maritalStatus: maritalStatus || undefined,
+      occupation: occupation || undefined,
     });
 
-    // Save the new user to the database
     const savedUser = await user.save();
-    res.status(201).json(savedUser);
+    const userSafe = savedUser.toObject();
+    delete userSafe.password;
+    res.status(201).json(userSafe);
   } catch (err) {
     console.error(err.message);
     res.status(400).json({ message: err.message });
@@ -390,11 +412,16 @@ router.get("/:id/stats", optionalAuth, async (req, res) => {
     const avgScore =
       reviewCount > 0 ? Math.round(agg.avgScore) : 0;
 
+    const userDoc = await User.findById(userId).select("points").lean();
+    const points = userDoc?.points || 0;
+
     res.json({
       reviewCount,
       restaurantCount,
       cityCount,
       avgScore,
+      points,
+      critic: criticStatus(reviewCount, points),
     });
   } catch (err) {
     console.error("user stats", err);

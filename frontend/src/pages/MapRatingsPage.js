@@ -319,6 +319,13 @@ function MapRatingsPage() {
                       >
                         View details →
                       </a>
+                      {" · "}
+                      <a
+                        className="small"
+                        href={`/submit-review?restaurantId=${m.id}`}
+                      >
+                        Review a dish
+                      </a>
                     </div>
                   </InfoWindowF>
               );
