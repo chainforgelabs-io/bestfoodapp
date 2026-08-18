@@ -126,18 +126,6 @@ function MapRatingsPage() {
     }
   }, []);
 
-  // Fetch overall score for a restaurant
-  const fetchScore = useCallback(async (restaurantId) => {
-    try {
-      const { data } = await axios.get(
-        `/food-items/restaurant/${restaurantId}/scores`
-      );
-      return data?.overallAverageScore || 0;
-    } catch {
-      return 0;
-    }
-  }, []);
-
   // When city changes, center map and load restaurants + scores + geocodes
   useEffect(() => {
     const run = async () => {
@@ -155,10 +143,9 @@ function MapRatingsPage() {
       // Load restaurants
       const list = await fetchRestaurants(selectedCity);
 
-      // For each, fetch score and geocode
       const results = [];
       for (const r of list) {
-        const overall = await fetchScore(r._id);
+        const overall = Math.round(r.overallAverageScore || 0);
         if (!overall || overall <= 0) continue; // only markers for rated restaurants
         const addrString = addressToString(r.address);
         if (!addrString) continue;
@@ -179,7 +166,7 @@ function MapRatingsPage() {
       setLoading(false);
     };
     run();
-  }, [mapsReady, selectedCity, geocodeAddress, fetchRestaurants, fetchScore]);
+  }, [mapsReady, selectedCity, geocodeAddress, fetchRestaurants]);
 
   const handleSelectCity = (city) => setSelectedCity(city);
 

@@ -8,6 +8,72 @@ const Address = require("../models/Address");
 const { protect } = require("../middleware/authMiddleware"); // Import the protect middleware
 const { allocateSlug } = require("../lib/seo/slugs");
 
+function overallFromAverages(adminAverageScore, communityAverageScore) {
+  if (adminAverageScore > 0 && communityAverageScore > 0) {
+    return (adminAverageScore + communityAverageScore) / 2;
+  }
+  return adminAverageScore || communityAverageScore || 0;
+}
+
+/** One FoodItem query for the whole list — same averages as /food-items/restaurant/:id/scores. */
+async function attachRestaurantScores(restaurants) {
+  if (!restaurants?.length) return [];
+  const ids = restaurants.map((r) => r._id);
+  const items = await FoodItem.find({ restaurant: { $in: ids } })
+    .select("restaurant adminScore communityScore")
+    .lean();
+
+  const buckets = new Map();
+  for (const item of items) {
+    const key = String(item.restaurant);
+    if (!buckets.has(key)) {
+      buckets.set(key, {
+        adminTotal: 0,
+        adminCount: 0,
+        communityTotal: 0,
+        communityCount: 0,
+      });
+    }
+    const bucket = buckets.get(key);
+    if (item.adminScore) {
+      bucket.adminTotal += item.adminScore;
+      bucket.adminCount += 1;
+    }
+    if (item.communityScore) {
+      bucket.communityTotal += item.communityScore;
+      bucket.communityCount += 1;
+    }
+  }
+
+  const withScores = restaurants.map((restaurant) => {
+    const obj =
+      typeof restaurant.toObject === "function"
+        ? restaurant.toObject()
+        : { ...restaurant };
+    const bucket = buckets.get(String(restaurant._id));
+    const adminAverageScore = bucket?.adminCount
+      ? bucket.adminTotal / bucket.adminCount
+      : 0;
+    const communityAverageScore = bucket?.communityCount
+      ? bucket.communityTotal / bucket.communityCount
+      : 0;
+    return {
+      ...obj,
+      adminAverageScore,
+      communityAverageScore,
+      overallAverageScore: overallFromAverages(
+        adminAverageScore,
+        communityAverageScore
+      ),
+    };
+  });
+
+  withScores.sort(
+    (a, b) => (b.overallAverageScore || 0) - (a.overallAverageScore || 0)
+  );
+  return withScores;
+}
+
 /** Resolve by Mongo ObjectId or immutable slug. */
 async function resolveRestaurant(idOrSlug, { populateAddress = false } = {}) {
   const isObjectId = mongoose.isValidObjectId(idOrSlug);
@@ -141,7 +207,7 @@ router.get("/search", async (req, res) => {
           .json({ message: "No restaurants found for the provided location" });
       }
 
-      return res.status(200).json(restaurants);
+      return res.status(200).json(await attachRestaurantScores(restaurants));
     }
 
     // Extract address IDs and find corresponding restaurants (exact match)
@@ -156,7 +222,7 @@ router.get("/search", async (req, res) => {
         .json({ message: "No restaurants found for the provided location" });
     }
 
-    res.status(200).json(restaurants);
+    res.status(200).json(await attachRestaurantScores(restaurants));
   } catch (error) {
     console.error("Error searching restaurants:", error);
     res.status(500).json({ message: "Server error" });
@@ -190,8 +256,7 @@ router.get("/rank/type-or-cuisine/city/:city", async (req, res) => {
         .json({ message: "No restaurants found for the provided criteria" });
     }
 
-    // Return the restaurant data directly, without score-related information
-    res.json(restaurants);
+    res.json(await attachRestaurantScores(restaurants));
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

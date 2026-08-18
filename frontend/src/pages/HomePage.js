@@ -9,6 +9,13 @@ import { restaurantPath } from "../utils/restaurantUrls";
 import "../styles/HomePage.css";
 import Logo from "../assets/logo.png"; // Import your logo here
 
+function sortByOverallScore(list) {
+  if (!Array.isArray(list)) return [];
+  return [...list].sort(
+    (a, b) => (b.overallAverageScore || 0) - (a.overallAverageScore || 0)
+  );
+}
+
 function HomePage() {
   const [searchTerm, setSearchTerm] = useState(""); // City search term
   const [citySelected, setCitySelected] = useState(""); // Selected city
@@ -21,7 +28,6 @@ function HomePage() {
   const [hasSearched, setHasSearched] = useState(false); // Whether search was performed
   const [foodSearchTerm, setFoodSearchTerm] = useState(""); // Food item search term
   const [restaurantSearchTerm, setRestaurantSearchTerm] = useState(""); // Restaurant search term
-  const [restaurantScores, setRestaurantScores] = useState({}); // Holds the restaurant scores
   const [suggestions, setSuggestions] = useState([]);
   const [publicBoards, setPublicBoards] = useState([]);
   const navigate = useNavigate(); // For navigation
@@ -102,7 +108,7 @@ function HomePage() {
         },
       });
       console.log(response.data);
-      setResults(response.data);
+      setResults(sortByOverallScore(response.data));
       setHasSearched(true);
       setActiveFilter("Restaurants");
     } catch (error) {
@@ -195,7 +201,7 @@ function HomePage() {
               country: citySelected.country,
             },
           });
-          setResults(response.data);
+          setResults(sortByOverallScore(response.data));
           return;
         } catch (error) {
           console.error("Error searching restaurants:", error);
@@ -218,9 +224,7 @@ function HomePage() {
         console.log("API Response:", response.data);
 
         // Filter and sort the results based on overall score
-        const sortedResults = response.data.sort((a, b) => {
-          return b.overallAverageScore - a.overallAverageScore;
-        });
+        const sortedResults = sortByOverallScore(response.data);
 
         setResults(sortedResults); // Update state with sorted results
         console.log("Filtered Results:", sortedResults);
@@ -253,7 +257,7 @@ function HomePage() {
                   )
               )
             : response.data;
-          setResults(filteredResults);
+          setResults(sortByOverallScore(filteredResults));
         } catch (fallbackError) {
           console.error(
             "Both restaurant search methods failed:",
@@ -305,54 +309,6 @@ function HomePage() {
   //     console.error("Error fetching suggestions:", error);
   //   }
   // };
-
-  // Function to fetch restaurant scores and store them in state
-  const fetchRestaurantScores = async (restaurantId) => {
-    try {
-      const response = await axios.get(
-        `/food-items/restaurant/${restaurantId}/scores`
-      );
-      return response.data;
-    } catch (error) {
-      // Handle 404 and other errors gracefully - don't log them as errors since some restaurants may not have scores yet
-      if (error.response?.status === 404) {
-        // Restaurant doesn't have any food items or scores yet
-        return {
-          adminAverageScore: 0,
-          communityAverageScore: 0,
-          overallAverageScore: 0,
-        };
-      }
-      // For other errors, still return default scores but log the error
-      console.warn(
-        "Error fetching restaurant scores for restaurant",
-        restaurantId,
-        ":",
-        error.message
-      );
-      return {
-        adminAverageScore: 0,
-        communityAverageScore: 0,
-        overallAverageScore: 0,
-      };
-    }
-  };
-
-  // Fetch scores after loading restaurants
-  useEffect(() => {
-    const loadRestaurantScores = async () => {
-      const scores = {};
-      for (const restaurant of results) {
-        const score = await fetchRestaurantScores(restaurant._id);
-        scores[restaurant._id] = score;
-      }
-      setRestaurantScores(scores);
-    };
-
-    if (results.length > 0) {
-      loadRestaurantScores();
-    }
-  }, [results]);
 
   // Helper function to capitalize the first letter of each word
   const capitalizeWords = (str) => {
@@ -565,15 +521,7 @@ function HomePage() {
           {activeFilter === "Restaurants" && (
             <div className="results-section">
               {results.length > 0 ? (
-                results
-                  .sort((a, b) => {
-                    const aScore =
-                      restaurantScores[a._id]?.overallAverageScore || 0;
-                    const bScore =
-                      restaurantScores[b._id]?.overallAverageScore || 0;
-                    return bScore - aScore; // Sort descending by overall score
-                  })
-                  .map((result, index) => (
+                results.map((result, index) => (
                     <div
                       key={result._id}
                       className="result-item"
@@ -583,10 +531,7 @@ function HomePage() {
                         <div className="rank-number">#{index + 1}</div>
                         <h3 className="restaurant-name">{result.name}</h3>
                         <div className="overall-score">
-                          {Math.round(
-                            restaurantScores[result._id]?.overallAverageScore ||
-                              0
-                          )}
+                          {Math.round(result.overallAverageScore || 0)}
                         </div>
                       </div>
 
@@ -613,19 +558,13 @@ function HomePage() {
                           <div className="score-item">
                             <span className="score-label">Admin</span>
                             <span className="score-value">
-                              {Math.round(
-                                restaurantScores[result._id]
-                                  ?.adminAverageScore || 0
-                              )}
+                              {Math.round(result.adminAverageScore || 0)}
                             </span>
                           </div>
                           <div className="score-item">
                             <span className="score-label">Community</span>
                             <span className="score-value">
-                              {Math.round(
-                                restaurantScores[result._id]
-                                  ?.communityAverageScore || 0
-                              )}
+                              {Math.round(result.communityAverageScore || 0)}
                             </span>
                           </div>
                         </div>
